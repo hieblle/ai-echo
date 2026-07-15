@@ -43,6 +43,8 @@ export default async function SurveyPage({
       form={session.org.form_of_address}
       questions={session.questions}
       toolChoices={session.toolChoices}
+      isoWeek={session.isoWeek}
+      kAnonymityMin={session.org.k_anonymity_min}
       tip={tipText ?? ""}
       showPrivacyNotice={!session.profile.onboarding_completed}
     />

@@ -31,18 +31,22 @@ const TEMPLATE_TITLES: Record<TemplateKey, string> = {
 };
 
 /** Privacy notice shown before the first survey (texts from the Notion questionnaire, SPEC.md §7). */
-const PRIVACY_POINTS_DU = [
-  "Deine Antworten werden anonym ausgewertet.",
-  "Auswertungen erfolgen nur ab einer Teamgröße von mindestens 5 Personen.",
-  "Freitext-Antworten werden nicht einzelpersonenbezogen weitergegeben.",
-  "Du kannst die Teilnahme jederzeit beenden.",
-];
-const PRIVACY_POINTS_SIE = [
-  "Ihre Antworten werden anonym ausgewertet.",
-  "Auswertungen erfolgen nur ab einer Teamgröße von mindestens 5 Personen.",
-  "Freitext-Antworten werden nicht einzelpersonenbezogen weitergegeben.",
-  "Sie können die Teilnahme jederzeit beenden.",
-];
+function privacyPoints(form: FormOfAddress, k: number): string[] {
+  const teamSize = `Auswertungen erfolgen nur ab einer Teamgröße von mindestens ${k} Personen.`;
+  return form === "sie"
+    ? [
+        "Ihre Antworten werden anonym ausgewertet.",
+        teamSize,
+        "Freitext-Antworten werden nicht einzelpersonenbezogen weitergegeben.",
+        "Sie können die Teilnahme jederzeit beenden.",
+      ]
+    : [
+        "Deine Antworten werden anonym ausgewertet.",
+        teamSize,
+        "Freitext-Antworten werden nicht einzelpersonenbezogen weitergegeben.",
+        "Du kannst die Teilnahme jederzeit beenden.",
+      ];
+}
 
 interface SurveyRunnerProps {
   template: TemplateKey;
@@ -50,6 +54,10 @@ interface SurveyRunnerProps {
   form: FormOfAddress;
   questions: Question[];
   toolChoices: Choice[];
+  /** ISO week the questions were rendered for (guards week rollover). */
+  isoWeek: string;
+  /** Org's k-anonymity threshold, shown in the privacy notice. */
+  kAnonymityMin: number;
   /** Wissens-Tipp der Woche, already resolved for the org's form of address. */
   tip: string;
   showPrivacyNotice: boolean;
@@ -61,6 +69,8 @@ export function SurveyRunner({
   form,
   questions,
   toolChoices,
+  isoWeek,
+  kAnonymityMin,
   tip,
   showPrivacyNotice,
 }: SurveyRunnerProps) {
@@ -93,6 +103,7 @@ export function SurveyRunner({
     const payload = {
       template,
       personaId,
+      isoWeek,
       answers: Object.entries(finalAnswers)
         .filter(
           (entry): entry is [string, AnswerValue] => entry[1] !== undefined,
@@ -147,7 +158,7 @@ export function SurveyRunner({
   }
 
   if (!privacyAccepted) {
-    const points = form === "sie" ? PRIVACY_POINTS_SIE : PRIVACY_POINTS_DU;
+    const points = privacyPoints(form, kAnonymityMin);
     return (
       <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-6 py-10">
         <h1 className="text-2xl font-bold">
@@ -200,12 +211,12 @@ export function SurveyRunner({
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={total}
-          aria-valuenow={index}
+          aria-valuenow={index + 1}
           className="h-2 overflow-hidden rounded-full bg-muted"
         >
           <div
             className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${Math.round((index / total) * 100)}%` }}
+            style={{ width: `${Math.round(((index + 1) / total) * 100)}%` }}
           />
         </div>
       </header>
@@ -226,9 +237,10 @@ export function SurveyRunner({
           form={form}
           toolChoices={toolChoices}
           value={value}
-          onChange={(v) =>
-            setAnswers((prev) => ({ ...prev, [question.code]: v }))
-          }
+          onChange={(v) => {
+            setError(null); // a stale error must not outlive an edit
+            setAnswers((prev) => ({ ...prev, [question.code]: v }));
+          }}
         />
       </section>
 
@@ -243,7 +255,10 @@ export function SurveyRunner({
           variant="outline"
           size="lg"
           disabled={index === 0 || submitting}
-          onClick={() => setIndex(index - 1)}
+          onClick={() => {
+            setError(null);
+            setIndex(index - 1);
+          }}
         >
           Zurück
         </Button>

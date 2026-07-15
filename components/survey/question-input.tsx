@@ -104,7 +104,11 @@ export function QuestionInput({
                 <button
                   type="button"
                   aria-pressed={selected}
-                  onClick={() => onChange({ kind: "choice", value: c.value })}
+                  onClick={() => {
+                    // Re-tapping the selected option must not wipe typed
+                    // text / the follow-up scale; switching values must.
+                    if (!selected) onChange({ kind: "choice", value: c.value });
+                  }}
                   className={cn(optionButton, selected && optionButtonSelected)}
                 >
                   {choiceLabel(c, form)}
@@ -113,7 +117,11 @@ export function QuestionInput({
                   <input
                     type="text"
                     autoFocus
-                    placeholder="Bitte ergänzen (optional)…"
+                    placeholder={
+                      form === "sie"
+                        ? "Optional – keine Angaben, die Sie identifizieren"
+                        : "Optional – keine Angaben, die dich identifizieren"
+                    }
                     className={cn(textFieldClasses, "mt-2")}
                     value={current?.text ?? ""}
                     onChange={(e) =>
@@ -223,7 +231,11 @@ export function QuestionInput({
           {showText && (
             <input
               type="text"
-              placeholder="Bitte ergänzen (optional)…"
+              placeholder={
+                form === "sie"
+                  ? "Optional – keine Angaben, die Sie identifizieren"
+                  : "Optional – keine Angaben, die dich identifizieren"
+              }
               className={textFieldClasses}
               value={current?.other_text ?? ""}
               onChange={(e) =>
@@ -352,14 +364,17 @@ export function QuestionInput({
                     type="number"
                     inputMode="numeric"
                     min={0}
+                    max={500}
                     className={cn(textFieldClasses, "max-w-24 py-2")}
                     value={row?.uses_per_week ?? ""}
                     onChange={(e) => {
                       const parsed = Number(e.target.value);
-                      update(c.value, {
-                        uses_per_week:
-                          Number.isFinite(parsed) && parsed >= 0 ? parsed : 0,
-                      });
+                      // Clamp to the server's accepted range (0..500).
+                      const clamped =
+                        Number.isFinite(parsed) && parsed >= 0
+                          ? Math.min(parsed, 500)
+                          : 0;
+                      update(c.value, { uses_per_week: clamped });
                     }}
                   />
                 </label>
