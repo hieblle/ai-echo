@@ -10,14 +10,15 @@ import {
   applyConditionalLogic,
   resolveToolChoices,
   shortWeeklyVariant,
+  toolCatalogFromPool,
 } from "@/lib/domain/conditional";
-import { getIsoWeek } from "@/lib/domain/isoWeek";
+import { getIsoWeek, previousIsoWeek } from "@/lib/domain/isoWeek";
 import {
   personalizeWeeklyDraw,
+  pickMonthlyQuestions,
   pickWeeklyQuestions,
 } from "@/lib/domain/rotation";
 import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
-import { QUESTIONS, TOOL_CATALOG } from "@/lib/seed/questions";
 import type {
   Choice,
   DemoPersona,
@@ -52,6 +53,7 @@ export function bootstrapProfile(persona: DemoPersona): RespondentProfile {
     ai_experience: null,
     question_history: null,
     onboarding_completed: false,
+    completed_cycles: [],
   };
 }
 
@@ -66,9 +68,14 @@ export function isTemplateKey(value: string): value is TemplateKey {
   return (TEMPLATE_KEYS as readonly string[]).includes(value);
 }
 
+/** Calendar month key for the monthly cycle, e.g. "2026-07" (UTC-based). */
+export function getMonthKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 /**
  * Build the survey session for a persona: load/bootstrap the profile, apply
- * rotation (weekly) and conditional logic, resolve tool rows.
+ * rotation (weekly/monthly) and conditional logic, resolve tool rows.
  */
 export async function getSurveySession(
   template: TemplateKey,
@@ -96,6 +103,11 @@ export async function getSurveySession(
 
   const isoWeek = getIsoWeek(now);
   const pool = await store.listQuestions(template);
+  // Data access stays behind the Store interface (CLAUDE.md rule 2): the tool
+  // catalog is derived from the stored O2 question, not from seed imports.
+  const toolCatalog = toolCatalogFromPool(
+    await store.listQuestions("onboarding"),
+  );
 
   let questions: Question[];
   if (template === "weekly") {
@@ -103,7 +115,19 @@ export async function getSurveySession(
       // Non-users get the fixed short pulse — they are a signal, too (SPEC §9).
       questions = shortWeeklyVariant(pool);
     } else {
-      const draw = pickWeeklyQuestions({ pool, orgId: org.id, isoWeek });
+      // Excluding last week's org draw makes consecutive draws disjoint, so
+      // the per-person no-repeat rule holds structurally (SPEC §9 b).
+      const previousDraw = pickWeeklyQuestions({
+        pool,
+        orgId: org.id,
+        isoWeek: previousIsoWeek(isoWeek),
+      });
+      const draw = pickWeeklyQuestions({
+        pool,
+        orgId: org.id,
+        isoWeek,
+        exclude: previousDraw.map((q) => q.code),
+      });
       // Only a PREVIOUS week's draw counts as history: re-opening the same
       // week's pulse must yield the same questions, not new substitutes.
       const history =
@@ -120,14 +144,27 @@ export async function getSurveySession(
       questions = applyConditionalLogic({
         questions: personalized,
         profile,
-        toolCatalog: TOOL_CATALOG,
+        toolCatalog,
       });
     }
+  } else if (template === "monthly") {
+    // 8–12 of the 18 monthly questions: fixed core + monthly rotation
+    // (SPEC §4.1/§8; selection documented in DECISIONS.md D1.13).
+    const selection = pickMonthlyQuestions({
+      pool,
+      orgId: org.id,
+      month: getMonthKey(now),
+    });
+    questions = applyConditionalLogic({
+      questions: selection,
+      profile,
+      toolCatalog,
+    });
   } else {
     questions = applyConditionalLogic({
       questions: pool,
       profile,
-      toolCatalog: TOOL_CATALOG,
+      toolCatalog,
     });
   }
 
@@ -138,16 +175,6 @@ export async function getSurveySession(
     template,
     isoWeek,
     questions,
-    toolChoices: resolveToolChoices(profile, TOOL_CATALOG),
+    toolChoices: resolveToolChoices(profile, toolCatalog),
   };
-}
-
-/** Lookup helper for validation: a template's question by code. */
-export function questionByCode(
-  template: TemplateKey,
-  code: string,
-): Question | undefined {
-  return QUESTIONS.find(
-    (q) => q.template_key === template && q.code === code && q.active,
-  );
 }

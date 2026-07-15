@@ -11,9 +11,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { toolCatalogFromPool } from "@/lib/domain/conditional";
 import { getIsoWeek } from "@/lib/domain/isoWeek";
 import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
-import { TOOL_CATALOG } from "@/lib/seed/questions";
 import { getSurveySession, isTemplateKey } from "@/lib/server/survey-service";
 import { getStore } from "@/lib/server/store-instance";
 import type {
@@ -27,17 +27,22 @@ const answerSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("choice"),
     value: z.string().min(1),
-    text: z.string().max(500).optional(),
+    // Empty/whitespace inline text would pollute Phase-2 free-text
+    // aggregation — the client never sends it, so reject it here.
+    text: z.string().trim().min(1).max(500).optional(),
     scale: z.number().int().optional(),
   }),
   z.object({
     kind: z.literal("choices"),
     values: z.array(z.string().min(1)).min(1).max(20),
-    other_text: z.string().max(500).optional(),
+    other_text: z.string().trim().min(1).max(500).optional(),
   }),
   z.object({ kind: z.literal("scale"), value: z.number().int() }),
   z.object({ kind: z.literal("number"), value: z.number().finite() }),
-  z.object({ kind: z.literal("text"), value: z.string().min(1).max(2000) }),
+  z.object({
+    kind: z.literal("text"),
+    value: z.string().trim().min(1).max(2000),
+  }),
   z.object({
     kind: z.literal("tool_matrix"),
     tools: z
@@ -45,7 +50,9 @@ const answerSchema = z.discriminatedUnion("kind", [
         z.object({
           tool: z.string().min(1),
           usefulness: z.number().int().min(1).max(10),
-          uses_per_week: z.number().finite().min(0).max(500),
+          // Range 0..500 is validated in validateAnswer so violations
+          // surface with the question code instead of a generic error.
+          uses_per_week: z.number().finite().min(0),
         }),
       )
       .min(1)
@@ -56,6 +63,8 @@ const answerSchema = z.discriminatedUnion("kind", [
 const payloadSchema = z.object({
   template: z.string(),
   personaId: z.string().min(1),
+  /** ISO week the questions were rendered for — guards week rollover. */
+  isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
   answers: z
     .array(z.object({ question_code: z.string().min(1), answer: answerSchema }))
     .min(1)
@@ -161,7 +170,13 @@ function validateAnswer(
       for (const row of answer.tools) {
         if (!allowed.has(row.tool)) return fail(`unknown tool "${row.tool}"`);
         if (seen.has(row.tool)) return fail(`duplicate tool "${row.tool}"`);
+        if (row.uses_per_week > 500) return fail("uses per week out of range");
         seen.add(row.tool);
+      }
+      // All-or-nothing also holds inside the matrix: every tool the
+      // respondent uses must be rated (mirrors the client's completeness rule).
+      if (answer.tools.length !== toolChoices.length) {
+        return fail("all tools must be rated");
       }
       return null;
     }
@@ -180,7 +195,36 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
 
   try {
     const now = new Date();
+    const isoWeek = getIsoWeek(now);
+
+    // The question set is re-derived per week — a pulse rendered before a
+    // week rollover must not be stored under the new week's cycle.
+    if (parsed.data.isoWeek !== isoWeek) {
+      return {
+        ok: false,
+        error:
+          "Die Kalenderwoche hat inzwischen gewechselt. Bitte die Befragung neu starten.",
+      };
+    }
+
     const session = await getSurveySession(template, personaId, now);
+    const cycleId = `${template}-${isoWeek}`;
+
+    // Duplicate-submission guard ("ganz oder gar nicht" also means "einmal"):
+    // Phase 4 replaces this with participations.status = 'completed'.
+    if (template === "onboarding" && session.profile.onboarding_completed) {
+      return {
+        ok: false,
+        error: "Die Onboarding-Befragung wurde bereits abgeschlossen.",
+      };
+    }
+    if ((session.profile.completed_cycles ?? []).includes(cycleId)) {
+      return {
+        ok: false,
+        error: "Diese Befragung wurde in diesem Zyklus bereits abgeschlossen.",
+      };
+    }
+
     const served = new Map(session.questions.map((q) => [q.code, q]));
 
     // No unknown and no duplicate question codes.
@@ -210,36 +254,56 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
       if (error) return { ok: false, error: `Ungültige Antwort (${error}).` };
     }
 
-    const isoWeek = getIsoWeek(now);
-    const rows: NewSurveyResponse[] = answers.map(({ question_code, answer }) => ({
-      org_id: session.org.id,
-      cycle_id: `${template}-${isoWeek}`,
-      department_id: session.profile.department_id,
-      role_scope: session.profile.role_scope,
-      question_code,
-      answer,
-      created_week: isoWeek,
-    }));
-
     const store = getStore();
+
+    // The onboarding baseline belongs to the department chosen in O1, not to
+    // the persona's pre-onboarding default — resolve it BEFORE writing rows.
+    let responseDepartment = session.profile.department_id;
+    if (template === "onboarding") {
+      const o1 = answers.find((a) => a.question_code === "O1")?.answer;
+      if (o1?.kind === "choice") {
+        const departments = await store.listDepartments(session.org.id);
+        if (departments.some((d) => d.id === o1.value)) {
+          responseDepartment = o1.value;
+        }
+      }
+    }
+
+    const rows: NewSurveyResponse[] = answers.map(({ question_code, answer }) => {
+      const q = served.get(question_code);
+      // Free texts are only ever shown org-wide without department (SPEC §7.3)
+      // — don't store a department on them in the first place.
+      const isFreeText = q?.type === "text_optional";
+      return {
+        org_id: session.org.id,
+        cycle_id: cycleId,
+        department_id: isFreeText ? null : responseDepartment,
+        role_scope: session.profile.role_scope,
+        question_code,
+        answer,
+        created_week: isoWeek,
+      };
+    });
+
     await store.submitResponses(rows);
 
     // Profile updates travel separately from responses (anonymity, SPEC.md §7).
     const profile = { ...session.profile };
+    profile.completed_cycles = [
+      ...(session.profile.completed_cycles ?? []),
+      cycleId,
+    ];
     if (template === "onboarding") {
-      const o1 = answers.find((a) => a.question_code === "O1")?.answer;
       const o2 = answers.find((a) => a.question_code === "O2")?.answer;
       const o3 = answers.find((a) => a.question_code === "O3")?.answer;
-      if (o1?.kind === "choice") {
-        const departments = await store.listDepartments(session.org.id);
-        if (departments.some((d) => d.id === o1.value)) {
-          profile.department_id = o1.value;
-        }
-      }
+      profile.department_id = responseDepartment;
       if (o2?.kind === "choices") {
         // Only catalog tools carry labels for W1.2/M2.1; "other"/"none" are
         // not usable as tool rows and are dropped from the profile.
-        const catalogValues = new Set(TOOL_CATALOG.map((c) => c.value));
+        const catalog = toolCatalogFromPool(
+          await store.listQuestions("onboarding"),
+        );
+        const catalogValues = new Set(catalog.map((c) => c.value));
         const cleaned = o2.values.includes("none")
           ? []
           : o2.values.filter((v) => catalogValues.has(v));
@@ -262,14 +326,23 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
     revalidatePath("/demo");
     return { ok: true };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unbekannter Fehler";
-    return { ok: false, error: message };
+    // Never surface raw internals (English messages, reflected input) in the
+    // German UI — log server-side, answer generically.
+    console.error("submitSurvey failed:", err);
+    return {
+      ok: false,
+      error:
+        "Es ist ein Fehler aufgetreten. Bitte die Seite neu laden und erneut versuchen.",
+    };
   }
 }
 
 /** Demo-only Du/Sie toggle (SPEC.md §14 org setting). */
-export async function setDemoFormOfAddress(form: "du" | "sie"): Promise<void> {
+export async function setDemoFormOfAddress(form: unknown): Promise<void> {
+  // Server actions are public endpoints — validate even the demo toggle.
+  const parsed = z.enum(["du", "sie"]).safeParse(form);
+  if (!parsed.success) return;
   const store = getStore();
-  await store.setFormOfAddress(DEMO_ORG_ID, form);
+  await store.setFormOfAddress(DEMO_ORG_ID, parsed.data);
   revalidatePath("/", "layout");
 }

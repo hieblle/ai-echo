@@ -38,6 +38,25 @@ export function shortWeeklyVariant(pool: Question[]): Question[] {
 }
 
 /**
+ * Derives the tool catalog from the onboarding questions: the O2 choices
+ * minus the non-tool options ("Aktuell keine" is exclusive, "Andere" carries
+ * free text). Deriving instead of importing the seed keeps all data access
+ * behind the Store interface (CLAUDE.md rule 2) — the catalog follows
+ * whatever question set the store serves.
+ *
+ * @throws Error when O2 is missing or has no choices.
+ */
+export function toolCatalogFromPool(onboardingPool: Question[]): Choice[] {
+  const o2 = onboardingPool.find((q) => q.code === "O2");
+  if (!o2 || o2.options?.kind !== "choices") {
+    throw new Error(
+      "toolCatalogFromPool: onboarding question O2 with choices is required",
+    );
+  }
+  return o2.options.choices.filter((c) => !c.exclusive && !c.allows_text);
+}
+
+/**
  * Narrows the org's tool catalog to the tools the respondent actually uses
  * (O2 → `profile.tools_used`).
  *

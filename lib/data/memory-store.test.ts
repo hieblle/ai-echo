@@ -109,6 +109,7 @@ function makeProfile(
     ai_experience: null,
     question_history: null,
     onboarding_completed: true,
+    completed_cycles: [],
     ...overrides,
   };
 }

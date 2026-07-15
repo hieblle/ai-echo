@@ -221,6 +221,11 @@ export interface RespondentProfile {
   /** Weekly questions served last, for the rotation's no-repeat rule. */
   question_history: { week: string; codes: string[] } | null;
   onboarding_completed: boolean;
+  /**
+   * Cycle ids this respondent already completed (e.g. "weekly-2026-W29") —
+   * duplicate-submission guard; Phase 4 replaces this with `participations`.
+   */
+  completed_cycles: string[];
 }
 
 /**
