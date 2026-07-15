@@ -25,6 +25,24 @@ export const WEEKLY_DRAW_MIN = 3;
 export const WEEKLY_DRAW_MAX = 5;
 export const WEEKLY_DRAW_DEFAULT = 5;
 
+/** Monthly deep-dive size bounds (SPEC.md §4.1/§8: "8–12 Fragen"). */
+export const MONTHLY_DRAW_MIN = 8;
+export const MONTHLY_DRAW_MAX = 12;
+export const MONTHLY_DRAW_DEFAULT = 10;
+
+/**
+ * Monthly questions that must be asked EVERY month: the gap-pair halves
+ * (M3.1↔F7, M5.1↔F6 — the Perception Gap needs both sides monthly), the ROI
+ * anchors (M1.1, M1.3) and the NPS (M6.1). The remaining slots rotate.
+ */
+export const MONTHLY_CORE_CODES: readonly string[] = [
+  "M1.1",
+  "M1.3",
+  "M3.1",
+  "M5.1",
+  "M6.1",
+];
+
 // --- Deterministic randomness ---------------------------------------------
 
 /**
@@ -103,6 +121,11 @@ function clampCount(count: number): number {
  * - With `count >= 4`, at least one question per `WEEKLY_DIMENSIONS` entry is
  *   guaranteed; throws when the pool cannot satisfy that.
  * - Throws when the pool has fewer distinct questions than `count`.
+ * - `exclude` (typically last week's org draw) removes codes from the pool
+ *   BEFORE drawing, which makes consecutive draws disjoint and the per-person
+ *   no-repeat rule structurally satisfiable (SPEC.md §9 constraint b). When
+ *   the exclusion would make the draw infeasible (tiny pool), it is ignored —
+ *   a feasible draw always wins over a strict exclusion.
  * - Result is sorted by `sort_order`. Inputs are never mutated.
  */
 export function pickWeeklyQuestions(args: {
@@ -110,9 +133,38 @@ export function pickWeeklyQuestions(args: {
   orgId: string;
   isoWeek: string;
   count?: number;
+  exclude?: readonly string[];
 }): Question[] {
   const { pool, orgId, isoWeek } = args;
   const count = clampCount(args.count ?? WEEKLY_DRAW_DEFAULT);
+
+  if (args.exclude && args.exclude.length > 0) {
+    const excluded = new Set(args.exclude);
+    const reduced = pool.filter((q) => !excluded.has(q.code));
+    if (isDrawFeasible(reduced, count)) {
+      return drawWeekly(reduced, orgId, isoWeek, count);
+    }
+  }
+  return drawWeekly(pool, orgId, isoWeek, count);
+}
+
+/** Whether `pool` can satisfy a weekly draw of `count` (distinct + coverage). */
+function isDrawFeasible(pool: Question[], count: number): boolean {
+  if (new Set(pool.map((q) => q.code)).size < count) return false;
+  if (count >= 4) {
+    for (const dimension of WEEKLY_DIMENSIONS) {
+      if (!pool.some((q) => q.dimension === dimension)) return false;
+    }
+  }
+  return true;
+}
+
+function drawWeekly(
+  pool: Question[],
+  orgId: string,
+  isoWeek: string,
+  count: number,
+): Question[] {
   const rng = seededRng(`${orgId}|${isoWeek}`);
   const shuffled = shuffledCopy(pool, rng);
 
@@ -165,11 +217,15 @@ export function pickWeeklyQuestions(args: {
  * seeded from `respondentKey + "|" + isoWeek`, so a respondent always gets
  * the same substitutes within a week.
  *
- * Trade-off: when no such candidate exists (e.g. the whole dimension was
- * already served last week), the ORIGINAL question is kept. Repeating a
- * question once beats shrinking the pulse below 3 questions or losing the
- * dimension coverage the org draw guarantees — a repeat is a UX blemish,
- * a missing dimension breaks the KPI aggregation.
+ * Substitution has two tiers:
+ *   1. a substitute of the SAME dimension (the SPEC's preferred mechanism);
+ *   2. when the dimension offers no candidate but stays covered by another
+ *      kept question, a substitute of ANY dimension — the no-repeat rule is
+ *      absolute in SPEC §9, dimension coverage is the only harder constraint.
+ * Only when even that would break dimension coverage is the ORIGINAL question
+ * kept: a one-off repeat beats a missing dimension, which would break the
+ * KPI aggregation. (With the real 12-question pool — 3 per dimension — and
+ * 5-question histories this last resort is unreachable.)
  *
  * Result is sorted by `sort_order`, contains no duplicates, and no input is
  * mutated.
@@ -188,23 +244,42 @@ export function personalizeWeeklyDraw(args: {
   // Codes that are (currently) part of the personalized result. Seeded with
   // the full draw so a substitute can never duplicate a question that is kept.
   const resultCodes = new Set(draw.map((q) => q.code));
+  const dimensionByCode = new Map(pool.map((q) => [q.code, q.dimension]));
+
+  // Deterministic candidate order: filter creates a copy, sorting it does
+  // not touch `pool`; sorting decouples the choice from the pool's order.
+  const sortedCandidates = (predicate: (q: Question) => boolean) =>
+    pool
+      .filter(
+        (q) => !historyCodes.has(q.code) && !resultCodes.has(q.code) && predicate(q),
+      )
+      .sort(
+        (a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code),
+      );
 
   const personalized = draw.map((question) => {
     if (!historyCodes.has(question.code)) return question;
 
-    // Deterministic candidate order: filter creates a copy, sorting it does
-    // not touch `pool`; sorting decouples the choice from the pool's order.
-    const candidates = pool
-      .filter(
-        (q) =>
-          q.dimension === question.dimension &&
-          !historyCodes.has(q.code) &&
-          !resultCodes.has(q.code),
-      )
-      .sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code));
+    // Tier 1: same dimension.
+    let candidates = sortedCandidates(
+      (q) => q.dimension === question.dimension,
+    );
+
+    // Tier 2: any dimension — allowed only if the colliding question's
+    // dimension remains covered by another question of the result.
+    if (candidates.length === 0) {
+      const dimensionStillCovered = [...resultCodes].some(
+        (code) =>
+          code !== question.code &&
+          dimensionByCode.get(code) === question.dimension,
+      );
+      if (dimensionStillCovered) {
+        candidates = sortedCandidates(() => true);
+      }
+    }
 
     const substitute = candidates[Math.floor(rng() * candidates.length)];
-    if (!substitute) return question; // no candidate → keep original (see above)
+    if (!substitute) return question; // last resort → keep original (see above)
 
     resultCodes.delete(question.code);
     resultCodes.add(substitute.code);
@@ -212,4 +287,64 @@ export function personalizeWeeklyDraw(args: {
   });
 
   return sortBySortOrder(personalized);
+}
+
+// --- Monthly selection --------------------------------------------------------
+
+/**
+ * Deterministic monthly deep-dive selection (SPEC.md §4.1/§8: 8–12 questions
+ * out of the 18-question monthly catalog).
+ *
+ * `MONTHLY_CORE_CODES` are always included; the remaining slots are drawn
+ * deterministically from the rest of the pool, seeded from
+ * `orgId + "|" + month` (calendar month, e.g. "2026-07") — every respondent
+ * of an org answers the same monthly set, and the non-core questions rotate
+ * month over month.
+ *
+ * - `count` defaults to 10 and is clamped to 8..12 (and to the pool size).
+ * - Throws when a core code is missing from the pool.
+ * - Result is sorted by `sort_order`. Inputs are never mutated.
+ */
+export function pickMonthlyQuestions(args: {
+  pool: Question[];
+  orgId: string;
+  /** Calendar month key, e.g. "2026-07". */
+  month: string;
+  count?: number;
+}): Question[] {
+  const { pool, orgId, month } = args;
+  const requested = Math.min(
+    MONTHLY_DRAW_MAX,
+    Math.max(MONTHLY_DRAW_MIN, Math.trunc(args.count ?? MONTHLY_DRAW_DEFAULT)),
+  );
+  const count = Math.min(requested, new Set(pool.map((q) => q.code)).size);
+
+  const picked: Question[] = [];
+  const pickedCodes = new Set<string>();
+
+  for (const code of MONTHLY_CORE_CODES) {
+    const question = pool.find((q) => q.code === code);
+    if (!question) {
+      throw new Error(
+        `Monthly pool is missing core question "${code}" (gap pairs / ROI anchors must be asked every month)`,
+      );
+    }
+    picked.push(question);
+    pickedCodes.add(code);
+  }
+
+  const rng = seededRng(`${orgId}|${month}`);
+  const rest = shuffledCopy(
+    pool.filter((q) => !pickedCodes.has(q.code)),
+    rng,
+  );
+  for (const question of rest) {
+    if (picked.length >= count) break;
+    if (!pickedCodes.has(question.code)) {
+      picked.push(question);
+      pickedCodes.add(question.code);
+    }
+  }
+
+  return sortBySortOrder(picked);
 }

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Question, WeeklyDimension } from "@/lib/types";
 import { WEEKLY_DIMENSIONS } from "@/lib/types";
-import { personalizeWeeklyDraw, pickWeeklyQuestions } from "./rotation";
+import {
+  MONTHLY_CORE_CODES,
+  personalizeWeeklyDraw,
+  pickMonthlyQuestions,
+  pickWeeklyQuestions,
+} from "./rotation";
 
 // --- Fixture -----------------------------------------------------------------
 // Inline 12-question weekly pool: 3 questions per weekly dimension,
@@ -268,5 +273,162 @@ describe("personalizeWeeklyDraw", () => {
     expect(codesOf([...draw])).toEqual(drawSnapshot);
     expect(POOL).toEqual(poolSnapshot);
     expect([...history]).toEqual(["W1.1"]);
+  });
+});
+
+// --- exclude (previous org draw) ----------------------------------------------
+
+describe("pickWeeklyQuestions · exclude", () => {
+  it("never draws an excluded code when the reduced pool stays feasible", () => {
+    const prev = pickWeeklyQuestions({ pool: POOL, orgId: ORG, isoWeek: WEEK });
+    const next = pickWeeklyQuestions({
+      pool: POOL,
+      orgId: ORG,
+      isoWeek: "2026-W30",
+      exclude: codesOf(prev),
+    });
+    const prevCodes = new Set(codesOf(prev));
+    for (const code of codesOf(next)) {
+      expect(prevCodes.has(code)).toBe(false);
+    }
+    // Coverage still holds on the reduced pool.
+    for (const dimension of WEEKLY_DIMENSIONS) {
+      expect(next.some((q) => q.dimension === dimension)).toBe(true);
+    }
+  });
+
+  it("ignores the exclusion when it would make the draw infeasible", () => {
+    // Excluding all three adoption questions leaves no adoption coverage —
+    // the draw must fall back to the full pool instead of throwing.
+    const result = pickWeeklyQuestions({
+      pool: POOL,
+      orgId: ORG,
+      isoWeek: WEEK,
+      exclude: ["W1.1", "W1.2", "W1.3"],
+    });
+    expect(result).toHaveLength(5);
+    expect(result.some((q) => q.dimension === "adoption")).toBe(true);
+    // Fallback equals the unexcluded draw (deterministic).
+    expect(codesOf(result)).toEqual(
+      codesOf(pickWeeklyQuestions({ pool: POOL, orgId: ORG, isoWeek: WEEK })),
+    );
+  });
+
+  it("stays deterministic with exclusions", () => {
+    const a = pickWeeklyQuestions({
+      pool: POOL,
+      orgId: ORG,
+      isoWeek: WEEK,
+      exclude: ["W1.1", "W2.1"],
+    });
+    const b = pickWeeklyQuestions({
+      pool: POOL,
+      orgId: ORG,
+      isoWeek: WEEK,
+      exclude: ["W1.1", "W2.1"],
+    });
+    expect(codesOf(a)).toEqual(codesOf(b));
+  });
+});
+
+// --- Monthly selection ----------------------------------------------------------
+
+describe("pickMonthlyQuestions", () => {
+  function makeMonthly(code: string, sortOrder: number): Question {
+    return {
+      ...makeQuestion(code.replace("M", "W") as string, "adoption", sortOrder),
+      id: `q-${code}`,
+      template_key: "monthly",
+      code,
+      dimension: "roi",
+    };
+  }
+
+  const MONTHLY_POOL: Question[] = [
+    "M1.1",
+    "M1.2",
+    "M1.3",
+    "M1.4",
+    "M2.1",
+    "M2.2",
+    "M2.3",
+    "M3.1",
+    "M3.2",
+    "M3.3",
+    "M4.1",
+    "M4.2",
+    "M4.3",
+    "M4.4",
+    "M5.1",
+    "M5.2",
+    "M5.3",
+    "M6.1",
+  ].map((code, i) => makeMonthly(code, (i + 1) * 10));
+
+  it("returns 10 questions by default, all core codes included", () => {
+    const result = pickMonthlyQuestions({
+      pool: MONTHLY_POOL,
+      orgId: ORG,
+      month: "2026-07",
+    });
+    expect(result).toHaveLength(10);
+    for (const code of MONTHLY_CORE_CODES) {
+      expect(codesOf(result)).toContain(code);
+    }
+    // In range 8..12 per SPEC §4.1.
+    expect(result.length).toBeGreaterThanOrEqual(8);
+    expect(result.length).toBeLessThanOrEqual(12);
+  });
+
+  it("is deterministic per (org, month) and rotates across months", () => {
+    const a = pickMonthlyQuestions({
+      pool: MONTHLY_POOL,
+      orgId: ORG,
+      month: "2026-07",
+    });
+    const b = pickMonthlyQuestions({
+      pool: MONTHLY_POOL,
+      orgId: ORG,
+      month: "2026-07",
+    });
+    expect(codesOf(a)).toEqual(codesOf(b));
+
+    const months = ["2026-07", "2026-08", "2026-09", "2026-10"];
+    const draws = months.map((month) =>
+      codesOf(
+        pickMonthlyQuestions({ pool: MONTHLY_POOL, orgId: ORG, month }),
+      ).join(","),
+    );
+    expect(new Set(draws).size).toBeGreaterThan(1);
+  });
+
+  it("clamps count to 8..12 and sorts by sort_order", () => {
+    const small = pickMonthlyQuestions({
+      pool: MONTHLY_POOL,
+      orgId: ORG,
+      month: "2026-07",
+      count: 1,
+    });
+    expect(small).toHaveLength(8);
+    const big = pickMonthlyQuestions({
+      pool: MONTHLY_POOL,
+      orgId: ORG,
+      month: "2026-07",
+      count: 99,
+    });
+    expect(big).toHaveLength(12);
+    const orders = big.map((q) => q.sort_order);
+    expect(orders).toEqual([...orders].sort((a, b) => a - b));
+  });
+
+  it("throws when a core question is missing", () => {
+    const poolWithoutNps = MONTHLY_POOL.filter((q) => q.code !== "M6.1");
+    expect(() =>
+      pickMonthlyQuestions({
+        pool: poolWithoutNps,
+        orgId: ORG,
+        month: "2026-07",
+      }),
+    ).toThrow(/M6\.1/);
   });
 });

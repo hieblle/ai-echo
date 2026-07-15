@@ -29,3 +29,16 @@ export function parseIsoWeek(week: string): { year: number; week: number } {
   if (wk < 1 || wk > 53) throw new RangeError(`invalid ISO week: ${week}`);
   return { year, week: wk };
 }
+
+/** Number of ISO weeks in a year (52 or 53): the week of Dec 28 is the last. */
+export function weeksInIsoYear(year: number): number {
+  return parseIsoWeek(getIsoWeek(new Date(Date.UTC(year, 11, 28)))).week;
+}
+
+/** The ISO week immediately before the given one (handles year rollover). */
+export function previousIsoWeek(week: string): string {
+  const { year, week: wk } = parseIsoWeek(week);
+  if (wk > 1) return `${year}-W${String(wk - 1).padStart(2, "0")}`;
+  const prevYear = year - 1;
+  return `${prevYear}-W${String(weeksInIsoYear(prevYear)).padStart(2, "0")}`;
+}

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getIsoWeek, parseIsoWeek } from "./isoWeek";
+import {
+  getIsoWeek,
+  parseIsoWeek,
+  previousIsoWeek,
+  weeksInIsoYear,
+} from "./isoWeek";
 
 describe("getIsoWeek", () => {
   it("formats a mid-year date", () => {
@@ -33,5 +38,25 @@ describe("parseIsoWeek", () => {
     expect(() => parseIsoWeek("2026-29")).toThrow(RangeError);
     expect(() => parseIsoWeek("2026-W54")).toThrow(RangeError);
     expect(() => parseIsoWeek("2026-W00")).toThrow(RangeError);
+  });
+});
+
+describe("weeksInIsoYear", () => {
+  it("distinguishes 52- and 53-week years", () => {
+    expect(weeksInIsoYear(2026)).toBe(53);
+    expect(weeksInIsoYear(2025)).toBe(52);
+    expect(weeksInIsoYear(2020)).toBe(53);
+  });
+});
+
+describe("previousIsoWeek", () => {
+  it("steps back within a year", () => {
+    expect(previousIsoWeek("2026-W29")).toBe("2026-W28");
+    expect(previousIsoWeek("2026-W02")).toBe("2026-W01");
+  });
+
+  it("rolls over the year boundary with the correct week count", () => {
+    expect(previousIsoWeek("2027-W01")).toBe("2026-W53");
+    expect(previousIsoWeek("2026-W01")).toBe("2025-W52");
   });
 });
