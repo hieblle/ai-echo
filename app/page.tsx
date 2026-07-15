@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { K_ANONYMITY_DEFAULT } from "@/lib/domain/anonymity";
 
@@ -19,15 +20,16 @@ export default function Home() {
 
       <section className="rounded-lg border bg-card p-6 text-card-foreground">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Phase 0 — Setup
+          Phase 1 — Klickbarer Survey-Prototyp
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Prototyp-Gerüst läuft ohne Datenbank, Auth oder Secrets. Der klickbare
-          Survey-Runner folgt in Phase 1, das Dashboard in Phase 2.
+          Läuft ohne Datenbank, Auth oder Secrets: Alle vier Befragungs-Flows
+          (Onboarding, Weekly, Monthly, Leadership) sind im Demo-Modus mit
+          Rollen-Umschalter durchspielbar. Das Dashboard folgt in Phase 2.
         </p>
         <ul className="mt-4 space-y-1 text-sm">
           <li>Next.js 15 · TypeScript strict · Tailwind + shadcn/ui</li>
-          <li>Vitest (Unit) · Playwright (E2E vorbereitet)</li>
+          <li>Rotation & Conditional Logic unit-getestet · Mobile-first</li>
           <li>
             k-Anonymität serverseitig, Default k&nbsp;=&nbsp;{K_ANONYMITY_DEFAULT}
           </li>
@@ -35,7 +37,9 @@ export default function Home() {
       </section>
 
       <div className="flex flex-wrap gap-3">
-        <Button disabled>Befragung starten (Phase 1)</Button>
+        <Button asChild size="lg">
+          <Link href="/demo">Demo starten</Link>
+        </Button>
         <Button variant="outline" disabled>
           Dashboard (Phase 2)
         </Button>
