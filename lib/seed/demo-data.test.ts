@@ -288,7 +288,7 @@ describe("cycle scheduling", () => {
     expect([...responseWeeks]).toEqual([firstWeek]);
   });
 
-  it("W1.1 answers exist for every org and every week", () => {
+  it("W1.1 is anchored: every org and week has at least 10 W1.1 answers", () => {
     for (const org of DEMO_ORGS) {
       for (const week of WEEKS) {
         const w11 = rows(
@@ -297,8 +297,32 @@ describe("cycle scheduling", () => {
             r.created_week === week &&
             r.question_code === "W1.1",
         );
-        expect(w11.length, `${org.id} ${week}`).toBeGreaterThan(0);
+        expect(w11.length, `${org.id} ${week}`).toBeGreaterThanOrEqual(10);
       }
+    }
+  });
+});
+
+// --- Anonymity of free texts (SPEC.md §7) ------------------------------------
+
+describe("free-text anonymity", () => {
+  it("every free-text answer carries NO department; other answers keep theirs", () => {
+    const textRows = rows((r) => r.answer.kind === "text");
+    expect(textRows.length).toBeGreaterThan(0);
+    for (const row of textRows) {
+      expect(
+        row.department_id,
+        `${row.org_id} ${row.question_code} ${row.created_week}`,
+      ).toBeNull();
+    }
+    // Non-text employee answers stay department-scoped (the k-anonymity
+    // aggregation needs them); only the extra org-level lead is null.
+    for (const row of rows((r) => r.answer.kind !== "text")) {
+      if (row.role_scope === "lead") continue;
+      expect(
+        row.department_id,
+        `${row.org_id} ${row.question_code} ${row.created_week}`,
+      ).not.toBeNull();
     }
   });
 });
@@ -363,6 +387,22 @@ describe("SPAR anomalies", () => {
     expect(f6.length).toBeGreaterThan(0);
     expect(m51.length).toBeGreaterThan(0);
     expect(mean(f6) - mean(m51)).toBeGreaterThan(3);
+  });
+
+  it("weekly adoption stays between 0.5 and 0.75 in every week", () => {
+    for (const week of WEEKS) {
+      const w11 = rows(
+        (r) =>
+          r.org_id === SPAR_ORG_ID &&
+          r.created_week === week &&
+          r.question_code === "W1.1",
+      );
+      expect(w11.length, week).toBeGreaterThanOrEqual(10);
+      const adoption =
+        w11.filter((r) => choiceValue(r) !== "none").length / w11.length;
+      expect(adoption, week).toBeGreaterThan(0.5);
+      expect(adoption, week).toBeLessThan(0.75);
+    }
   });
 
   it("more than 30 % of M3.2 answers wish for prompt engineering training (→ R4)", () => {

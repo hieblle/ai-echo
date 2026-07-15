@@ -3,23 +3,29 @@
  *
  * Generates deterministic synthetic survey responses and participation stats
  * for the three §16.3 demo orgs over a caller-supplied window of consecutive
- * ISO weeks — with the dashboard anomalies built in:
+ * ISO weeks — tuned so the trigger engine (SPEC.md §11) fires EXACTLY the
+ * intended story and nothing else:
  *
- * - Merlin (healthy): participation ≈ 0.75, adoption ≈ 0.7, but the paid
- *   Copilot licence is barely used (W1.2 share < 15 % → R5) and Marketing has
- *   headcount 4 → the k-anonymity suppression showcase.
- * - SPAR: perception gap (employee M5.1 low, leadership F6 high → R6) and a
- *   dominant prompt-engineering training wish (M3.2 → R4).
- * - REWE (struggling): adoption < 0.5 every week (→ R1), W4.2 sentiment
- *   strictly declining over the last four weeks (→ R3), weekly participation
- *   < 0.4 in the last two cycles (→ R7) — while trust (W3.3) stays ≥ 5.5 so
- *   R2 does NOT fire.
+ * - Merlin (healthy): only R5 (context "copilot365") — the paid Copilot
+ *   licence is barely used (W1.2 share < 15 %); Marketing (headcount 4) is
+ *   the k-anonymity suppression showcase.
+ * - SPAR: only R4 (context "prompt_engineering") and R6 (context "strategy"
+ *   — employee M5.1 ≈ 3.8 vs leadership F6 ≈ 8.2).
+ * - REWE (struggling): only R1, R3 and R7 — adoption < 0.5 every week, a
+ *   strictly declining sentiment and participation < 0.4 from week 5 onward.
+ *   Trust stays ≥ 5.5 so R2 does NOT fire.
+ *
+ * All trend anomalies are keyed off the ABSOLUTE week index, so extending the
+ * window ("Woche simulieren") keeps every anomaly alive and never rewrites
+ * history. Free-text answers carry NO department (SPEC.md §7): per-lead or
+ * small-team texts would be personally attributable, so `kind: "text"` rows
+ * are emitted org-level only.
  *
  * Pure and fully deterministic: an inline xmur3 + mulberry32 PRNG seeded from
  * `(org, week)`; no Math.random, no Date.now — weeks come in as parameters.
  * The weekly question set is the REAL org draw from `pickWeeklyQuestions`
- * (with last week's codes excluded), so generated codes match the rotation
- * the survey runner uses.
+ * (W1.1 anchored via WEEKLY_ANCHOR_CODES per DECISIONS D2.10, last week's
+ * codes excluded), so generated codes match the rotation the runner uses.
  */
 
 import type {
@@ -33,7 +39,10 @@ import type {
   RoleScope,
 } from "@/lib/types";
 import { previousIsoWeek } from "@/lib/domain/isoWeek";
-import { pickWeeklyQuestions } from "@/lib/domain/rotation";
+import {
+  WEEKLY_ANCHOR_CODES,
+  pickWeeklyQuestions,
+} from "@/lib/domain/rotation";
 import { TOOL_CATALOG, questionsFor } from "./questions";
 import {
   DEMO_ORGS,
@@ -167,9 +176,11 @@ function allocateByShares(rng: Rng, count: number, dist: Dist): string[] {
 /**
  * `count` integer scale values in [min, max] whose SUM equals
  * round(mean × count) exactly (clamped to the feasible range) — the achieved
- * mean deviates from the target by at most 0.5/count, which is what makes
- * REWE's strictly-decreasing W4.2 means and SPAR's gap means reliable.
- * Values are diffused ±1 (sum-preserving) for a natural-looking spread.
+ * mean deviates from the target by at most 0.5/count. Combined with the FIXED
+ * non-user counts (see OrgDemoProfile.nonUserCount) this makes REWE's
+ * strictly-declining sentiment and the zigzag guards of the healthy orgs hold
+ * by construction, not by luck. Values are diffused ±1 (sum-preserving) for a
+ * natural-looking spread.
  */
 function allocateScaleValues(
   rng: Rng,
@@ -211,16 +222,44 @@ function takeShare<T>(rng: Rng, items: readonly T[], share: number): T[] {
   return copy.slice(0, count);
 }
 
+/**
+ * W4.1 choice values by "relief level" 0..4 — the KPI engine maps them onto
+ * 0/2,5/5/7,5/10 (SPEC.md §10), i.e. mapped value = 2.5 × level. Generating
+ * W4.1 as an exact-sum level allocation gives the sentiment index the same
+ * sum-level control as the W4.2 scale.
+ */
+const W41_LEVEL_VALUES = [
+  "strong_strain",
+  "some_strain",
+  "neutral",
+  "some_relief",
+  "strong_relief",
+] as const;
+
+/**
+ * Cap share for any single M3.2 training topic that is NOT the org's intended
+ * R4 anomaly: kept strictly below 0.28 (the R4 threshold is > 0.3), so no
+ * accidental R4 fires — and because EVERY monthly cycle is capped, the bound
+ * also holds pooled over multiple cycles after simulated weeks.
+ */
+const M32_TOPIC_CAP_SHARE = 0.27;
+
 // --- Org demo profiles (targets behind the dictated anomalies) --------------
 
 interface OrgDemoProfile {
-  /** Weekly participation target; may depend on the position in the window. */
-  weeklyParticipation: (weekIndex: number, weekCount: number) => number;
-  /** Share of weekly respondents answering the non-user short pulse (§9). */
-  nonUserShare: number;
+  /** Weekly participation target by ABSOLUTE week index (stable under
+   * window extension — "Woche simulieren" must not rewrite the trend). */
+  weeklyParticipation: (weekIndex: number) => number;
+  /**
+   * FIXED number of short-pulse non-users per cycle (≈ 10 % of respondents).
+   * A fixed count keeps the undrawn-week W4.1/W4.2 sample size — and with it
+   * the sentiment quantization grid — constant across weeks (see R3 notes).
+   */
+  nonUserCount: number;
   /** W1.1 distribution among tool USERS ("none" = quiet week, drives adoption). */
   w11UserDist: Dist;
-  /** W1.2 most-used-tool shares (also the O2 main tool distribution). */
+  /** W1.2 most-used-tool shares (also the O2 main tool distribution). Every
+   * share except an intended R5 anomaly stays clearly above 0.25. */
   toolDist: Dist;
   w13YesRate: number;
   w21Dist: Dist;
@@ -228,8 +267,14 @@ interface OrgDemoProfile {
   w31Dist: Dist;
   w32Dist: Dist;
   w33Mean: number;
-  w41Dist: (weekIndex: number, weekCount: number) => Dist;
-  w42Mean: (weekIndex: number, weekCount: number) => number;
+  /**
+   * Constant W4.1 target level (0..4; mapped mean = 2.5 × level). Chosen so
+   * nonUserCount × level is an integer — undrawn weeks then reproduce the
+   * EXACT same W4.1 mean every week and W4.2 alone moves the sentiment index.
+   */
+  w41Level: number;
+  /** W4.2 target mean by ABSOLUTE week index. */
+  w42Mean: (weekIndex: number) => number;
   /** Share of respondents answering optional weekly free texts. */
   weeklyTextRate: number;
   monthly: {
@@ -278,17 +323,28 @@ interface OrgDemoProfile {
   };
 }
 
+/**
+ * Healthy-org guard: the W4.2 target zigzags ±0.3 around the base, so the
+ * sentiment index strictly alternates week over week — three consecutive
+ * declines (R3) are structurally impossible at ANY horizon.
+ */
+function zigzag(base: number): (weekIndex: number) => number {
+  return (weekIndex) => base + (weekIndex % 2 === 0 ? 0.3 : -0.3);
+}
+
 const MERLIN_PROFILE: OrgDemoProfile = {
   weeklyParticipation: () => 0.75,
-  nonUserShare: 0.1,
+  nonUserCount: 4,
+  // W1.1 is anchored: adoption ≈ 0.8 × users/(users+4) ≈ 0.7 EVERY week.
   w11UserDist: [
-    ["none", 0.12],
-    ["1_2", 0.18],
-    ["3_5", 0.3],
-    ["daily", 0.25],
-    ["multiple_daily", 0.15],
+    ["none", 0.2],
+    ["1_2", 0.16],
+    ["3_5", 0.27],
+    ["daily", 0.23],
+    ["multiple_daily", 0.14],
   ],
-  // Copilot licence paid but barely used (< 15 % → R5); DeepL/ChatGPT dominate.
+  // Copilot licence paid but barely used (< 15 % → R5); the other paid tools
+  // stay far above the 20 % threshold.
   toolDist: [
     ["copilot365", 0.08],
     ["chatgpt", 0.55],
@@ -317,14 +373,8 @@ const MERLIN_PROFILE: OrgDemoProfile = {
     ["dont_know", 0.13],
   ],
   w33Mean: 7.2,
-  w41Dist: () => [
-    ["strong_relief", 0.3],
-    ["some_relief", 0.4],
-    ["neutral", 0.2],
-    ["some_strain", 0.08],
-    ["strong_strain", 0.02],
-  ],
-  w42Mean: () => 7.3,
+  w41Level: 3, // mapped 7.5; 4 non-users × 3 = 12 → exact every undrawn week
+  w42Mean: zigzag(7.3),
   weeklyTextRate: 0.3,
   monthly: {
     respondentShare: 0.7,
@@ -333,7 +383,7 @@ const MERLIN_PROFILE: OrgDemoProfile = {
     toolUsefulness: { copilot365: 3, chatgpt: 8.2, deepl_write: 8.4 },
     toolUsesPerWeek: { copilot365: 1, chatgpt: 7, deepl_write: 6 },
     m31Mean: 6.8,
-    m32PromptRate: 0.22,
+    m32PromptRate: 0.2,
     m32NoneRate: 0.15,
     m32TopicDist: [
       ["basics", 0.12],
@@ -356,6 +406,7 @@ const MERLIN_PROFILE: OrgDemoProfile = {
     m61Mean: 8.4,
     textRate: 0.3,
   },
+  // Gaps ≤ 0.5 on every pair — R6 must stay a SPAR-only anomaly.
   leadership: { f2Mean: 7.6, f6Mean: 7.4, f7Mean: 6.6, textRate: 0.5 },
   onboarding: {
     share: 0.9,
@@ -435,7 +486,8 @@ const MERLIN_PROFILE: OrgDemoProfile = {
 
 const SPAR_PROFILE: OrgDemoProfile = {
   weeklyParticipation: () => 0.65,
-  nonUserShare: 0.1,
+  nonUserCount: 5,
+  // Adoption ≈ 0.7 × users/(users+5) ≈ 0.63 every week — inside (0.5, 0.75).
   w11UserDist: [
     ["none", 0.3],
     ["1_2", 0.28],
@@ -443,10 +495,12 @@ const SPAR_PROFILE: OrgDemoProfile = {
     ["daily", 0.12],
     ["multiple_daily", 0.05],
   ],
+  // Every paid tool clearly above the R5 threshold (deepl_write raised to
+  // 0.30 — at exactly 0.2 quota rounding dipped below the strict "< 0.2").
   toolDist: [
-    ["copilot365", 0.3],
-    ["chatgpt", 0.5],
-    ["deepl_write", 0.2],
+    ["copilot365", 0.28],
+    ["chatgpt", 0.42],
+    ["deepl_write", 0.3],
   ],
   w13YesRate: 0.25,
   w21Dist: [
@@ -471,14 +525,8 @@ const SPAR_PROFILE: OrgDemoProfile = {
     ["dont_know", 0.15],
   ],
   w33Mean: 6.1,
-  w41Dist: () => [
-    ["strong_relief", 0.15],
-    ["some_relief", 0.35],
-    ["neutral", 0.3],
-    ["some_strain", 0.15],
-    ["strong_strain", 0.05],
-  ],
-  w42Mean: () => 6.4,
+  w41Level: 2.6, // mapped 6.5; 5 non-users × 2.6 = 13 → exact every undrawn week
+  w42Mean: zigzag(6.4),
   weeklyTextRate: 0.3,
   monthly: {
     respondentShare: 0.7,
@@ -487,7 +535,8 @@ const SPAR_PROFILE: OrgDemoProfile = {
     toolUsefulness: { copilot365: 5.5, chatgpt: 7.5, deepl_write: 7 },
     toolUsesPerWeek: { copilot365: 3, chatgpt: 5, deepl_write: 3 },
     m31Mean: 5.6,
-    // > 35 % of all M3.2 answers include prompt_engineering → R4.
+    // ~50 % of all M3.2 answers include prompt_engineering (> 35 % → R4);
+    // every OTHER topic is capped below 28 % (see M32_TOPIC_CAP_SHARE).
     m32PromptRate: 0.55,
     m32NoneRate: 0.1,
     m32TopicDist: [
@@ -507,7 +556,8 @@ const SPAR_PROFILE: OrgDemoProfile = {
       ["never", 0.15],
     ],
     // Perception gap: employees see no clear strategy (M5.1 ≈ 3.8) while
-    // leadership rates its communication F6 ≈ 8.2 → gap > 3 → R6.
+    // leadership rates its communication F6 ≈ 8.2 → gap > 3 → R6 (strategy
+    // pair only; competence and benefit stay well below 3).
     m51Mean: 3.8,
     m52Mean: 4.4,
     m61Mean: 7.0,
@@ -589,54 +639,13 @@ const SPAR_PROFILE: OrgDemoProfile = {
   },
 };
 
-/** Distance from the window's last week → W4.1 distribution (worsening). */
-const REWE_W41_BY_DISTANCE: Dist[] = [
-  [
-    ["strong_relief", 0.04],
-    ["some_relief", 0.16],
-    ["neutral", 0.34],
-    ["some_strain", 0.29],
-    ["strong_strain", 0.17],
-  ],
-  [
-    ["strong_relief", 0.05],
-    ["some_relief", 0.2],
-    ["neutral", 0.35],
-    ["some_strain", 0.26],
-    ["strong_strain", 0.14],
-  ],
-  [
-    ["strong_relief", 0.06],
-    ["some_relief", 0.24],
-    ["neutral", 0.35],
-    ["some_strain", 0.24],
-    ["strong_strain", 0.11],
-  ],
-  [
-    ["strong_relief", 0.08],
-    ["some_relief", 0.27],
-    ["neutral", 0.35],
-    ["some_strain", 0.21],
-    ["strong_strain", 0.09],
-  ],
-  [
-    ["strong_relief", 0.1],
-    ["some_relief", 0.3],
-    ["neutral", 0.35],
-    ["some_strain", 0.18],
-    ["strong_strain", 0.07],
-  ],
-];
-
-/** W4.2 target means for the last four weeks (strictly declining → R3). */
-const REWE_W42_LAST_FOUR = [4.6, 5.2, 5.7, 6.2];
-
 const REWE_PROFILE: OrgDemoProfile = {
-  // Last two cycles < 0.4 (→ R7), earlier weeks ≈ 0.45.
-  weeklyParticipation: (weekIndex, weekCount) =>
-    weekCount - 1 - weekIndex <= 1 ? 0.33 : 0.45,
-  nonUserShare: 0.1,
-  // Adoption = 0.9 × 0.45 ≈ 0.4 < 0.5 in every W1.1-drawn week (→ R1).
+  // < 0.4 from week index 4 onward — R7 fires and STAYS fired when the
+  // window is extended (absolute keying, plateau at 0.33).
+  weeklyParticipation: (weekIndex) => (weekIndex <= 3 ? 0.45 : 0.33),
+  nonUserCount: 4,
+  // Adoption ≈ 0.45 × users/(users+4) ≈ 0.38–0.40 < 0.5 in EVERY week (→ R1)
+  // at any horizon (participation plateaus, the shares are quota-exact).
   w11UserDist: [
     ["none", 0.55],
     ["1_2", 0.2],
@@ -644,10 +653,12 @@ const REWE_PROFILE: OrgDemoProfile = {
     ["daily", 0.07],
     ["multiple_daily", 0.03],
   ],
+  // internal_ai raised to 0.28 — at exactly 0.2 the pooled share dipped
+  // below the strict "< 0.2" threshold after simulated weeks (R5 misfire).
   toolDist: [
-    ["copilot365", 0.35],
-    ["chatgpt", 0.45],
-    ["internal_ai", 0.2],
+    ["copilot365", 0.3],
+    ["chatgpt", 0.42],
+    ["internal_ai", 0.28],
   ],
   w13YesRate: 0.12,
   w21Dist: [
@@ -673,17 +684,11 @@ const REWE_PROFILE: OrgDemoProfile = {
     ["dont_know", 0.2],
   ],
   w33Mean: 6.2,
-  w41Dist: (weekIndex, weekCount) => {
-    const distance = Math.min(weekCount - 1 - weekIndex, REWE_W41_BY_DISTANCE.length - 1);
-    return required(REWE_W41_BY_DISTANCE[distance], "REWE W4.1 distribution");
-  },
-  w42Mean: (weekIndex, weekCount) => {
-    const distance = weekCount - 1 - weekIndex;
-    if (distance < REWE_W42_LAST_FOUR.length) {
-      return required(REWE_W42_LAST_FOUR[distance], "REWE W4.2 target");
-    }
-    return Math.min(6.8, 6.2 + 0.15 * (distance - 3));
-  },
+  w41Level: 1.75, // mapped 4.375; 4 non-users × 1.75 = 7 → exact every undrawn week
+  // Strictly declining sentiment (→ R3): slope 0.25/week moves the 4-answer
+  // undrawn weeks by EXACTLY one sum point, so the decline is strict by
+  // construction until the floor (~week 20) — it survives "Woche simulieren".
+  w42Mean: (weekIndex) => Math.max(2.0, 7.0 - 0.25 * weekIndex),
   weeklyTextRate: 0.3,
   monthly: {
     respondentShare: 0.7,
@@ -692,7 +697,8 @@ const REWE_PROFILE: OrgDemoProfile = {
     toolUsefulness: { copilot365: 4.5, chatgpt: 6.5, internal_ai: 3.5 },
     toolUsesPerWeek: { copilot365: 2, chatgpt: 4, internal_ai: 1 },
     m31Mean: 4.8,
-    m32PromptRate: 0.28,
+    // NO R4 at REWE: prompt stays ≈ 0.18, every other topic is capped < 0.28.
+    m32PromptRate: 0.2,
     m32NoneRate: 0.12,
     m32TopicDist: [
       ["basics", 0.3],
@@ -715,7 +721,7 @@ const REWE_PROFILE: OrgDemoProfile = {
     m61Mean: 5.6,
     textRate: 0.3,
   },
-  // F6 − M5.1 = 2.0 < 3: R6 stays a SPAR-only anomaly.
+  // F6 − M5.1 ≈ 2.0 ≤ 2.5 on every pair: R6 stays a SPAR-only anomaly.
   leadership: { f2Mean: 5.8, f6Mean: 6.4, f7Mean: 5.2, textRate: 0.5 },
   onboarding: {
     share: 0.9,
@@ -811,8 +817,9 @@ const TOOL_LABEL_BY_VALUE = new Map(
 
 /**
  * The org-level weekly draw for `weeks[weekIndex]`, reproducing the rotation
- * chain the app applies: every week excludes the PREVIOUS week's draw codes
- * (SPEC.md §9), starting with no exclusion at `weeks[0]`.
+ * chain the app applies: W1.1 is anchored in every draw (WEEKLY_ANCHOR_CODES,
+ * DECISIONS D2.10) and every week excludes the PREVIOUS week's draw codes
+ * (SPEC.md §9; anchors are exempt), starting with no exclusion at `weeks[0]`.
  */
 function weeklyDrawFor(
   orgId: string,
@@ -829,6 +836,7 @@ function weeklyDrawFor(
       orgId,
       isoWeek,
       exclude: i > 0 ? previousCodes : [],
+      anchors: WEEKLY_ANCHOR_CODES,
     });
     previousCodes = draw.map((question) => question.code);
   }
@@ -874,12 +882,15 @@ export interface GeneratedDemoData {
 }
 
 /** The non-user short pulse (SPEC.md §9): answered EVERY week regardless of
- * the draw — which also guarantees W1.1 (adoption) data in every week. */
+ * the draw. W1.1 is additionally anchored in every draw (D2.10), so the
+ * weekly adoption rate always rests on the full respondent sample. */
 const SHORT_PULSE_CODES = new Set(["W1.1", "W4.1", "W4.2"]);
 
 /**
  * Generates one org-week of demo responses + participation stats.
  * Deterministic: same args → same output (PRNG seeded from org and week).
+ * All trends are keyed by ABSOLUTE week index, so extending `weeks` later
+ * ("Woche simulieren") never changes already-generated weeks.
  */
 export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
   const { org, departments, headcounts, toolSettings, weeks, weekIndex } = args;
@@ -911,7 +922,10 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
     responses.push({
       org_id: org.id,
       cycle_id: cycleId,
-      department_id: departmentId,
+      // Free texts are the most re-identifiable answers (a per-lead F3/F4
+      // row is n = 1): they NEVER carry a department (SPEC.md §7) — the
+      // dashboard shows them org-level only. Other answers keep theirs.
+      department_id: answer.kind === "text" ? null : departmentId,
       role_scope: roleScope,
       question_code: questionCode,
       answer,
@@ -931,11 +945,9 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
         list.push({ department_id: dept.id, nonUser: false });
       }
     }
-    // ~10 % non-users org-wide (at least one → W1.1 data every week).
-    const nonUserCount = Math.min(
-      list.length,
-      Math.max(1, Math.round(list.length * profile.nonUserShare)),
-    );
+    // Fixed non-user count (≈ 10 %) org-wide — constant across weeks so the
+    // short-pulse sample size (and the sentiment grid) never wobbles.
+    const nonUserCount = Math.min(list.length, Math.max(1, profile.nonUserCount));
     const indices = list.map((_, index) => index);
     shuffleInPlace(rng, indices);
     for (const index of indices.slice(0, nonUserCount)) {
@@ -948,7 +960,7 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
 
   const weeklyCycleId = `weekly-${isoWeek}`;
   const respondents = buildRespondents(
-    profile.weeklyParticipation(weekIndex, weeks.length),
+    profile.weeklyParticipation(weekIndex),
     0.05,
   );
   const users = respondents.filter((r) => !r.nonUser);
@@ -961,7 +973,7 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
     code: string,
     answerers: readonly DemoRespondent[],
     dist: Dist,
-  ): string[] => {
+  ): void => {
     const values = allocateByShares(rng, answerers.length, dist);
     answerers.forEach((respondent, index) => {
       emit(weeklyCycleId, respondent.department_id, "employee", code, {
@@ -969,7 +981,6 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
         value: required(values[index], `${code} value`),
       });
     });
-    return values;
   };
 
   const emitWeeklyScaleRows = (
@@ -1003,6 +1014,8 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
 
     switch (code) {
       case "W1.1": {
+        // Anchored → drawn every week; users answer with the org's usage
+        // distribution, non-users always report "none" (short pulse).
         if (isDrawn) emitWeeklyChoiceRows(code, users, profile.w11UserDist);
         for (const respondent of nonUsers) {
           emit(weeklyCycleId, respondent.department_id, "employee", code, {
@@ -1077,13 +1090,31 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
         break;
       }
       case "W4.1": {
+        // Exact-sum LEVEL allocation (constant target): undrawn weeks with
+        // the fixed non-user sample reproduce the identical mean every week,
+        // so only W4.2 moves the sentiment index (keeps R3 fully controlled).
         const answerers = isDrawn ? respondents : nonUsers;
-        emitWeeklyChoiceRows(code, answerers, profile.w41Dist(weekIndex, weeks.length));
+        const levels = allocateScaleValues(
+          rng,
+          answerers.length,
+          profile.w41Level,
+          0,
+          4,
+        );
+        answerers.forEach((respondent, index) => {
+          emit(weeklyCycleId, respondent.department_id, "employee", code, {
+            kind: "choice",
+            value: required(
+              W41_LEVEL_VALUES[required(levels[index], "W4.1 level")],
+              "W4.1 value",
+            ),
+          });
+        });
         break;
       }
       case "W4.2": {
         const answerers = isDrawn ? respondents : nonUsers;
-        emitWeeklyScaleRows(code, answerers, profile.w42Mean(weekIndex, weeks.length));
+        emitWeeklyScaleRows(code, answerers, profile.w42Mean(weekIndex));
         break;
       }
       case "W4.3": {
@@ -1275,7 +1306,10 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
 
     emitMonthlyScale("M3.1", monthly.m31Mean, 1, 10);
 
-    // M3.2 — training wishes (SPAR: prompt_engineering > 35 % → R4).
+    // M3.2 — training wishes. The org's intended R4 topic (prompt_engineering
+    // at SPAR) comes from an exact quota; every OTHER topic is HARD-CAPPED
+    // below M32_TOPIC_CAP_SHARE so no accidental R4 can fire (per cycle, and
+    // therefore also pooled over multiple cycles).
     const noneFlags = allocateByShares(rng, monthlyCount, [
       ["none", monthly.m32NoneRate],
       ["topics", 1 - monthly.m32NoneRate],
@@ -1284,17 +1318,39 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
       ["yes", monthly.m32PromptRate],
       ["no", 1 - monthly.m32PromptRate],
     ]);
+    const topicCap = Math.max(
+      1,
+      Math.ceil(monthlyCount * M32_TOPIC_CAP_SHARE) - 1,
+    );
+    const topicCounts = new Map<string, number>();
+    const pickCappedTopic = (exclude: readonly string[]): string | null => {
+      const open = monthly.m32TopicDist.filter(
+        ([topic]) =>
+          !exclude.includes(topic) && (topicCounts.get(topic) ?? 0) < topicCap,
+      );
+      if (open.length === 0) return null;
+      const topic = pickWeighted(rng, open);
+      topicCounts.set(topic, (topicCounts.get(topic) ?? 0) + 1);
+      return topic;
+    };
     monthlyRespondents.forEach((respondent, index) => {
       let values: string[];
       if (required(noneFlags[index], "M3.2 none flag") === "none") {
         values = ["none"];
       } else {
-        const withPrompt = required(promptFlags[index], "M3.2 prompt flag") === "yes";
-        const extraCount = 1 + (rng() < 0.4 ? 1 : 0);
-        values = [
-          ...(withPrompt ? ["prompt_engineering"] : []),
-          ...pickDistinctWeighted(rng, monthly.m32TopicDist, extraCount),
-        ];
+        const withPrompt =
+          required(promptFlags[index], "M3.2 prompt flag") === "yes";
+        values = withPrompt ? ["prompt_engineering"] : [];
+        const extraCount = withPrompt
+          ? (rng() < 0.4 ? 1 : 0)
+          : 1 + (rng() < 0.35 ? 1 : 0);
+        for (let extra = 0; extra < extraCount; extra++) {
+          const topic = pickCappedTopic(values);
+          if (topic) values.push(topic);
+        }
+        // Capacity is ~1.5× demand, so an empty pick is theoretical only —
+        // still, a multi_choice answer must carry at least one value.
+        if (values.length === 0) values = ["none"];
       }
       emit(monthlyCycleId, respondent.department_id, "employee", "M3.2", {
         kind: "choices",
@@ -1421,7 +1477,10 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
  * The full Phase 2 demo dataset: all three §16.3 orgs × all weeks of the
  * window. Callers typically pass 6 consecutive ISO weeks (SPEC.md §16.3);
  * any length works — onboarding lands in the first week, monthly/leadership
- * in every 4th week (weekIndex % 4 === 3).
+ * in every 4th week (weekIndex % 4 === 3). Because all trends are keyed by
+ * absolute week index, appending weeks later (via `generateOrgWeek` with the
+ * extended array — "Woche simulieren") produces rows consistent with the
+ * original window.
  */
 export function generateAllDemoData(args: { weeks: string[] }): GeneratedDemoData {
   const responses: NewSurveyResponse[] = [];

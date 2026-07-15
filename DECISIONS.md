@@ -123,6 +123,20 @@ Mittelwert der F5-Antworten im Betrachtungsfenster (Fallback:
   Vorperiode"; die Kacheln zeigen Baseline-Delta + Sparkline (Vorperioden-
   Bewegung visuell). Explizites Vorwochen-Delta: Phase 3/Post-MVP.
 
+### D2.13 — Generator-Rekalibrierung nach der zweiten Review-Runde
+Die Trigger-Komposition der Demo-Daten ist jetzt per End-to-End-Test exakt
+gepinnt (echte KPI-/Trigger-Pipeline über die generierten Daten) und bleibt
+auch nach simulierten Zusatzwochen stabil: Tool-Gewichte deutlich von der
+R5-Schwelle entfernt (SPAR DeepL 0,30 · REWE internal_ai 0,28 statt exakt
+0,20); M3.2-Nebenthemen pro Zyklus hart < 0,27 gekappt (R4 nur SPAR/Prompt);
+alle Trends absolut nach weekIndex verankert statt relativ zum Fensterende
+(REWE-Stimmung fällt 0,25/Woche ab 7,0 mit Boden 2,0 → R3 überlebt ~20
+simulierte Wochen; Merlin/SPAR-Stimmung pendelt ±0,3 als Anti-R3-Guard);
+Nicht-Nutzer als FIXE Zahl je Org-Woche (stabile Quantisierung der
+Exakt-Summen-Zuteilung). Freitext-Zeilen (kind "text") tragen department_id
+null; Choice-Antworten mit Inline-Text behalten die Abteilung (bewusst — sie
+sind Auswahlantworten, keine Freitexte im §7.3-Sinn).
+
 ### D2.9 — Dashboard-Darstellung
 Viz-Tokens nur für Light Mode (Theme-Toggle existiert noch nicht); Recharts
 nur für die Sparklines, Heatmap und Gap-Dumbbells als Server-SVG/HTML ohne
