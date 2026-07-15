@@ -67,7 +67,7 @@ describe("getSurveySession · weekly", () => {
 
   it("is stable within the same week (same-week retake, D1.5)", async () => {
     const first = await getSurveySession("weekly", MARKETING, NOW);
-    const store = getStore();
+    const store = await getStore();
     const profile = await store.getProfile(DEMO_ORG_ID, MARKETING);
     await store.saveProfile({
       ...profile!,
@@ -165,7 +165,7 @@ describe("getSurveySession · guards & bootstrap", () => {
 
   it("bootstraps and persists a profile on first contact", async () => {
     await getSurveySession("weekly", MARKETING, NOW);
-    const profile = await getStore().getProfile(DEMO_ORG_ID, MARKETING);
+    const profile = await (await getStore()).getProfile(DEMO_ORG_ID, MARKETING);
     expect(profile).not.toBeNull();
     expect(profile!.tools_used).toEqual(["chatgpt", "deepl_write"]);
     expect(profile!.uses_no_tools).toBe(false);

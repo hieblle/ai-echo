@@ -12,8 +12,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { toolCatalogFromPool } from "@/lib/domain/conditional";
-import { getIsoWeek } from "@/lib/domain/isoWeek";
+import { getIsoWeek, nextIsoWeek } from "@/lib/domain/isoWeek";
+import { generateOrgWeek } from "@/lib/seed/demo-data";
 import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
+import { DEMO_ORG_HEADCOUNTS } from "@/lib/seed/orgs-demo";
 import { getSurveySession, isTemplateKey } from "@/lib/server/survey-service";
 import { getStore } from "@/lib/server/store-instance";
 import type {
@@ -254,7 +256,7 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
       if (error) return { ok: false, error: `Ungültige Antwort (${error}).` };
     }
 
-    const store = getStore();
+    const store = await getStore();
 
     // The onboarding baseline belongs to the department chosen in O1, not to
     // the persona's pre-onboarding default — resolve it BEFORE writing rows.
@@ -337,12 +339,70 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
   }
 }
 
+/**
+ * Demo control (SPEC §13 Phase 2): generate the next data week for every
+ * generated demo org, continuing the deterministic cadence (weekly always,
+ * monthly + leadership every 4th week).
+ */
+export async function simulateWeek(): Promise<void> {
+  const store = await getStore();
+  for (const org of await store.listOrganizations()) {
+    const headcounts = DEMO_ORG_HEADCOUNTS[org.id];
+    if (!headcounts) continue; // orgs without generator profile (Musterwerk)
+
+    const stats = await store.listParticipationStats(org.id);
+    const weeks = [
+      ...new Set(
+        stats.filter((s) => s.template_key === "weekly").map((s) => s.week),
+      ),
+    ].sort();
+    const latest = weeks[weeks.length - 1];
+    if (!latest) continue;
+
+    const allWeeks = [...weeks, nextIsoWeek(latest)];
+    const { responses, participation } = generateOrgWeek({
+      org,
+      departments: await store.listDepartments(org.id),
+      headcounts,
+      toolSettings: await store.listToolSettings(org.id),
+      weeks: allWeeks,
+      weekIndex: allWeeks.length - 1,
+    });
+    await store.submitResponses(responses);
+    await store.addParticipationStats(participation);
+  }
+  revalidatePath("/dashboard", "layout");
+}
+
+const recommendationStatusSchema = z.object({
+  orgId: z.string().min(1),
+  ruleKey: z.string().min(1),
+  context: z.string().max(200),
+  status: z.enum(["open", "done", "dismissed"]),
+});
+
+/** org_admin marks a recommendation card as done/dismissed (flow F7). */
+export async function updateRecommendationStatus(
+  input: unknown,
+): Promise<void> {
+  const parsed = recommendationStatusSchema.safeParse(input);
+  if (!parsed.success) return;
+  const store = await getStore();
+  await store.setRecommendationState({
+    org_id: parsed.data.orgId,
+    rule_key: parsed.data.ruleKey,
+    context: parsed.data.context,
+    status: parsed.data.status,
+  });
+  revalidatePath("/dashboard", "layout");
+}
+
 /** Demo-only Du/Sie toggle (SPEC.md §14 org setting). */
 export async function setDemoFormOfAddress(form: unknown): Promise<void> {
   // Server actions are public endpoints — validate even the demo toggle.
   const parsed = z.enum(["du", "sie"]).safeParse(form);
   if (!parsed.success) return;
-  const store = getStore();
+  const store = await getStore();
   await store.setFormOfAddress(DEMO_ORG_ID, parsed.data);
   revalidatePath("/", "layout");
 }

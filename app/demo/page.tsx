@@ -47,7 +47,7 @@ interface DemoPageProps {
 
 export default async function DemoPage({ searchParams }: DemoPageProps) {
   const { persona: personaParam } = await searchParams;
-  const store = getStore();
+  const store = await getStore();
 
   const org = await store.getOrganization(DEMO_ORG_ID);
   const personas = await store.listPersonas(DEMO_ORG_ID);
@@ -171,8 +171,11 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
         </form>
       </section>
 
-      <footer className="text-sm text-muted-foreground">
-        Gespeicherte Antworten (anonym, org-weit): {responses.length}
+      <footer className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+        <span>Gespeicherte Antworten (anonym, org-weit): {responses.length}</span>
+        <Link href="/dashboard" className="underline-offset-4 hover:underline">
+          Zum Dashboard →
+        </Link>
       </footer>
     </main>
   );

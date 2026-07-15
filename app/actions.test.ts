@@ -84,7 +84,7 @@ describe("submitSurvey · happy path & anonymity shape", () => {
     const result = await submitSurvey(payload);
     expect(result).toEqual({ ok: true });
 
-    const rows = await getStore().listResponses(DEMO_ORG_ID);
+    const rows = await (await getStore()).listResponses(DEMO_ORG_ID);
     expect(rows.length).toBe(payload.answers.length);
     for (const row of rows) {
       expect(Object.keys(row).sort()).toEqual([
@@ -106,7 +106,7 @@ describe("submitSurvey · happy path & anonymity shape", () => {
   it("stores free-text rows without a department (SPEC §7.3)", async () => {
     const { session, ...payload } = await buildPayload("monthly", MARKETING);
     expect(await submitSurvey(payload)).toEqual({ ok: true });
-    const rows = await getStore().listResponses(DEMO_ORG_ID);
+    const rows = await (await getStore()).listResponses(DEMO_ORG_ID);
     const freeTextCodes = new Set(
       session.questions
         .filter((q) => q.type === "text_optional")
@@ -142,7 +142,7 @@ describe("submitSurvey · guards", () => {
     expect(again.ok).toBe(false);
     if (!again.ok) expect(again.error).toMatch(/bereits abgeschlossen/);
     // No second batch stored.
-    expect((await getStore().listResponses(DEMO_ORG_ID)).length).toBe(
+    expect((await (await getStore()).listResponses(DEMO_ORG_ID)).length).toBe(
       payload.answers.length,
     );
   });
@@ -175,7 +175,7 @@ describe("submitSurvey · guards", () => {
     const result = await submitSurvey(stale);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/Kalenderwoche/);
-    expect(await getStore().listResponses(DEMO_ORG_ID)).toEqual([]);
+    expect(await (await getStore()).listResponses(DEMO_ORG_ID)).toEqual([]);
   });
 
   it("rejects unknown, duplicate and missing question codes atomically", async () => {
@@ -201,7 +201,7 @@ describe("submitSurvey · guards", () => {
     const missing = { ...payload, answers: nonText.slice(0, -1) };
     expect((await submitSurvey(missing)).ok).toBe(false);
 
-    expect(await getStore().listResponses(DEMO_ORG_ID)).toEqual([]);
+    expect(await (await getStore()).listResponses(DEMO_ORG_ID)).toEqual([]);
   });
 });
 
@@ -280,7 +280,7 @@ describe("submitSurvey · answer validation matrix", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error).toMatch(/M2\.1/);
     }
-    expect(await getStore().listResponses(DEMO_ORG_ID)).toEqual([]);
+    expect(await (await getStore()).listResponses(DEMO_ORG_ID)).toEqual([]);
   });
 
   it("rejects exclusive multi-choice combinations (O2 'none' + tool)", async () => {
@@ -309,7 +309,7 @@ describe("submitSurvey · profile updates", () => {
 
     expect(await submitSurvey(payload)).toEqual({ ok: true });
 
-    const profile = await getStore().getProfile(DEMO_ORG_ID, MARKETING);
+    const profile = await (await getStore()).getProfile(DEMO_ORG_ID, MARKETING);
     expect(profile!.department_id).toBe("hr");
     expect(profile!.tools_used).toEqual(["claude", "gemini"]); // "other" dropped (D1.6)
     expect(profile!.uses_no_tools).toBe(false);
@@ -318,7 +318,7 @@ describe("submitSurvey · profile updates", () => {
     expect(profile!.completed_cycles).toContain(`onboarding-${WEEK()}`);
 
     // The baseline rows already belong to the O1 department, not the default.
-    const rows = await getStore().listResponses(DEMO_ORG_ID);
+    const rows = await (await getStore()).listResponses(DEMO_ORG_ID);
     for (const row of rows.filter((r) => r.department_id !== null)) {
       expect(row.department_id).toBe("hr");
     }
@@ -333,7 +333,7 @@ describe("submitSurvey · profile updates", () => {
     };
     expect(await submitSurvey(payload)).toEqual({ ok: true });
 
-    const profile = await getStore().getProfile(DEMO_ORG_ID, MARKETING);
+    const profile = await (await getStore()).getProfile(DEMO_ORG_ID, MARKETING);
     expect(profile!.uses_no_tools).toBe(true);
     expect(profile!.tools_used).toEqual([]);
 
@@ -348,7 +348,7 @@ describe("submitSurvey · profile updates", () => {
   it("weekly submit records the served codes as question history", async () => {
     const { session, ...payload } = await buildPayload("weekly", MARKETING);
     expect(await submitSurvey(payload)).toEqual({ ok: true });
-    const profile = await getStore().getProfile(DEMO_ORG_ID, MARKETING);
+    const profile = await (await getStore()).getProfile(DEMO_ORG_ID, MARKETING);
     expect(profile!.question_history).toEqual({
       week: WEEK(),
       codes: session.questions.map((q) => q.code),
@@ -359,15 +359,15 @@ describe("submitSurvey · profile updates", () => {
 describe("setDemoFormOfAddress", () => {
   it("accepts only du/sie", async () => {
     await setDemoFormOfAddress("sie");
-    expect((await getStore().getOrganization(DEMO_ORG_ID))!.form_of_address).toBe(
+    expect((await (await getStore()).getOrganization(DEMO_ORG_ID))!.form_of_address).toBe(
       "sie",
     );
     await setDemoFormOfAddress("hacker");
-    expect((await getStore().getOrganization(DEMO_ORG_ID))!.form_of_address).toBe(
+    expect((await (await getStore()).getOrganization(DEMO_ORG_ID))!.form_of_address).toBe(
       "sie",
     );
     await setDemoFormOfAddress("du");
-    expect((await getStore().getOrganization(DEMO_ORG_ID))!.form_of_address).toBe(
+    expect((await (await getStore()).getOrganization(DEMO_ORG_ID))!.form_of_address).toBe(
       "du",
     );
   });

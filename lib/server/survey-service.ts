@@ -82,7 +82,7 @@ export async function getSurveySession(
   personaId: string,
   now: Date,
 ): Promise<SurveySession> {
-  const store = getStore();
+  const store = await getStore();
 
   const org = await store.getOrganization(DEMO_ORG_ID);
   if (!org) throw new Error("demo organization missing");
