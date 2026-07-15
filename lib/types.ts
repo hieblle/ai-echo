@@ -35,6 +35,15 @@ export type Dimension =
   | "nps"
   | "meta";
 
+/** The four weekly pulse dimensions the rotation must cover (SPEC.md §9). */
+export const WEEKLY_DIMENSIONS = [
+  "adoption",
+  "efficiency",
+  "trust",
+  "sentiment",
+] as const satisfies readonly Dimension[];
+export type WeeklyDimension = (typeof WEEKLY_DIMENSIONS)[number];
+
 export type QuestionType =
   | "single_choice"
   | "multi_choice"
@@ -52,7 +61,105 @@ export type FormOfAddress = "du" | "sie";
 /** Scope a response/profile belongs to, kept separate from the concrete role. */
 export type RoleScope = "employee" | "lead";
 
-// --- Core entities (subset established in Phase 0, extended per phase) ----
+// --- Question options (the questionnaire is data, not code) ---------------
+
+/** One selectable option of a choice question. */
+export interface Choice {
+  /** Stable value stored in answers, e.g. "daily" or "chatgpt". */
+  value: string;
+  /** Du-form label (default). */
+  label: string;
+  /** Sie-form label; falls back to `label` when omitted. */
+  label_sie?: string;
+  /** Selecting this clears all others (e.g. O2 "Aktuell keine", M3.2 "Kein Bedarf"). */
+  exclusive?: boolean;
+  /** This option carries an inline free-text field ("Andere: ____", "Ja → Welches?"). */
+  allows_text?: boolean;
+}
+
+export type QuestionOptions =
+  | {
+      kind: "choices";
+      choices: Choice[];
+      /**
+       * Optional scale follow-up shown when `on_value` is selected
+       * (M3.3 "Wie hilfreich war er?" 1–10).
+       */
+      followup_scale?: {
+        on_value: string;
+        text: string;
+        text_sie?: string;
+      };
+    }
+  | {
+      kind: "scale";
+      min: number;
+      max: number;
+      /** Anchor label at the minimum, e.g. "Anfänger". */
+      min_label: string;
+      max_label: string;
+      min_label_sie?: string;
+      max_label_sie?: string;
+    }
+  | { kind: "number"; unit: string | null; min?: number }
+  | { kind: "text"; placeholder?: string; placeholder_sie?: string }
+  /** Tool rows come from the respondent's profile (O2), never from the seed. */
+  | { kind: "tool_matrix" };
+
+/** Conditional display logic (SPEC.md §9). */
+export interface QuestionCondition {
+  /**
+   * Question only makes sense for respondents with at least one tool from O2;
+   * choice/matrix rows are narrowed to `profile.tools_used`.
+   */
+  requires_tool?: boolean;
+}
+
+/** A questionnaire item. The questionnaire is data, not code (CLAUDE.md rule 3). */
+export interface Question {
+  id: string;
+  template_key: TemplateKey;
+  /** Stable question code, e.g. "W1.1", "O2", "F6" (SPEC.md §12). */
+  code: string;
+  dimension: Dimension;
+  type: QuestionType;
+  /** Du-form text (default). */
+  text: string;
+  /** Sie-form variant; falls back to `text` when null (CLAUDE.md rule 3). */
+  text_sie: string | null;
+  options: QuestionOptions | null;
+  condition: QuestionCondition | null;
+  /** Code of the mirrored leadership/employee question for gap analysis. */
+  is_gap_pair_with: string | null;
+  sort_order: number;
+  active: boolean;
+}
+
+// --- Answers ---------------------------------------------------------------
+
+/**
+ * The typed answer payload stored in `responses.answer`.
+ * Discriminated so the runner, validation (Zod) and later KPI code agree.
+ */
+export type AnswerValue =
+  | {
+      kind: "choice";
+      value: string;
+      /** Inline text for `allows_text` options ("Ja → Welches?"). */
+      text?: string;
+      /** Value of a `followup_scale` (M3.3). */
+      scale?: number;
+    }
+  | { kind: "choices"; values: string[]; other_text?: string }
+  | { kind: "scale"; value: number }
+  | { kind: "number"; value: number }
+  | { kind: "text"; value: string }
+  | {
+      kind: "tool_matrix";
+      tools: { tool: string; usefulness: number; uses_per_week: number }[];
+    };
+
+// --- Core entities ---------------------------------------------------------
 
 export interface Organization {
   id: OrgId;
@@ -74,27 +181,6 @@ export interface Department {
   name: string;
 }
 
-/** A questionnaire item. The questionnaire is data, not code (CLAUDE.md rule 3). */
-export interface Question {
-  id: string;
-  template_key: TemplateKey;
-  /** Stable question code, e.g. "W1.1", "O2", "F6" (SPEC.md §12). */
-  code: string;
-  dimension: Dimension;
-  type: QuestionType;
-  /** Du-form text (default). */
-  text: string;
-  /** Sie-form variant; falls back to `text` when null (CLAUDE.md rule 3). */
-  text_sie: string | null;
-  options: unknown | null;
-  /** Conditional logic, e.g. { requires_tool: true } (SPEC.md §9). */
-  condition: unknown | null;
-  /** Code of the mirrored leadership/employee question for gap analysis. */
-  is_gap_pair_with: string | null;
-  sort_order: number;
-  active: boolean;
-}
-
 /**
  * A single answer. Deliberately carries NO user/membership/pseudonym link and
  * only the ISO week — never an exact timestamp (SPEC.md §6, §7 anonymity).
@@ -106,7 +192,49 @@ export interface SurveyResponse {
   department_id: DepartmentId | null;
   role_scope: RoleScope;
   question_code: string;
-  answer: unknown;
+  answer: AnswerValue;
   /** ISO week, e.g. "2026-W29" — no timestamp. */
   created_week: string;
+}
+
+/** A response before the store assigns its id. */
+export type NewSurveyResponse = Omit<SurveyResponse, "id">;
+
+/**
+ * Per-respondent survey state (SPEC.md §6 `respondent_profiles`).
+ *
+ * Phase 1–3: keyed by demo persona. Phase 4 replaces the key with the
+ * pseudonym token; the shape stays. NEVER joined with `responses`.
+ */
+export interface RespondentProfile {
+  /** Demo persona id (Phase 1–3); pseudonym token from Phase 4. */
+  respondent_key: string;
+  org_id: OrgId;
+  department_id: DepartmentId | null;
+  role_scope: RoleScope;
+  /** Tool values chosen in O2 (empty when none / not yet onboarded). */
+  tools_used: string[];
+  /** O2 "Aktuell keine" → short pulse variant W1.1 + W4.1 + W4.2 (SPEC.md §9). */
+  uses_no_tools: boolean;
+  /** O3 value (usage duration), for later segmentation. */
+  ai_experience: string | null;
+  /** Weekly questions served last, for the rotation's no-repeat rule. */
+  question_history: { week: string; codes: string[] } | null;
+  onboarding_completed: boolean;
+}
+
+/**
+ * A selectable demo identity for the prototype's role switcher
+ * (SPEC.md §13 Phase 1 — "Demo-Modus statt Login").
+ */
+export interface DemoPersona {
+  id: string;
+  org_id: OrgId;
+  /** Dropdown label, e.g. "Mitarbeiterin Marketing". */
+  label: string;
+  role: Role;
+  role_scope: RoleScope;
+  department_id: DepartmentId;
+  /** Pre-seeded O2 tool values so weekly/monthly are playable immediately. */
+  default_tools: string[];
 }
