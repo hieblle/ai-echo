@@ -64,6 +64,11 @@ const globalForStore = globalThis as unknown as {
 };
 
 export function getStore(): Promise<Store> {
-  globalForStore.__kiBarometerStore ??= buildSeededStore();
+  // A failed seed attempt must not be memoized forever (permanent 500s) —
+  // clear the slot on rejection so the next request retries.
+  globalForStore.__kiBarometerStore ??= buildSeededStore().catch((err) => {
+    globalForStore.__kiBarometerStore = undefined;
+    throw err;
+  });
   return globalForStore.__kiBarometerStore;
 }

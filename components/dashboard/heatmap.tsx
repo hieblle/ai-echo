@@ -91,32 +91,36 @@ export function Heatmap({
               </td>
               {WEEKLY_DIMENSIONS.map((dim) => {
                 const cell = byKey.get(`${row.id ?? "__org__"}|${dim}`);
-                if (!cell || cell.suppressed || cell.value === null) {
+                if (!cell || cell.value === null) {
+                  // "n < k" ONLY for genuinely suppressed cells — a qualified
+                  // department can still lack data for one dimension.
+                  const isSuppressed = (cell?.suppressed ?? false) && (cell?.n ?? 0) > 0;
                   return (
                     <td
                       key={dim}
                       title={
-                        cell && cell.n > 0
+                        isSuppressed
                           ? `Zu wenige Antworten (n < ${k}) — wird nur in der Gesamtauswertung berücksichtigt.`
                           : "Keine Daten."
                       }
                       className="rounded bg-muted/60 p-2 text-center text-xs text-muted-foreground"
                     >
-                      {cell && cell.n > 0 ? `n < ${k}` : "–"}
+                      {isSuppressed ? `n < ${k}` : "–"}
                     </td>
                   );
                 }
+                const label = cell.value.toFixed(1).replace(".", ",");
                 return (
                   <td
                     key={dim}
-                    title={`${row.name} · ${DIMENSION_LABELS[dim]}: ${cell.value.toFixed(1)} (n = ${cell.n})`}
+                    title={`${row.name} · ${DIMENSION_LABELS[dim]}: ${label} (n = ${cell.n})`}
                     className="rounded p-2 text-center font-medium"
                     style={{
                       backgroundColor: rampColor(cell.value),
                       color: inkFor(cell.value),
                     }}
                   >
-                    {cell.value.toFixed(1)}
+                    {label}
                   </td>
                 );
               })}

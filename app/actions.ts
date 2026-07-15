@@ -343,8 +343,33 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
  * Demo control (SPEC §13 Phase 2): generate the next data week for every
  * generated demo org, continuing the deterministic cadence (weekly always,
  * monthly + leadership every 4th week).
+ *
+ * Serialized through a globalThis promise chain: overlapping invocations
+ * (double-click, two tabs) would otherwise check-then-act on the same latest
+ * week and write the week twice — doubling every KPI and, worse, lifting the
+ * n < k department above the anonymity threshold via duplicated rows.
  */
+const globalForSim = globalThis as unknown as {
+  __kiBarometerSimLock?: Promise<void>;
+};
+
 export async function simulateWeek(): Promise<void> {
+  const previous = globalForSim.__kiBarometerSimLock ?? Promise.resolve();
+  const run = previous.then(doSimulateWeek, doSimulateWeek);
+  // The lock itself must never stay rejected, or every later click would fail.
+  globalForSim.__kiBarometerSimLock = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  try {
+    await run;
+  } catch (err) {
+    console.error("simulateWeek failed:", err);
+  }
+  revalidatePath("/dashboard", "layout");
+}
+
+async function doSimulateWeek(): Promise<void> {
   const store = await getStore();
   for (const org of await store.listOrganizations()) {
     const headcounts = DEMO_ORG_HEADCOUNTS[org.id];
@@ -371,12 +396,11 @@ export async function simulateWeek(): Promise<void> {
     await store.submitResponses(responses);
     await store.addParticipationStats(participation);
   }
-  revalidatePath("/dashboard", "layout");
 }
 
 const recommendationStatusSchema = z.object({
-  orgId: z.string().min(1),
-  ruleKey: z.string().min(1),
+  orgId: z.string().min(1).max(100),
+  ruleKey: z.string().min(1).max(20),
   context: z.string().max(200),
   status: z.enum(["open", "done", "dismissed"]),
 });
@@ -388,6 +412,11 @@ export async function updateRecommendationStatus(
   const parsed = recommendationStatusSchema.safeParse(input);
   if (!parsed.success) return;
   const store = await getStore();
+  // Server actions are public endpoints: verify org and rule instead of
+  // letting the store throw (would 500) or the state map grow unboundedly.
+  if (!(await store.getOrganization(parsed.data.orgId))) return;
+  const rules = await store.listRules();
+  if (!rules.some((r) => r.key === parsed.data.ruleKey)) return;
   await store.setRecommendationState({
     org_id: parsed.data.orgId,
     rule_key: parsed.data.ruleKey,

@@ -193,6 +193,13 @@ export default async function DashboardPage({
   const sentiment = latestNonNull(history, "sentiment_index");
   const participation = latestNonNull(history, "participation_rate");
   const openRecs = recommendations.filter((r) => r.status === "open");
+  // With < 3 weeks "latest vs baseline" compares a window against itself.
+  const deltaOf = (
+    current: number | null,
+    base: number | null,
+    asPercent: boolean,
+  ) =>
+    history.length >= 3 ? deltaVsBaseline(current, base, asPercent) : undefined;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-8 px-6 py-8">
@@ -258,7 +265,7 @@ export default async function DashboardPage({
               label="Adoption-Rate"
               value={pct(adoption.current)}
               hint="gepoolt über 4 Wochen"
-              delta={deltaVsBaseline(adoption.current, adoption.baseline, true)}
+              delta={deltaOf(adoption.current, adoption.baseline, true)}
               spark={history.map((h) => ({
                 week: h.week,
                 // Weeks without a real W1.1 sample (rotation did not draw it)
@@ -276,21 +283,21 @@ export default async function DashboardPage({
               label="Effizienzindex"
               value={idx(efficiencyCombined)}
               hint="W2.3 + normiertes M1.3"
-              delta={deltaVsBaseline(efficiencyCombined, baseline.efficiency_index, false)}
+              delta={deltaOf(efficiencyCombined, baseline.efficiency_index, false)}
               spark={spark(history, "efficiency_index")}
               sparkDomain={[0, 10]}
             />
             <StatTile
               label="Vertrauensindex"
               value={idx(trust)}
-              delta={deltaVsBaseline(trust, baseline.trust_index, false)}
+              delta={deltaOf(trust, baseline.trust_index, false)}
               spark={spark(history, "trust_index")}
               sparkDomain={[0, 10]}
             />
             <StatTile
               label="Stimmungsindex"
               value={idx(sentiment)}
-              delta={deltaVsBaseline(sentiment, baseline.sentiment_index, false)}
+              delta={deltaOf(sentiment, baseline.sentiment_index, false)}
               spark={spark(history, "sentiment_index")}
               sparkDomain={[0, 10]}
             />
@@ -344,7 +351,7 @@ export default async function DashboardPage({
                 <dd className="font-medium">{nf.format(roi.license_costs_eur)} €</dd>
               </div>
               <p className="col-span-2 text-xs text-muted-foreground sm:col-span-4">
-                Basis: letzte 4 Wochen, {nf.format(org.hourly_rate_default)} €/h ·
+                Basis: letzte 4 Wochen, {nf.format(data.roiHourlyRate)} €/h {data.roiRateFromF5 ? "(Ø aus F5)" : "(Org-Standard)"} ·
                 *auf Nichtteilnehmende hochgerechnet (konservativer Erstwert:
                 nur gemeldete Stunden, SPEC §10).
               </p>

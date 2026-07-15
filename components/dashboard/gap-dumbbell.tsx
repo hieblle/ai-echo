@@ -69,7 +69,7 @@ export function GapDumbbells({ pairs }: { pairs: GapPairResult[] }) {
                     style={critical ? { color: "var(--viz-delta-bad)" } : undefined}
                   >
                     Δ {pair.gap > 0 ? "+" : ""}
-                    {pair.gap.toFixed(1)}
+                    {pair.gap.toFixed(1).replace(".", ",")}
                   </p>
                 )}
               </div>
@@ -78,7 +78,7 @@ export function GapDumbbells({ pairs }: { pairs: GapPairResult[] }) {
                   viewBox={`0 0 ${width} 36`}
                   className="w-full"
                   role="img"
-                  aria-label={`${labels.title}: Mitarbeitende ${pair.employee_value?.toFixed(1)}, Führung ${pair.leadership_value?.toFixed(1)}`}
+                  aria-label={`${labels.title}: Mitarbeitende ${pair.employee_value?.toFixed(1).replace(".", ",")}, Führung ${pair.leadership_value?.toFixed(1).replace(".", ",")}`}
                 >
                   <line
                     x1={8}
@@ -109,7 +109,7 @@ export function GapDumbbells({ pairs }: { pairs: GapPairResult[] }) {
                         textAnchor="middle"
                         className="fill-foreground text-[10px] font-medium"
                       >
-                        {v.toFixed(1)}
+                        {v.toFixed(1).replace(".", ",")}
                       </text>
                     </g>
                   ))}

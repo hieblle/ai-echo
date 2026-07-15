@@ -69,8 +69,9 @@ export default async function ReportPage({
     gapPairs,
     nps,
     recommendations,
-    freeTexts,
     trainingWishes,
+    useCases,
+    monthlyScopeWeek,
     aiAct,
   } = data;
 
@@ -108,7 +109,6 @@ export default async function ReportPage({
   ];
 
   const openRecs = recommendations.filter((r) => r.status === "open");
-  const topTexts = freeTexts.slice(0, 5);
 
   return (
     <main className="mx-auto max-w-3xl px-8 py-10 print:max-w-none print:px-0 print:py-0">
@@ -172,7 +172,8 @@ export default async function ReportPage({
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {nf.format(roi.saved_hours)} gemeldete Stunden ×{" "}
-            {nf.format(org.hourly_rate_default)} €/h −{" "}
+            {nf.format(data.roiHourlyRate)} €/h
+            {data.roiRateFromF5 ? " (Ø aus F5)" : " (Org-Standard)"} −{" "}
             {nf.format(roi.license_costs_eur)} € Lizenzkosten. Hochgerechnet
             auf Nichtteilnehmende:{" "}
             {roi.saved_hours_extrapolated === null
@@ -186,19 +187,24 @@ export default async function ReportPage({
       {/* 2. Gap-Analyse */}
       <section className="mb-8">
         <h2 className="mb-3 text-xl font-semibold">2. Perception Gap</h2>
+        {monthlyScopeWeek && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            Basis: Monats-/Führungsbefragung der Woche {monthlyScopeWeek}.
+          </p>
+        )}
         <GapDumbbells pairs={gapPairs} />
       </section>
 
-      {/* 3. Use Cases */}
+      {/* 3. Use Cases (W2.2 / M1.4) */}
       <section className="mb-8 print-break-before">
-        <h2 className="mb-3 text-xl font-semibold">3. Top-Use-Cases & Stimmen</h2>
-        {topTexts.length === 0 ? (
+        <h2 className="mb-3 text-xl font-semibold">3. Top-Use-Cases</h2>
+        {useCases.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Keine Freitext-Antworten im Berichtszeitraum.
+            Keine Use-Case-Antworten im Berichtszeitraum.
           </p>
         ) : (
           <ul className="space-y-2 text-sm">
-            {topTexts.map((t, i) => (
+            {useCases.map((t, i) => (
               <li key={i} className="rounded border p-3">
                 „{t.text}“{" "}
                 <span className="text-xs text-muted-foreground">
