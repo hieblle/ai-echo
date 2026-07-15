@@ -11,7 +11,8 @@ weiterarbeiten"). Neueste Einträge oben.
 Umgesetzt nach SPEC.md §13 (Phase 2). Akzeptanz verifiziert: alle §10-Formeln
 unit-getestet (Klassenmitten, Invertierung, NPS, Gap); Abteilung mit n = 4
 (Merlin Marketing) erscheint nirgends einzeln; 6 Empfehlungen feuern auf den
-Demo-Daten (R5 · R4+R6 · R1+R3+R7); Report-Route druckt sauber (Print-CSS
+Demo-Daten (Merlin: R5 · SPAR: R4+R6 · REWE: R1+R3+R7 — per End-to-End-Test
+auf exakt diese Kombination gepinnt); Report-Route druckt sauber (Print-CSS
 im Browser verifiziert).
 
 ### D2.1 — KPI-Konventionen (lib/domain/kpi.ts)
@@ -84,6 +85,43 @@ Der Singleton generiert beim ersten Zugriff 6 ABGESCHLOSSENE Wochen (bis zur
 Vorwoche) für die drei §16.3-Orgs; Musterwerk bleibt leer (interaktive
 Survey-Demo). getStore() liefert jetzt ein Promise (memoisiert auf
 globalThis), damit das Seeding vor dem ersten Read abgeschlossen ist.
+
+### D2.10 — W1.1 ist Anker jeder Wochen-Ziehung (revidiert D1.3, Review-Fund)
+Die adversariale Review wies nach: Bei SPAR zog die Rotation W1.1 im gesamten
+Live-Fenster nie — die einzigen W1.1-Antworten kamen von den Nicht-Nutzern
+(Kurz-Pulse, per Definition „none"), das Dashboard zeigte 0 % statt ~63 % und
+R1 feuerte falsch; der Stichprobenboden aus D2.2 war bei ≥ 50 Respondenten
+strukturell wirkungslos. §9 („nie zweimal in Folge") und §10 („Anteil an allen
+W1.1-Antworten DER WOCHE" als Leitkennzahl) stehen hier im Konflikt —
+aufgelöst zugunsten von §10: `WEEKLY_ANCHOR_CODES = ["W1.1"]` ist Teil JEDER
+Ziehung, von Ausschluss und persönlicher Ersetzung ausgenommen (wöchentlich
+dieselbe Kernfrage ist gängige Pulse-Praxis). Die No-Repeat-Regel gilt
+unverändert für alle übrigen Fragen (60-Wochen-Regressionstest). D2.2 bleibt
+als Defense-in-Depth bestehen.
+
+### D2.11 — F5 fließt in den ROI (Review-Fund)
+§12: „F5 Ø-Stundensatz Team (fließt in ROI)". Der ROI nutzt jetzt den
+Mittelwert der F5-Antworten im Betrachtungsfenster (Fallback:
+`hourly_rate_default`); die Quelle wird in Dashboard/Report ausgewiesen.
+
+### D2.12 — Härtungen aus der zweiten Review-Runde
+- **simulateWeek serialisiert** (globalThis-Promise-Kette): Parallele Aufrufe
+  (Doppelklick) hätten dieselbe Woche doppelt geschrieben — inkl. Aushebelung
+  der k-Anonymitäts-Unterdrückung durch duplizierte Zeilen.
+- **Report-Baseline = Programm-Baseline** (erste zwei Messwochen der Org),
+  nicht die ersten Wochen des Berichtsmonats — sonst vergleicht jeder Report
+  ab Monat 2 das Fenster mit sich selbst.
+- **Monats-Scoping im Report:** Gap/NPS/Schulungswünsche/AI-Act-„aktuell"
+  basieren auf dem jüngsten Monats-/Leadership-Zyklus ≤ Monatsende
+  (ausgewiesen); alte Reports ändern sich nicht rückwirkend. O4 bleibt
+  bewusst Programm-Baseline. Use-Case-Sektion filtert auf W2.2/M1.4.
+- updateRecommendationStatus validiert Org + Regel (öffentlicher Endpoint);
+  Heatmap unterscheidet „n < k" von „Keine Daten"; deutsche Dezimal-Kommas in
+  Heatmap/Gap; fehlgeschlagenes Seeding wird nicht dauerhaft memoisiert;
+  Baseline-Deltas erst ab 3 Wochen Historie (vorher strukturell „flat").
+- **Vorperioden-Delta bewusst verschoben:** §10 nennt „gegen Baseline und
+  Vorperiode"; die Kacheln zeigen Baseline-Delta + Sparkline (Vorperioden-
+  Bewegung visuell). Explizites Vorwochen-Delta: Phase 3/Post-MVP.
 
 ### D2.9 — Dashboard-Darstellung
 Viz-Tokens nur für Light Mode (Theme-Toggle existiert noch nicht); Recharts
