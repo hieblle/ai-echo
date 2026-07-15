@@ -81,6 +81,56 @@ mobil verifiziert deutlich unter 60 Sekunden.
 Der `tool_matrix`-Options-Typ trägt keine Anker-Labels; die Skala 1–10 wird
 ohne Anker gerendert. Bei Bedarf in Phase 2/3 als Options-Erweiterung nachrüsten.
 
+### D1.13 — Monthly-Auswahl: 10 von 18 Fragen (Kern + Monats-Rotation)
+SPEC §4.1/§8 verlangt 8–12 Fragen pro Monatsbefragung, der Katalog (§12) hat 18.
+Auswahlregel: 5 Kernfragen IMMER (M1.1, M1.3 = ROI-Anker; M3.1, M5.1 =
+Gap-Paar-Hälften — der Perception Gap braucht beide Seiten monatlich; M6.1 =
+NPS) + 5 weitere deterministisch rotierend pro Org und Kalendermonat
+(`orgId|YYYY-MM`-Seed). M2.1 entfällt zusätzlich für Tool-lose (Conditional).
+
+### D1.14 — „Nie zweimal in Folge" strukturell statt per Fallback (Review-Fix)
+Adversariale Review wies nach: Mit unabhängigen Wochen-Ziehungen brach die
+No-Repeat-Regel in ~14 % der Personen-Wochen (Dimension „verstopft"). Fix in
+zwei Schichten: (1) Die Org-Ziehung schließt die Ziehung der Vorwoche aus
+(deterministisch rekonstruierbar, keine Persistenz nötig; bei Unmachbarkeit
+wird der Ausschluss ignoriert statt geworfen). (2) Die persönliche Ersetzung
+hat eine zweite Stufe: Gibt es keinen Kandidaten derselben Dimension, die
+Dimension bleibt aber durch eine andere gezogene Frage abgedeckt, wird
+dimensionsübergreifend ersetzt — die No-Repeat-Regel ist in §9 absolut,
+Dimensionsabdeckung die einzige härtere Nebenbedingung. Regressionstest:
+60-Wochen-Simulation auf dem echten Pool ohne einen einzigen Repeat.
+
+### D1.15 — Doppel-Submit-Schutz über `completed_cycles` (Review-Fix)
+Jede abgeschlossene Befragung wird als Zyklus-ID im Profil vermerkt
+(`weekly-2026-W29` …); ein zweiter Submit desselben Zyklus wird abgelehnt,
+Onboarding zusätzlich über `onboarding_completed` (einmalig lt. SPEC). Ohne
+den Schutz hätte die Phase-2-Aggregation doppelt gezählt. Vorläufer des
+Phase-4-`participations`-Konzepts. Demo-Hinweis: Server-Neustart setzt den
+In-Memory-Store und damit auch diese Sperren zurück.
+
+### D1.16 — Wissens-Tipps bleiben bewusst außerhalb des Store-Interfaces
+Die Review markierte Seed-Direktimporte als Verstoß gegen Architekturregel 2.
+Behoben für den Tool-Katalog (wird jetzt aus der O2-Frage des Stores
+abgeleitet, `toolCatalogFromPool`). Die Wissens-Tipps bleiben als statischer
+UI-Content direkt importiert: Sie sind kein Befragungs-/Auswertungsdatum und
+haben keine Phase-4-Entsprechung im Datenmodell. Neu bewerten, falls Tipps
+org-konfigurierbar werden.
+
+### D1.17 — Anonymitäts-Vormerkungen für Phase 4 (aus der Review)
+Jetzt harmlos (Demo-Daten), vor Phase 4 zwingend zu adressieren:
+1. **Response-IDs nicht sequenziell** in der DB (Submission-Gruppen/-Reihenfolge
+   rekonstruierbar) — UUIDs, keine `created_at`-Spalte.
+2. **`question_history` ist ein potenzieller Fingerprint** (persönliche
+   Ersatzfragen ⇒ ggf. einzigartiges Code-Set je Abteilung/Woche). Zudem
+   widerspricht SPEC §6 sich selbst: Das Pseudonym-Token in Supabase
+   `user_metadata` liegt server-seitig in `auth.users` — die Zuordnung
+   Token↔User existiert dann doch. Vor Phase 4: Token nur gehasht speichern,
+   SPEC korrigieren, `question_history` älter als Vorwoche löschen.
+3. **k „nur erhöhbar"** ist noch nirgends erzwungen — der Phase-4-Settings-Pfad
+   muss k < 5 ablehnen.
+4. W1.2-/M2.1-Antworten spiegeln `tools_used` (zweiter Join-Kandidat) —
+   akzeptiertes Restrisiko unter k-Anonymität, dokumentiert.
+
 ---
 
 ## Phase 0 — Setup (2026-07-14)
