@@ -17,6 +17,7 @@ import {
   personalizeWeeklyDraw,
   pickMonthlyQuestions,
   pickWeeklyQuestions,
+  WEEKLY_ANCHOR_CODES,
 } from "@/lib/domain/rotation";
 import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
 import type {
@@ -115,18 +116,21 @@ export async function getSurveySession(
       // Non-users get the fixed short pulse — they are a signal, too (SPEC §9).
       questions = shortWeeklyVariant(pool);
     } else {
-      // Excluding last week's org draw makes consecutive draws disjoint, so
-      // the per-person no-repeat rule holds structurally (SPEC §9 b).
+      // W1.1 is anchored in every draw (lead KPI needs weekly data, D2.10);
+      // excluding last week's remaining org draw keeps the other questions
+      // disjoint, so the no-repeat rule holds structurally (SPEC §9 b).
       const previousDraw = pickWeeklyQuestions({
         pool,
         orgId: org.id,
         isoWeek: previousIsoWeek(isoWeek),
+        anchors: WEEKLY_ANCHOR_CODES,
       });
       const draw = pickWeeklyQuestions({
         pool,
         orgId: org.id,
         isoWeek,
         exclude: previousDraw.map((q) => q.code),
+        anchors: WEEKLY_ANCHOR_CODES,
       });
       // Only a PREVIOUS week's draw counts as history: re-opening the same
       // week's pulse must yield the same questions, not new substitutes.
@@ -140,6 +144,7 @@ export async function getSurveySession(
         history,
         respondentKey: personaId,
         isoWeek,
+        anchors: WEEKLY_ANCHOR_CODES,
       });
       questions = applyConditionalLogic({
         questions: personalized,

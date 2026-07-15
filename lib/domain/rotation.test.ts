@@ -6,6 +6,7 @@ import {
   personalizeWeeklyDraw,
   pickMonthlyQuestions,
   pickWeeklyQuestions,
+  WEEKLY_ANCHOR_CODES,
 } from "./rotation";
 
 // --- Fixture -----------------------------------------------------------------
@@ -430,5 +431,66 @@ describe("pickMonthlyQuestions", () => {
         month: "2026-07",
       }),
     ).toThrow(/M6\.1/);
+  });
+});
+
+// --- Weekly anchors (D2.10) -----------------------------------------------------
+
+describe("pickWeeklyQuestions · anchors", () => {
+  it("includes the anchor in every draw across many weeks", () => {
+    for (let w = 10; w < 30; w++) {
+      const draw = pickWeeklyQuestions({
+        pool: POOL,
+        orgId: ORG,
+        isoWeek: `2026-W${String(w).padStart(2, "0")}`,
+        anchors: WEEKLY_ANCHOR_CODES,
+      });
+      expect(codesOf(draw)).toContain("W1.1");
+      expect(draw).toHaveLength(5);
+    }
+  });
+
+  it("exempts anchors from the exclusion list", () => {
+    const draw = pickWeeklyQuestions({
+      pool: POOL,
+      orgId: ORG,
+      isoWeek: WEEK,
+      exclude: ["W1.1", "W2.1"],
+      anchors: ["W1.1"],
+    });
+    expect(codesOf(draw)).toContain("W1.1");
+    expect(codesOf(draw)).not.toContain("W2.1");
+  });
+
+  it("throws when an anchor is missing from the pool", () => {
+    const poolWithoutAnchor = POOL.filter((q) => q.code !== "W1.1");
+    expect(() =>
+      pickWeeklyQuestions({
+        pool: poolWithoutAnchor,
+        orgId: ORG,
+        isoWeek: WEEK,
+        anchors: ["W1.1"],
+      }),
+    ).toThrow(/anchor/);
+  });
+});
+
+describe("personalizeWeeklyDraw · anchors", () => {
+  it("never substitutes an anchor even when it is in the history", () => {
+    const draw = pickWeeklyQuestions({
+      pool: POOL,
+      orgId: ORG,
+      isoWeek: WEEK,
+      anchors: ["W1.1"],
+    });
+    const personalized = personalizeWeeklyDraw({
+      draw,
+      pool: POOL,
+      history: ["W1.1"],
+      respondentKey: "p-1",
+      isoWeek: WEEK,
+      anchors: ["W1.1"],
+    });
+    expect(codesOf(personalized)).toContain("W1.1");
   });
 });

@@ -25,6 +25,17 @@ export const WEEKLY_DRAW_MIN = 3;
 export const WEEKLY_DRAW_MAX = 5;
 export const WEEKLY_DRAW_DEFAULT = 5;
 
+/**
+ * Questions anchored in EVERY weekly draw. W1.1 feeds the lead KPI
+ * (Adoption-Rate, SPEC §10: "an allen W1.1-Antworten der Woche") — without a
+ * weekly draw the only W1.1 answers come from the non-user short variant,
+ * which is structurally biased toward "none". SPEC §9's no-repeat rule and
+ * §10's weekly adoption measurement conflict here; resolved in favor of §10
+ * (documented in DECISIONS.md D2.10): anchors repeat weekly by design and
+ * are exempt from exclusion and personalization.
+ */
+export const WEEKLY_ANCHOR_CODES: readonly string[] = ["W1.1"];
+
 /** Monthly deep-dive size bounds (SPEC.md §4.1/§8: "8–12 Fragen"). */
 export const MONTHLY_DRAW_MIN = 8;
 export const MONTHLY_DRAW_MAX = 12;
@@ -134,18 +145,34 @@ export function pickWeeklyQuestions(args: {
   isoWeek: string;
   count?: number;
   exclude?: readonly string[];
+  /** Codes drawn in EVERY week (default WEEKLY_ANCHOR_CODES semantics are opt-in). */
+  anchors?: readonly string[];
 }): Question[] {
   const { pool, orgId, isoWeek } = args;
   const count = clampCount(args.count ?? WEEKLY_DRAW_DEFAULT);
+  const anchors = args.anchors ?? [];
 
-  if (args.exclude && args.exclude.length > 0) {
-    const excluded = new Set(args.exclude);
+  const anchorQuestions = anchors.map((code) => {
+    const question = pool.find((q) => q.code === code);
+    if (!question) {
+      throw new Error(
+        `Weekly pool is missing anchor question "${code}" (anchors must always be drawable)`,
+      );
+    }
+    return question;
+  });
+
+  // Anchors are exempt from exclusion by definition — they repeat weekly.
+  const excluded = new Set(args.exclude ?? []);
+  for (const code of anchors) excluded.delete(code);
+
+  if (excluded.size > 0) {
     const reduced = pool.filter((q) => !excluded.has(q.code));
     if (isDrawFeasible(reduced, count)) {
-      return drawWeekly(reduced, orgId, isoWeek, count);
+      return drawWeekly(reduced, orgId, isoWeek, count, anchorQuestions);
     }
   }
-  return drawWeekly(pool, orgId, isoWeek, count);
+  return drawWeekly(pool, orgId, isoWeek, count, anchorQuestions);
 }
 
 /** Whether `pool` can satisfy a weekly draw of `count` (distinct + coverage). */
@@ -164,12 +191,22 @@ function drawWeekly(
   orgId: string,
   isoWeek: string,
   count: number,
+  anchorQuestions: readonly Question[] = [],
 ): Question[] {
   const rng = seededRng(`${orgId}|${isoWeek}`);
   const shuffled = shuffledCopy(pool, rng);
 
   const picked: Question[] = [];
   const pickedCodes = new Set<string>();
+
+  // Anchors first: they are part of every draw (see WEEKLY_ANCHOR_CODES)
+  // and count toward `count` and the dimension coverage below.
+  for (const question of anchorQuestions) {
+    if (!pickedCodes.has(question.code)) {
+      picked.push(question);
+      pickedCodes.add(question.code);
+    }
+  }
 
   // First pass: guarantee dimension coverage (constraint a, only for 4+).
   if (count >= 4) {
@@ -236,10 +273,13 @@ export function personalizeWeeklyDraw(args: {
   history: readonly string[];
   respondentKey: string;
   isoWeek: string;
+  /** Codes exempt from the no-repeat rule (weekly anchors, e.g. W1.1). */
+  anchors?: readonly string[];
 }): Question[] {
   const { draw, pool, history, respondentKey, isoWeek } = args;
   const rng = seededRng(`${respondentKey}|${isoWeek}`);
   const historyCodes = new Set(history);
+  for (const code of args.anchors ?? []) historyCodes.delete(code);
 
   // Codes that are (currently) part of the personalized result. Seeded with
   // the full draw so a substitute can never duplicate a question that is kept.

@@ -3,6 +3,7 @@ import { getIsoWeek } from "@/lib/domain/isoWeek";
 import {
   personalizeWeeklyDraw,
   pickWeeklyQuestions,
+  WEEKLY_ANCHOR_CODES,
 } from "@/lib/domain/rotation";
 import { DEMO_ORG_ID, DEMO_PERSONAS } from "@/lib/seed/demo-org";
 import { WEEKLY_POOL } from "@/lib/seed/questions";
@@ -82,9 +83,9 @@ describe("getSurveySession · weekly", () => {
     );
   });
 
-  it("never repeats a question in consecutive weeks (SPEC §9 b, 60-week simulation)", async () => {
+  it("anchors W1.1 weekly and never repeats any other question in consecutive weeks (SPEC §9 b / D2.10, 60-week simulation)", async () => {
     // Simulates the exact service composition against the REAL seed pool:
-    // previous-draw exclusion + personal history substitution.
+    // anchored draw + previous-draw exclusion + personal substitution.
     let history: string[] = [];
     let previousWeek: string | null = null;
     const start = Date.UTC(2026, 0, 5); // a Monday
@@ -96,6 +97,7 @@ describe("getSurveySession · weekly", () => {
             pool: WEEKLY_POOL,
             orgId: DEMO_ORG_ID,
             isoWeek: previousWeek,
+            anchors: WEEKLY_ANCHOR_CODES,
           }).map((q) => q.code)
         : [];
       const draw = pickWeeklyQuestions({
@@ -103,6 +105,7 @@ describe("getSurveySession · weekly", () => {
         orgId: DEMO_ORG_ID,
         isoWeek,
         exclude,
+        anchors: WEEKLY_ANCHOR_CODES,
       });
       const personalized = personalizeWeeklyDraw({
         draw,
@@ -110,9 +113,15 @@ describe("getSurveySession · weekly", () => {
         history,
         respondentKey: MARKETING,
         isoWeek,
+        anchors: WEEKLY_ANCHOR_CODES,
       });
       const codes = personalized.map((q) => q.code);
-      const repeats = codes.filter((c) => history.includes(c));
+      // The anchor is served every single week (lead KPI, D2.10)…
+      expect(codes).toContain("W1.1");
+      // …and every non-anchor question still honors the no-repeat rule.
+      const repeats = codes.filter(
+        (c) => history.includes(c) && !WEEKLY_ANCHOR_CODES.includes(c),
+      );
       expect(repeats).toEqual([]);
       history = codes;
       previousWeek = isoWeek;
