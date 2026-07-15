@@ -14,7 +14,11 @@ import type {
   NewSurveyResponse,
   OrgId,
   Organization,
+  OrgToolSetting,
+  ParticipationStat,
   Question,
+  RecommendationRule,
+  RecommendationState,
   RespondentProfile,
   SurveyResponse,
   TemplateKey,
@@ -26,10 +30,14 @@ export interface MemoryStoreSeed {
   departments: Department[];
   personas: DemoPersona[];
   questions: Question[];
+  /** Configured AI tools per org (SPEC.md §6 org_settings_tools). */
+  toolSettings: OrgToolSetting[];
+  /** Global recommendation rules R1–R7 (SPEC.md §11) — rules are data, not code. */
+  rules: RecommendationRule[];
 }
 
-/** ISO-week format stored on responses, e.g. "2026-W29" (SPEC.md §6/§7). */
-const CREATED_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
+/** ISO-week format used by responses and participation stats, e.g. "2026-W29". */
+const ISO_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
 
 export class MemoryStore implements Store {
   readonly mode: StoreMode = "memory";
@@ -38,12 +46,19 @@ export class MemoryStore implements Store {
   private readonly departments: Department[];
   private readonly personas: DemoPersona[];
   private readonly questions: Question[];
+  private readonly toolSettings: OrgToolSetting[];
+  private readonly rules: RecommendationRule[];
 
   /** Keyed by `org_id` + `respondent_key` (never joinable with responses). */
   private readonly profiles = new Map<string, RespondentProfile>();
   private readonly responses: SurveyResponse[] = [];
   /** Monotonically increasing response id counter ("r1", "r2", ...). */
   private responseIdCounter = 0;
+
+  /** Aggregate participation numbers per cycle (Phase 2/3 demo scope). */
+  private readonly participationStats: ParticipationStat[] = [];
+  /** Keyed by (org_id, rule_key, context) — one decision per derived card. */
+  private readonly recommendationStates = new Map<string, RecommendationState>();
 
   constructor(seed: MemoryStoreSeed) {
     // Deep-copy the seed so later mutations by the caller cannot leak in.
@@ -52,6 +67,8 @@ export class MemoryStore implements Store {
     this.departments = copy.departments;
     this.personas = copy.personas;
     this.questions = copy.questions;
+    this.toolSettings = copy.toolSettings;
+    this.rules = copy.rules;
   }
 
   // --- Organization & catalog ---------------------------------------------
@@ -61,8 +78,25 @@ export class MemoryStore implements Store {
     return org ? structuredClone(org) : null;
   }
 
+  async getOrganizationBySlug(slug: string): Promise<Organization | null> {
+    const org = this.organizations.find((o) => o.slug === slug);
+    return org ? structuredClone(org) : null;
+  }
+
+  async listOrganizations(): Promise<Organization[]> {
+    // `filter`/spread returns a fresh array, so sorting it is safe.
+    const all = [...this.organizations];
+    all.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    return structuredClone(all);
+  }
+
   async listDepartments(orgId: OrgId): Promise<Department[]> {
     return structuredClone(this.departments.filter((d) => d.org_id === orgId));
+  }
+
+  async listToolSettings(orgId: OrgId): Promise<OrgToolSetting[]> {
+    // Active AND inactive — callers filter (e.g. ROI only counts active ones).
+    return structuredClone(this.toolSettings.filter((t) => t.org_id === orgId));
   }
 
   async listQuestions(templateKey: TemplateKey): Promise<Question[]> {
@@ -121,7 +155,7 @@ export class MemoryStore implements Store {
       if (row.question_code === "") {
         throw new Error("submitResponses: empty question_code");
       }
-      if (!CREATED_WEEK_PATTERN.test(row.created_week)) {
+      if (!ISO_WEEK_PATTERN.test(row.created_week)) {
         throw new Error(
           `submitResponses: invalid created_week "${row.created_week}" (expected e.g. "2026-W29")`,
         );
@@ -141,6 +175,91 @@ export class MemoryStore implements Store {
     return structuredClone(this.responses.filter((r) => r.org_id === orgId));
   }
 
+  // --- Participation & recommendations (Phase 2 dashboard) -------------------
+
+  async listParticipationStats(orgId: OrgId): Promise<ParticipationStat[]> {
+    return structuredClone(
+      this.participationStats.filter((s) => s.org_id === orgId),
+    );
+  }
+
+  /**
+   * Append cycle participation aggregates atomically — like `submitResponses`,
+   * every entry is validated first; nothing is stored on any error.
+   */
+  async addParticipationStats(stats: ParticipationStat[]): Promise<void> {
+    if (stats.length === 0) {
+      throw new Error("addParticipationStats: empty batch");
+    }
+    for (const stat of stats) {
+      if (!this.findOrganization(stat.org_id)) {
+        throw new Error(
+          `addParticipationStats: unknown org_id "${stat.org_id}"`,
+        );
+      }
+      if (stat.cycle_id === "") {
+        throw new Error("addParticipationStats: empty cycle_id");
+      }
+      if (!ISO_WEEK_PATTERN.test(stat.week)) {
+        throw new Error(
+          `addParticipationStats: invalid week "${stat.week}" (expected e.g. "2026-W29")`,
+        );
+      }
+      // `!(x >= 0)` (not `x < 0`) so NaN is rejected too.
+      if (!(stat.invited >= 0)) {
+        throw new Error(
+          `addParticipationStats: invited must be >= 0, got ${stat.invited}`,
+        );
+      }
+      if (!(stat.completed >= 0)) {
+        throw new Error(
+          `addParticipationStats: completed must be >= 0, got ${stat.completed}`,
+        );
+      }
+      if (stat.completed > stat.invited) {
+        throw new Error(
+          `addParticipationStats: completed (${stat.completed}) exceeds invited (${stat.invited})`,
+        );
+      }
+    }
+
+    for (const stat of stats) {
+      this.participationStats.push(structuredClone(stat));
+    }
+  }
+
+  async listRules(): Promise<RecommendationRule[]> {
+    const active = this.rules.filter((r) => r.active);
+    // `filter` already returned a fresh array, so sorting it is safe.
+    active.sort((a, b) => a.key.localeCompare(b.key, "de"));
+    return structuredClone(active);
+  }
+
+  async listRecommendationStates(orgId: OrgId): Promise<RecommendationState[]> {
+    return structuredClone(
+      [...this.recommendationStates.values()].filter(
+        (s) => s.org_id === orgId,
+      ),
+    );
+  }
+
+  /** Upsert one decision, keyed by (org_id, rule_key, context). */
+  async setRecommendationState(state: RecommendationState): Promise<void> {
+    if (!this.findOrganization(state.org_id)) {
+      throw new Error(
+        `setRecommendationState: unknown org_id "${state.org_id}"`,
+      );
+    }
+    if (state.rule_key === "") {
+      throw new Error("setRecommendationState: empty rule_key");
+    }
+    // `context` may legitimately be "" (rules without a discriminator).
+    this.recommendationStates.set(
+      recommendationStateKey(state.org_id, state.rule_key, state.context),
+      structuredClone(state),
+    );
+  }
+
   // --- Internals -------------------------------------------------------------
 
   private findOrganization(orgId: OrgId): Organization | undefined {
@@ -151,4 +270,13 @@ export class MemoryStore implements Store {
 function profileKey(orgId: OrgId, respondentKey: string): string {
   // NUL cannot occur in ids, so the composite key is collision-free.
   return `${orgId}\u0000${respondentKey}`;
+}
+
+function recommendationStateKey(
+  orgId: OrgId,
+  ruleKey: string,
+  context: string,
+): string {
+  // NUL cannot occur in ids/keys, so the composite key is collision-free.
+  return `${orgId}\u0000${ruleKey}\u0000${context}`;
 }

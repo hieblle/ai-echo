@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getIsoWeek,
+  nextIsoWeek,
   parseIsoWeek,
   previousIsoWeek,
   weeksInIsoYear,
@@ -58,5 +59,14 @@ describe("previousIsoWeek", () => {
   it("rolls over the year boundary with the correct week count", () => {
     expect(previousIsoWeek("2027-W01")).toBe("2026-W53");
     expect(previousIsoWeek("2026-W01")).toBe("2025-W52");
+  });
+});
+
+describe("nextIsoWeek", () => {
+  it("steps forward and inverts previousIsoWeek", () => {
+    expect(nextIsoWeek("2026-W29")).toBe("2026-W30");
+    expect(nextIsoWeek("2026-W53")).toBe("2027-W01");
+    expect(nextIsoWeek("2025-W52")).toBe("2026-W01");
+    expect(nextIsoWeek(previousIsoWeek("2026-W01"))).toBe("2026-W01");
   });
 });

@@ -12,13 +12,17 @@ import type {
   Department,
   NewSurveyResponse,
   Organization,
+  OrgToolSetting,
+  ParticipationStat,
   Question,
+  RecommendationRule,
+  RecommendationState,
   RespondentProfile,
 } from "@/lib/types";
 
 // --- Fixtures ---------------------------------------------------------------
-// Small inline question fixtures — deliberately NOT lib/seed/questions, which
-// is built concurrently by another module.
+// Small inline fixtures — deliberately NOT lib/seed/questions or other seed
+// modules, which are built concurrently by other modules.
 
 function makeQuestion(overrides: Partial<Question> & { id: string }): Question {
   return {
@@ -68,12 +72,60 @@ const OTHER_PERSONA: DemoPersona = {
   default_tools: [],
 };
 
+function makeToolSetting(
+  overrides: Partial<OrgToolSetting> & { id: string },
+): OrgToolSetting {
+  return {
+    org_id: DEMO_ORG_ID,
+    tool_value: "chatgpt",
+    tool_label: "ChatGPT",
+    monthly_license_cost_eur: 20,
+    active: true,
+    ...overrides,
+  };
+}
+
+const FIXTURE_TOOL_SETTINGS: OrgToolSetting[] = [
+  makeToolSetting({ id: "ts-demo-chatgpt" }),
+  // Inactive on purpose: listToolSettings must NOT filter — callers do.
+  makeToolSetting({
+    id: "ts-demo-copilot",
+    tool_value: "copilot365",
+    tool_label: "Microsoft 365 Copilot",
+    monthly_license_cost_eur: 28.1,
+    active: false,
+  }),
+  makeToolSetting({ id: "ts-other-chatgpt", org_id: OTHER_ORG.id }),
+];
+
+function makeRule(
+  overrides: Partial<RecommendationRule> & { key: string },
+): RecommendationRule {
+  return {
+    title: "Testregel",
+    description: "Beschreibung",
+    action_type: "course",
+    course_url: null,
+    active: true,
+    ...overrides,
+  };
+}
+
+const FIXTURE_RULES: RecommendationRule[] = [
+  // Deliberately out of order + one inactive to exercise filter and sort.
+  makeRule({ key: "R3" }),
+  makeRule({ key: "R1" }),
+  makeRule({ key: "R2", active: false }),
+];
+
 function makeSeed(): MemoryStoreSeed {
   return {
     organizations: [DEMO_ORG, OTHER_ORG],
     departments: [...DEMO_DEPARTMENTS, OTHER_DEPARTMENT],
     personas: [...DEMO_PERSONAS, OTHER_PERSONA],
     questions: FIXTURE_QUESTIONS,
+    toolSettings: structuredClone(FIXTURE_TOOL_SETTINGS),
+    rules: structuredClone(FIXTURE_RULES),
   };
 }
 
@@ -110,6 +162,32 @@ function makeProfile(
     question_history: null,
     onboarding_completed: true,
     completed_cycles: [],
+    ...overrides,
+  };
+}
+
+function makeStat(
+  overrides: Partial<ParticipationStat> = {},
+): ParticipationStat {
+  return {
+    org_id: DEMO_ORG_ID,
+    cycle_id: "weekly-2026-W29",
+    template_key: "weekly",
+    week: "2026-W29",
+    invited: 40,
+    completed: 25,
+    ...overrides,
+  };
+}
+
+function makeRecState(
+  overrides: Partial<RecommendationState> = {},
+): RecommendationState {
+  return {
+    org_id: DEMO_ORG_ID,
+    rule_key: "R1",
+    context: "",
+    status: "done",
     ...overrides,
   };
 }
@@ -324,6 +402,280 @@ describe("MemoryStore", () => {
     });
   });
 
+  describe("getOrganizationBySlug", () => {
+    it("returns the matching org", async () => {
+      const store = makeStore();
+      expect((await store.getOrganizationBySlug("musterwerk"))?.id).toBe(
+        DEMO_ORG_ID,
+      );
+      expect((await store.getOrganizationBySlug("andere"))?.id).toBe(
+        OTHER_ORG.id,
+      );
+    });
+
+    it("returns null for an unknown slug", async () => {
+      expect(await makeStore().getOrganizationBySlug("nope")).toBeNull();
+    });
+
+    it("returns a copy — mutating the result does not affect the store", async () => {
+      const store = makeStore();
+      const org = await store.getOrganizationBySlug("musterwerk");
+      org!.name = "HACKED";
+
+      expect((await store.getOrganizationBySlug("musterwerk"))?.name).toBe(
+        "Musterwerk GmbH",
+      );
+    });
+  });
+
+  describe("listOrganizations", () => {
+    it("returns all orgs sorted by name ascending", async () => {
+      const orgs = await makeStore().listOrganizations();
+      expect(orgs.map((o) => o.name)).toEqual([
+        "Andere GmbH",
+        "Musterwerk GmbH",
+      ]);
+    });
+
+    it("returns copies — mutating the result does not affect the store", async () => {
+      const store = makeStore();
+      const orgs = await store.listOrganizations();
+      orgs[0]!.name = "HACKED";
+      orgs.length = 0;
+
+      const fresh = await store.listOrganizations();
+      expect(fresh).toHaveLength(2);
+      expect(fresh[0]!.name).toBe("Andere GmbH");
+    });
+  });
+
+  describe("listToolSettings", () => {
+    it("is org-scoped and includes inactive settings (callers filter)", async () => {
+      const store = makeStore();
+      const demo = await store.listToolSettings(DEMO_ORG_ID);
+      expect(demo.map((t) => t.id)).toEqual([
+        "ts-demo-chatgpt",
+        "ts-demo-copilot",
+      ]);
+      expect(demo.map((t) => t.active)).toEqual([true, false]);
+
+      const other = await store.listToolSettings(OTHER_ORG.id);
+      expect(other.map((t) => t.id)).toEqual(["ts-other-chatgpt"]);
+
+      expect(await store.listToolSettings("org-nope")).toEqual([]);
+    });
+
+    it("returns copies — mutating the result does not affect the store", async () => {
+      const store = makeStore();
+      const [first] = await store.listToolSettings(DEMO_ORG_ID);
+      first!.monthly_license_cost_eur = 9999;
+
+      const [fresh] = await store.listToolSettings(DEMO_ORG_ID);
+      expect(fresh!.monthly_license_cost_eur).toBe(20);
+    });
+  });
+
+  describe("participation stats", () => {
+    it("appends and lists org-scoped", async () => {
+      const store = makeStore();
+      expect(await store.listParticipationStats(DEMO_ORG_ID)).toEqual([]);
+
+      const demoStat = makeStat();
+      const otherStat = makeStat({
+        org_id: OTHER_ORG.id,
+        cycle_id: "weekly-2026-W30",
+        week: "2026-W30",
+      });
+      await store.addParticipationStats([demoStat, otherStat]);
+
+      expect(await store.listParticipationStats(DEMO_ORG_ID)).toEqual([
+        demoStat,
+      ]);
+      expect(await store.listParticipationStats(OTHER_ORG.id)).toEqual([
+        otherStat,
+      ]);
+      expect(await store.listParticipationStats("org-nope")).toEqual([]);
+    });
+
+    it("throws on an empty batch", async () => {
+      await expect(makeStore().addParticipationStats([])).rejects.toThrow(
+        /empty/,
+      );
+    });
+
+    it("stores nothing when one entry of a batch is invalid (atomicity)", async () => {
+      const store = makeStore();
+      const batch = [
+        makeStat(),
+        makeStat({ week: "not-a-week" }),
+        makeStat({ cycle_id: "weekly-2026-W31", week: "2026-W31" }),
+      ];
+      await expect(store.addParticipationStats(batch)).rejects.toThrow(/week/);
+
+      expect(await store.listParticipationStats(DEMO_ORG_ID)).toEqual([]);
+    });
+
+    it("rejects completed > invited", async () => {
+      const store = makeStore();
+      await expect(
+        store.addParticipationStats([makeStat({ invited: 10, completed: 11 })]),
+      ).rejects.toThrow(/exceeds invited/);
+      expect(await store.listParticipationStats(DEMO_ORG_ID)).toEqual([]);
+    });
+
+    it("rejects negative invited and completed", async () => {
+      await expect(
+        makeStore().addParticipationStats([makeStat({ invited: -1 })]),
+      ).rejects.toThrow(/invited/);
+      await expect(
+        makeStore().addParticipationStats([
+          makeStat({ completed: -1, invited: 5 }),
+        ]),
+      ).rejects.toThrow(/completed/);
+    });
+
+    it.each(["2026-29", "26-W29", "2026-W2", " 2026-W29"])(
+      "rejects malformed week %j",
+      async (week) => {
+        await expect(
+          makeStore().addParticipationStats([makeStat({ week })]),
+        ).rejects.toThrow(/week/);
+      },
+    );
+
+    it("rejects an unknown org_id", async () => {
+      await expect(
+        makeStore().addParticipationStats([makeStat({ org_id: "org-nope" })]),
+      ).rejects.toThrow(/org_id/);
+    });
+
+    it("rejects an empty cycle_id", async () => {
+      await expect(
+        makeStore().addParticipationStats([makeStat({ cycle_id: "" })]),
+      ).rejects.toThrow(/cycle_id/);
+    });
+
+    it("stores and returns copies — callers cannot alias internal state", async () => {
+      const store = makeStore();
+      const stat = makeStat();
+      await store.addParticipationStats([stat]);
+
+      // Mutating the input after the fact must not leak in.
+      stat.completed = 0;
+
+      const listed = await store.listParticipationStats(DEMO_ORG_ID);
+      expect(listed[0]!.completed).toBe(25);
+
+      // Mutating a listed copy must not leak in either.
+      listed[0]!.invited = 0;
+      const fresh = await store.listParticipationStats(DEMO_ORG_ID);
+      expect(fresh[0]!.invited).toBe(40);
+    });
+  });
+
+  describe("listRules", () => {
+    it("returns only active rules, sorted by key ascending", async () => {
+      const rules = await makeStore().listRules();
+      expect(rules.map((r) => r.key)).toEqual(["R1", "R3"]);
+    });
+
+    it("returns copies — mutating the result does not affect the store", async () => {
+      const store = makeStore();
+      const [first] = await store.listRules();
+      first!.title = "HACKED";
+
+      const [fresh] = await store.listRules();
+      expect(fresh!.title).toBe("Testregel");
+    });
+  });
+
+  describe("recommendation states", () => {
+    it("starts empty and round-trips a state", async () => {
+      const store = makeStore();
+      expect(await store.listRecommendationStates(DEMO_ORG_ID)).toEqual([]);
+
+      const state = makeRecState();
+      await store.setRecommendationState(state);
+      expect(await store.listRecommendationStates(DEMO_ORG_ID)).toEqual([
+        state,
+      ]);
+    });
+
+    it("upserts — same (org, rule_key, context) overwrites the status", async () => {
+      const store = makeStore();
+      await store.setRecommendationState(makeRecState({ status: "done" }));
+      await store.setRecommendationState(makeRecState({ status: "dismissed" }));
+
+      const states = await store.listRecommendationStates(DEMO_ORG_ID);
+      expect(states).toHaveLength(1);
+      expect(states[0]!.status).toBe("dismissed");
+    });
+
+    it("keeps states with different contexts side by side", async () => {
+      const store = makeStore();
+      await store.setRecommendationState(
+        makeRecState({ rule_key: "R4", context: "chatgpt", status: "done" }),
+      );
+      await store.setRecommendationState(
+        makeRecState({ rule_key: "R4", context: "copilot365", status: "dismissed" }),
+      );
+      // Empty context is a valid, distinct key of its own.
+      await store.setRecommendationState(
+        makeRecState({ rule_key: "R4", context: "", status: "open" }),
+      );
+
+      const states = await store.listRecommendationStates(DEMO_ORG_ID);
+      expect(states).toHaveLength(3);
+      expect(
+        states.map((s) => [s.context, s.status]).sort(),
+      ).toEqual([
+        ["", "open"],
+        ["chatgpt", "done"],
+        ["copilot365", "dismissed"],
+      ]);
+    });
+
+    it("is org-scoped", async () => {
+      const store = makeStore();
+      await store.setRecommendationState(makeRecState());
+      await store.setRecommendationState(
+        makeRecState({ org_id: OTHER_ORG.id, status: "dismissed" }),
+      );
+
+      const demo = await store.listRecommendationStates(DEMO_ORG_ID);
+      const other = await store.listRecommendationStates(OTHER_ORG.id);
+      expect(demo.map((s) => s.org_id)).toEqual([DEMO_ORG_ID]);
+      expect(other.map((s) => s.org_id)).toEqual([OTHER_ORG.id]);
+      expect(await store.listRecommendationStates("org-nope")).toEqual([]);
+    });
+
+    it("throws on an unknown org_id", async () => {
+      await expect(
+        makeStore().setRecommendationState(makeRecState({ org_id: "org-nope" })),
+      ).rejects.toThrow(/org_id/);
+    });
+
+    it("throws on an empty rule_key", async () => {
+      await expect(
+        makeStore().setRecommendationState(makeRecState({ rule_key: "" })),
+      ).rejects.toThrow(/rule_key/);
+    });
+
+    it("stores and returns copies — callers cannot alias internal state", async () => {
+      const store = makeStore();
+      const state = makeRecState();
+      await store.setRecommendationState(state);
+
+      state.status = "open";
+      const listed = await store.listRecommendationStates(DEMO_ORG_ID);
+      expect(listed[0]!.status).toBe("done");
+
+      listed[0]!.status = "open";
+      const fresh = await store.listRecommendationStates(DEMO_ORG_ID);
+      expect(fresh[0]!.status).toBe("done");
+    });
+  });
+
   describe("setFormOfAddress", () => {
     it("updates the org's form_of_address", async () => {
       const store = makeStore();
@@ -363,6 +715,24 @@ describe("MemoryStore", () => {
       const [persona] = await store.listPersonas(DEMO_ORG_ID);
       expect(persona!.default_tools).toEqual(["chatgpt", "deepl_write"]);
       expect(await store.listQuestions("weekly")).toHaveLength(2);
+    });
+
+    it("mutating seed toolSettings and rules after construction does not affect the store", async () => {
+      const seed = makeSeed();
+      const store = new MemoryStore(seed);
+
+      seed.toolSettings[0]!.monthly_license_cost_eur = 9999;
+      seed.toolSettings.length = 0;
+      seed.rules[1]!.title = "HACKED";
+      seed.rules.push(makeRule({ key: "R0" }));
+
+      const tools = await store.listToolSettings(DEMO_ORG_ID);
+      expect(tools).toHaveLength(2);
+      expect(tools[0]!.monthly_license_cost_eur).toBe(20);
+
+      const rules = await store.listRules();
+      expect(rules.map((r) => r.key)).toEqual(["R1", "R3"]);
+      expect(rules[0]!.title).toBe("Testregel");
     });
   });
 });

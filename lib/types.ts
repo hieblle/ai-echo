@@ -228,6 +228,149 @@ export interface RespondentProfile {
   completed_cycles: string[];
 }
 
+/** A configured AI tool of an org with its license cost (SPEC.md §6). */
+export interface OrgToolSetting {
+  id: string;
+  org_id: OrgId;
+  /** Tool value from the O2 catalog (e.g. "copilot365"). */
+  tool_value: string;
+  tool_label: string;
+  monthly_license_cost_eur: number;
+  active: boolean;
+}
+
+/**
+ * Aggregate participation numbers per cycle (Phase 2/3 demo scope).
+ * Phase 4 replaces this with per-person `participations` rows — the dashboard
+ * only ever needs the ratio, which keeps the demo free of fake person records.
+ */
+export interface ParticipationStat {
+  org_id: OrgId;
+  cycle_id: string;
+  template_key: TemplateKey;
+  /** ISO week the cycle belongs to, e.g. "2026-W29". */
+  week: string;
+  invited: number;
+  completed: number;
+}
+
+export type RecommendationStatus = "open" | "done" | "dismissed";
+
+/** A recommendation rule (SPEC.md §11 R1–R7) — rules are data, not code. */
+export interface RecommendationRule {
+  key: string;
+  title: string;
+  description: string;
+  action_type: "course" | "strategy_call" | "license_review" | "communication";
+  course_url: string | null;
+  active: boolean;
+}
+
+/**
+ * Persisted status override for a DERIVED recommendation. Recommendations
+ * themselves are recomputed from the data on every evaluation (regelbasiert);
+ * only the org_admin's done/dismissed decision is stored, keyed by rule and
+ * context — no duplicate-row bookkeeping needed.
+ */
+export interface RecommendationState {
+  org_id: OrgId;
+  rule_key: string;
+  /** Discriminator when one rule fires per tool/pair/topic; "" when none. */
+  context: string;
+  status: RecommendationStatus;
+}
+
+// --- Domain result types (contract between kpi.ts, triggers.ts and the UI) --
+
+/** Weekly KPI snapshot (SPEC.md §10). Null = no data for that metric/week. */
+export interface WeeklyKpis {
+  week: string;
+  /** Respondent proxy: max answers a single question got this week. */
+  n_pulse: number;
+  /**
+   * Number of W1.1 answers this week. Weeks where the rotation did not draw
+   * W1.1 only carry the short-variant answers of non-users — a thin, biased
+   * sample. Consumers must not treat weeks with n_adoption below
+   * WEEKLY_ADOPTION_MIN_SAMPLE as adoption evidence.
+   */
+  n_adoption: number;
+  /** Share of W1.1 answers with usage >= "1–2 mal" (0..1). */
+  adoption_rate: number | null;
+  /** Share of "Täglich" + "Mehrmals täglich" (0..1). */
+  power_user_share: number | null;
+  /** Sum of W2.1 class midpoints (hours) this week. */
+  saved_hours_sum: number;
+  efficiency_index: number | null;
+  trust_index: number | null;
+  sentiment_index: number | null;
+  /** completed ÷ invited of this week's weekly cycle. */
+  participation_rate: number | null;
+}
+
+/** ROI tile numbers (SPEC.md §10). */
+export interface RoiSnapshot {
+  /** Conservative: sum of reported saved hours in the window. */
+  saved_hours: number;
+  /** Secondary value: extrapolated to non-participants via participation. */
+  saved_hours_extrapolated: number | null;
+  gross_savings_eur: number;
+  license_costs_eur: number;
+  net_savings_eur: number;
+  /** null when license costs are 0. */
+  roi_multiple: number | null;
+}
+
+export type GapPairKey = "strategy" | "competence" | "benefit";
+
+/** One mirrored perception-gap pair (SPEC.md §10). */
+export interface GapPairResult {
+  pair: GapPairKey;
+  employee_value: number | null;
+  leadership_value: number | null;
+  /** leadership − employee; positive = Führung optimistischer. */
+  gap: number | null;
+  n_employee: number;
+  n_leadership: number;
+}
+
+/** One heatmap cell (departments × weekly dimensions), k-anonymity aware. */
+export interface HeatmapCell {
+  /** null = org total. */
+  department_id: DepartmentId | null;
+  dimension: WeeklyDimension;
+  /** 0..10 (adoption share scaled ×10); null when suppressed or no data. */
+  value: number | null;
+  /** Respondent proxy behind the cell (for display: "n < k" when suppressed). */
+  n: number;
+  suppressed: boolean;
+}
+
+/** Share of pulse respondents naming a tool as most-used (W1.2). */
+export interface ToolUsageStat {
+  tool_value: string;
+  mentions: number;
+  total: number;
+  /** mentions ÷ total; null when total = 0. */
+  share: number | null;
+}
+
+/** Share of M3.2 answers wishing training on a topic. */
+export interface TrainingWishStat {
+  topic: string;
+  count: number;
+  total: number;
+  share: number;
+}
+
+/** A rule that fired during evaluation (before status overrides). */
+export interface TriggeredRecommendation {
+  rule_key: string;
+  /** Discriminator (tool value, gap pair key, topic); "" when none. */
+  context: string;
+  /** German sentence describing the concrete finding, for the card. */
+  detail: string;
+}
+
 /**
  * A selectable demo identity for the prototype's role switcher
  * (SPEC.md §13 Phase 1 — "Demo-Modus statt Login").

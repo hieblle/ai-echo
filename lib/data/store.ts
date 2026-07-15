@@ -22,7 +22,11 @@ import type {
   NewSurveyResponse,
   OrgId,
   Organization,
+  OrgToolSetting,
+  ParticipationStat,
   Question,
+  RecommendationRule,
+  RecommendationState,
   RespondentProfile,
   SurveyResponse,
   TemplateKey,
@@ -37,7 +41,11 @@ export interface Store {
   // --- Organization & catalog ------------------------------------------
 
   getOrganization(orgId: OrgId): Promise<Organization | null>;
+  getOrganizationBySlug(slug: string): Promise<Organization | null>;
+  listOrganizations(): Promise<Organization[]>;
   listDepartments(orgId: OrgId): Promise<Department[]>;
+  /** Configured AI tools with license costs (SPEC.md §6 org_settings_tools). */
+  listToolSettings(orgId: OrgId): Promise<OrgToolSetting[]>;
   /** Active questions of a template, ordered by sort_order. */
   listQuestions(templateKey: TemplateKey): Promise<Question[]>;
   /** Demo identities for the prototype's role switcher (Phase 1–3 only). */
@@ -62,4 +70,16 @@ export interface Store {
   submitResponses(responses: NewSurveyResponse[]): Promise<void>;
   /** All stored responses of an org (dev/demo introspection; Phase 2 KPIs). */
   listResponses(orgId: OrgId): Promise<SurveyResponse[]>;
+
+  // --- Participation & recommendations (Phase 2 dashboard) ---------------
+
+  listParticipationStats(orgId: OrgId): Promise<ParticipationStat[]>;
+  /** Append cycle participation aggregates (demo generator, Phase 2/3). */
+  addParticipationStats(stats: ParticipationStat[]): Promise<void>;
+  /** Active recommendation rules R1–R7 (global seed, SPEC.md §11). */
+  listRules(): Promise<RecommendationRule[]>;
+  /** Persisted done/dismissed decisions for derived recommendations. */
+  listRecommendationStates(orgId: OrgId): Promise<RecommendationState[]>;
+  /** Upsert one decision, keyed by (org_id, rule_key, context). */
+  setRecommendationState(state: RecommendationState): Promise<void>;
 }

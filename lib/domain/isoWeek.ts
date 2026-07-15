@@ -42,3 +42,12 @@ export function previousIsoWeek(week: string): string {
   const prevYear = year - 1;
   return `${prevYear}-W${String(weeksInIsoYear(prevYear)).padStart(2, "0")}`;
 }
+
+/** The ISO week immediately after the given one (handles year rollover). */
+export function nextIsoWeek(week: string): string {
+  const { year, week: wk } = parseIsoWeek(week);
+  if (wk < weeksInIsoYear(year)) {
+    return `${year}-W${String(wk + 1).padStart(2, "0")}`;
+  }
+  return `${year + 1}-W01`;
+}
