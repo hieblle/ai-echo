@@ -20,16 +20,17 @@ export default function Home() {
 
       <section className="rounded-lg border bg-card p-6 text-card-foreground">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Phase 1 — Klickbarer Survey-Prototyp
+          Phase 2 — Dashboard auf synthetischen Daten
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Läuft ohne Datenbank, Auth oder Secrets: Alle vier Befragungs-Flows
-          (Onboarding, Weekly, Monthly, Leadership) sind im Demo-Modus mit
-          Rollen-Umschalter durchspielbar. Das Dashboard folgt in Phase 2.
+          im Demo-Modus plus Dashboard mit ROI, Perception Gap, Heatmap und
+          Empfehlungen — auf 6 Wochen generierter Demo-Daten für drei
+          Beispiel-Organisationen.
         </p>
         <ul className="mt-4 space-y-1 text-sm">
-          <li>Next.js 15 · TypeScript strict · Tailwind + shadcn/ui</li>
-          <li>Rotation & Conditional Logic unit-getestet · Mobile-first</li>
+          <li>Next.js 15 · TypeScript strict · Tailwind + shadcn/ui · Recharts</li>
+          <li>KPI-, Trigger- & Rotations-Engine als pure functions, unit-getestet</li>
           <li>
             k-Anonymität serverseitig, Default k&nbsp;=&nbsp;{K_ANONYMITY_DEFAULT}
           </li>
@@ -38,10 +39,10 @@ export default function Home() {
 
       <div className="flex flex-wrap gap-3">
         <Button asChild size="lg">
-          <Link href="/demo">Demo starten</Link>
+          <Link href="/demo">Befragungs-Demo</Link>
         </Button>
-        <Button variant="outline" disabled>
-          Dashboard (Phase 2)
+        <Button asChild size="lg" variant="outline">
+          <Link href="/dashboard">Dashboard</Link>
         </Button>
       </div>
     </main>

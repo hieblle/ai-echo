@@ -52,4 +52,30 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Data-viz tokens (validated reference palette, see dataviz skill).
+     The prototype renders light mode only; dark steps come with the theme
+     toggle in a later phase. */
+  :root {
+    --viz-series-1: #2a78d6; /* Mitarbeitende */
+    --viz-series-2: #008300; /* Führungskräfte */
+    --viz-deemphasis: #c3c2b7;
+    --viz-grid: #e1e0d9;
+    --viz-muted: #898781;
+    --viz-delta-good: #006300;
+    --viz-delta-bad: #d03b3b;
+  }
+}
+
+/* Print styles for the monthly report route (SPEC §13 Phase 2). */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+  .print-break-before {
+    break-before: page;
+  }
+  body {
+    background: #fff;
+  }
 }
