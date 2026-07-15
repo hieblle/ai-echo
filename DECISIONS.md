@@ -6,6 +6,94 @@ weiterarbeiten"). Neueste Einträge oben.
 
 ---
 
+## Phase 2 — Dashboard auf synthetischen Daten (2026-07-15)
+
+Umgesetzt nach SPEC.md §13 (Phase 2). Akzeptanz verifiziert: alle §10-Formeln
+unit-getestet (Klassenmitten, Invertierung, NPS, Gap); Abteilung mit n = 4
+(Merlin Marketing) erscheint nirgends einzeln; 6 Empfehlungen feuern auf den
+Demo-Daten (R5 · R4+R6 · R1+R3+R7); Report-Route druckt sauber (Print-CSS
+im Browser verifiziert).
+
+### D2.1 — KPI-Konventionen (lib/domain/kpi.ts)
+Respondenten-Proxy für anonyme Zeilen = MAX Antwortzahl eines einzelnen
+Fragecodes im Betrachtungsraum (bester Unterschätzer, da jede Person eine
+Frage höchstens einmal pro Zyklus beantwortet). Indizes als Mittel der
+Frage-Mittelwerte („Mittel aus X und Y", §10), fehlende Seite fällt auf die
+andere zurück. ROI konservativ: nur Σ W2.1-Klassenmitten der letzten 4 Wochen,
+M1.1-Selbstschätzungen fließen bewusst NICHT ein (§10 „konservativ");
+Hochrechnung als Zweitwert über die Ø-Teilnahmequote. M1.3 ist monatlich und
+wird beim kombinierten Effizienzindex nicht wochen-gefiltert. Baseline =
+Mittel der ersten beiden Pulse-Wochen (der Onboarding-Teil der SPEC-Baseline
+hat keine Index-Quellen). Fehlgeformte Antworten werden still ignoriert.
+
+### D2.2 — Dünne-Stichproben-Guard für die Adoption (Verifikations-Fund)
+Produkteigenheit: In Wochen, in denen die Rotation W1.1 nicht zieht, stammen
+die einzigen W1.1-Antworten von Nicht-Nutzern (Kurz-Pulse, per Definition
+„none") — der Wochenwert wäre strukturell verzerrt (Screenshot zeigte 0 %
+neben 70 % in der Heatmap). Fix: `WEEKLY_ADOPTION_MIN_SAMPLE = 5` (Stich-
+probenboden, KEINE k-Anonymität); Wochen darunter gelten nicht als Evidenz —
+Trigger R1 überspringt sie, die Sparkline zeigt eine Lücke, die Kachel nutzt
+`pooledAdoption` über 4 Wochen (Baseline: erste 2 Wochen gepoolt).
+
+### D2.3 — Heatmap: k-Qualifikation pro Abteilungs-Woche
+Zelle aggregiert nur Wochen, in denen der Abteilungs-Respondenten-Proxy
+`meetsKAnonymity(n, k)` erfüllt; keine qualifizierte Woche ⇒ Zelle zeigt
+„n < k" statt eines Werts. Org-Gesamtzeile ohne Unterdrückung. Adoption auf
+der 0–10-Farbskala als Anteil × 10.
+
+### D2.4 — Trigger-Semantik (lib/domain/triggers.ts)
+Alle Schwellen strikt (< bzw. >, Grenzwert feuert nicht). R3 „sinkt 3 Zyklen
+in Folge" = 4 Werte mit 3 strikten Rückgängen (Plateau bricht die Serie).
+R5-Nutzung = W1.2-„meistgenutzt"-Anteil im Fenster, Daten-Guard: feuert erst
+ab 10 W1.2-Antworten; Tool ohne Nennung zählt als 0 %. R6 nur bei positivem
+Gap (> +3, Führung optimistischer — §2 P3 rahmt das Risiko so). R1/R7 werten
+die letzten zwei Wochen MIT Daten. Kurs-URLs der Regel-Seeds sind Platzhalter
+(academy.dbrains.example), bis die echten Deep-Links feststehen.
+
+### D2.5 — Teilnahme als Aggregat-Statistik bis Phase 4
+`ParticipationStat` (invited/completed pro Zyklus) statt personenbezogener
+`participations`-Zeilen — das Dashboard braucht nur die Quote, und der
+Prototyp bleibt frei von Fake-Personendaten. Phase 4 ersetzt das durch das
+echte §6-Modell.
+
+### D2.6 — Empfehlungen werden abgeleitet, nur der Status wird gespeichert
+Cards entstehen bei jedem Rendern regelbasiert aus den Daten; persistiert
+wird ausschließlich die org_admin-Entscheidung (done/dismissed) mit Schlüssel
+(rule_key, context) — kein Duplikat-Bookkeeping, Re-Evaluation bleibt Quelle
+der Wahrheit.
+
+### D2.7 — Demo-Daten-Generator (lib/seed/demo-data.ts)
+Deterministisch (seeded PRNG, Quoten-Zuteilung nach größtem Rest, damit die
+Zielwerte exakt halten); Wochen müssen konsekutiv sein (Ausschluss-Kette der
+Rotation). Weekly-Codes kommen aus der ECHTEN Rotation inkl. Vorwochen-
+Ausschluss; ~10 % Nicht-Nutzer je Org beantworten die Kurzvariante (dadurch
+gibt es jede Woche W1.1-Daten). Monats-/Leadership-Zyklen bei
+weekIndex % 4 === 3; „Woche simulieren" setzt exakt diese Kadenz fort.
+Monats-Respondenten werden als frische Zeilen modelliert (~70 % der
+Wochen-Respondenten); der zusätzliche Org-Lead trägt department_id null.
+Datei heißt `orgs-demo.ts` (statt `orgs.demo.ts` aus §16.3 — konsistent mit
+dem übrigen Namensschema). Eingebaute Auffälligkeiten: Merlin Marketing
+Headcount 4 (k-Anonymität), Merlin Copilot bezahlt & <15 % genutzt (R5),
+SPAR M5.1↔F6-Gap ≈ 4,3 (R6) + Prompt-Engineering-Wunsch ≈ 49 % (R4), REWE
+Adoption < 50 % durchgängig (R1) + W4.2 fällt 4 Wochen strikt (R3) +
+Teilnahme zuletzt 2× < 40 % (R7); REWE-Vertrauen bleibt ≥ 5,5 (R2 feuert
+bewusst nicht).
+
+### D2.8 — Store-Seeding beim ersten Zugriff, getStore() ist async
+Der Singleton generiert beim ersten Zugriff 6 ABGESCHLOSSENE Wochen (bis zur
+Vorwoche) für die drei §16.3-Orgs; Musterwerk bleibt leer (interaktive
+Survey-Demo). getStore() liefert jetzt ein Promise (memoisiert auf
+globalThis), damit das Seeding vor dem ersten Read abgeschlossen ist.
+
+### D2.9 — Dashboard-Darstellung
+Viz-Tokens nur für Light Mode (Theme-Toggle existiert noch nicht); Recharts
+nur für die Sparklines, Heatmap und Gap-Dumbbells als Server-SVG/HTML ohne
+Client-JS; Kategorial-Paar (MA blau / FK grün) und sequentielle Blau-Rampe
+aus der validierten Referenzpalette (Validator-Checks bestanden).
+Report-Monat = Kalendermonat des Wochen-Donnerstags (ISO 8601).
+
+---
+
 ## Phase 1 — Klickbarer Survey-Prototyp (2026-07-15)
 
 Umgesetzt nach SPEC.md §13 (Phase 1). Akzeptanz: Pulse am Handy < 60 Sek

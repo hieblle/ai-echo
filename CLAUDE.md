@@ -6,7 +6,7 @@ Webapp „KI-Barometer": macht den Erfolg von KI-Einführungen in Unternehmen me
 **Vollständige Spezifikation: `SPEC.md` — vor jeder Arbeit den relevanten Abschnitt lesen.** Annahmen und Abweichungen in `DECISIONS.md` dokumentieren (anlegen, falls nicht vorhanden).
 
 ## Aktuelle Phase
-**Phase 1 abgeschlossen → als Nächstes Phase 2** (SPEC.md Abschnitt 13). Diese Zeile beim Phasenwechsel aktualisieren.
+**Phase 2 abgeschlossen → als Nächstes Phase 3 (Testrunde & GO/NO-GO)** (SPEC.md Abschnitt 13). Diese Zeile beim Phasenwechsel aktualisieren.
 
 ## Wichtigste Regel: Prototype-first
 **Bis einschließlich Phase 3 gibt es KEINE Datenbank, KEIN Auth, KEINE E-Mails, KEINE Secrets.**
