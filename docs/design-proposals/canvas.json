@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Option A · Klar & Fokussiert", "x": 0, "y": 0, "w": 1280, "h": 1100 },
+    { "file": "DarkCockpit.dc.html", "title": "Option B · Dark Cockpit", "x": 1400, "y": 0, "w": 1280, "h": 1100 },
+    { "file": "WarmMenschlich.dc.html", "title": "Option C · Warm & Menschlich", "x": 2800, "y": 0, "w": 1280, "h": 1100 }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -170, "w": 560, "text": "3 Designrichtungen für das KI-Barometer-Dashboard (gleiche Inhalte, echte Kennzahlen-Struktur aus der App).\nA: nah an der jetzigen App, aufgeräumtes SaaS-Design. Ruhig und vertrauensbildend.\nB: dunkles Analytics-Cockpit für den Management-Auftritt. Zahlen dominieren.\nC: warm und menschlich, Serifen-Akzente. Betont Kultur statt Kontrolle." }
+  ],
+  "launch": { "view": "canvas" }
+}
