@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { setDemoFormOfAddress } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
-import { getStore } from "@/lib/server/store-instance";
+import { getDemoStore } from "@/lib/server/store-instance";
 import { cn } from "@/lib/utils";
 import type { TemplateKey } from "@/lib/types";
 
@@ -47,7 +47,7 @@ interface DemoPageProps {
 
 export default async function DemoPage({ searchParams }: DemoPageProps) {
   const { persona: personaParam } = await searchParams;
-  const store = await getStore();
+  const store = await getDemoStore();
 
   const org = await store.getOrganization(DEMO_ORG_ID);
   const personas = await store.listPersonas(DEMO_ORG_ID);

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { GapDumbbells } from "@/components/dashboard/gap-dumbbell";
 import { getReportData } from "@/lib/server/dashboard-service";
+import { getDemoStore } from "@/lib/server/store-instance";
 import type { WeeklyKpis } from "@/lib/types";
 
 // Stateful in-memory demo data — always render fresh.
@@ -57,7 +58,7 @@ export default async function ReportPage({
   params: Promise<{ slug: string; month: string }>;
 }) {
   const { slug, month } = await params;
-  const data = await getReportData(slug, month);
+  const data = await getReportData(await getDemoStore(), slug, month);
   if (!data) notFound();
 
   const {

@@ -11,6 +11,7 @@ import {
   type DashboardRecommendation,
 } from "@/lib/server/dashboard-service";
 import { WEEKLY_ADOPTION_MIN_SAMPLE } from "@/lib/domain/kpi";
+import { getDemoStore } from "@/lib/server/store-instance";
 import { cn } from "@/lib/utils";
 import type { WeeklyKpis } from "@/lib/types";
 
@@ -167,7 +168,7 @@ export default async function DashboardPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const data = await getDashboardData(slug);
+  const data = await getDashboardData(await getDemoStore(), slug);
   if (!data) notFound();
 
   const {

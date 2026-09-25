@@ -28,7 +28,7 @@ import type {
   RespondentProfile,
   TemplateKey,
 } from "@/lib/types";
-import { getStore } from "./store-instance";
+import { getDemoStore } from "./store-instance";
 
 export interface SurveySession {
   org: Organization;
@@ -83,7 +83,7 @@ export async function getSurveySession(
   personaId: string,
   now: Date,
 ): Promise<SurveySession> {
-  const store = await getStore();
+  const store = await getDemoStore();
 
   const org = await store.getOrganization(DEMO_ORG_ID);
   if (!org) throw new Error("demo organization missing");

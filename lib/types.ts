@@ -371,6 +371,92 @@ export interface TriggeredRecommendation {
   detail: string;
 }
 
+// --- Accounts, cycles & participation (Phase 4, SPEC.md §6) ----------------
+
+/** Roles a person can hold INSIDE an org; `platform_admin` is global (env). */
+export type OrgRole = Exclude<Role, "platform_admin">;
+
+export type MembershipStatus = "invited" | "active" | "removed";
+
+/**
+ * A person's membership in an org (SPEC.md §6 `memberships`). This is the
+ * ONLY place a user id lives; responses never reference it.
+ */
+export interface Membership {
+  id: string;
+  org_id: OrgId;
+  /** Supabase auth user id. */
+  user_id: string;
+  /** Kept for admin lists/reminders; mirrors the auth user's email. */
+  email: string;
+  department_id: DepartmentId | null;
+  role: OrgRole;
+  status: MembershipStatus;
+  /** ISO timestamp. */
+  invited_at: string;
+  /** ISO timestamp of the first login; null while invited. */
+  joined_at: string | null;
+}
+
+export type NewMembership = Omit<Membership, "id">;
+
+export type CycleStatus = "scheduled" | "open" | "closed";
+
+/** One survey run of an org (SPEC.md §6 `survey_cycles`). */
+export interface SurveyCycle {
+  id: string;
+  org_id: OrgId;
+  template_key: TemplateKey;
+  /** ISO week the cycle belongs to, e.g. "2026-W29". */
+  week: string;
+  /** Calendar dates (YYYY-MM-DD), inclusive. */
+  period_start: string;
+  period_end: string;
+  status: CycleStatus;
+  /** ISO timestamp; null until the reminder went out (max. one per cycle). */
+  reminder_sent_at: string | null;
+}
+
+export type NewSurveyCycle = Omit<SurveyCycle, "id">;
+
+export type ParticipationStatus = "invited" | "completed" | "skipped";
+
+/**
+ * Who took part in which cycle — for reminders and the participation rate
+ * ONLY. Deliberately shares no key with `responses` (SPEC.md §7.1).
+ */
+export interface Participation {
+  id: string;
+  cycle_id: string;
+  membership_id: string;
+  status: ParticipationStatus;
+  /** ISO timestamp rounded to the hour; null while invited. */
+  completed_at: string | null;
+}
+
+export type NewParticipation = Omit<Participation, "id">;
+
+/** Fields an org admin / platform admin may change after creation. */
+export type OrganizationPatch = Partial<
+  Pick<
+    Organization,
+    | "name"
+    | "logo_url"
+    | "primary_color"
+    | "hourly_rate_default"
+    | "form_of_address"
+    | "k_anonymity_min"
+  >
+>;
+
+export type MembershipPatch = Partial<
+  Pick<Membership, "department_id" | "role" | "status" | "joined_at">
+>;
+
+export type CyclePatch = Partial<
+  Pick<SurveyCycle, "status" | "reminder_sent_at">
+>;
+
 /**
  * A selectable demo identity for the prototype's role switcher
  * (SPEC.md §13 Phase 1 — "Demo-Modus statt Login").

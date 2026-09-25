@@ -17,7 +17,7 @@ import { generateOrgWeek } from "@/lib/seed/demo-data";
 import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
 import { DEMO_ORG_HEADCOUNTS } from "@/lib/seed/orgs-demo";
 import { getSurveySession, isTemplateKey } from "@/lib/server/survey-service";
-import { getStore } from "@/lib/server/store-instance";
+import { getDemoStore } from "@/lib/server/store-instance";
 import type {
   AnswerValue,
   Choice,
@@ -256,7 +256,7 @@ export async function submitSurvey(input: unknown): Promise<SubmitSurveyResult> 
       if (error) return { ok: false, error: `Ungültige Antwort (${error}).` };
     }
 
-    const store = await getStore();
+    const store = await getDemoStore();
 
     // The onboarding baseline belongs to the department chosen in O1, not to
     // the persona's pre-onboarding default — resolve it BEFORE writing rows.
@@ -370,7 +370,7 @@ export async function simulateWeek(): Promise<void> {
 }
 
 async function doSimulateWeek(): Promise<void> {
-  const store = await getStore();
+  const store = await getDemoStore();
   for (const org of await store.listOrganizations()) {
     const headcounts = DEMO_ORG_HEADCOUNTS[org.id];
     if (!headcounts) continue; // orgs without generator profile (Musterwerk)
@@ -411,7 +411,7 @@ export async function updateRecommendationStatus(
 ): Promise<void> {
   const parsed = recommendationStatusSchema.safeParse(input);
   if (!parsed.success) return;
-  const store = await getStore();
+  const store = await getDemoStore();
   // Server actions are public endpoints: verify org and rule instead of
   // letting the store throw (would 500) or the state map grow unboundedly.
   if (!(await store.getOrganization(parsed.data.orgId))) return;
@@ -431,7 +431,7 @@ export async function setDemoFormOfAddress(form: unknown): Promise<void> {
   // Server actions are public endpoints — validate even the demo toggle.
   const parsed = z.enum(["du", "sie"]).safeParse(form);
   if (!parsed.success) return;
-  const store = await getStore();
+  const store = await getDemoStore();
   await store.setFormOfAddress(DEMO_ORG_ID, parsed.data);
   revalidatePath("/", "layout");
 }

@@ -21,6 +21,7 @@ import {
 } from "@/lib/domain/kpi";
 import { parseIsoWeek } from "@/lib/domain/isoWeek";
 import { evaluateTriggers } from "@/lib/domain/triggers";
+import type { Store } from "@/lib/data/store";
 import type {
   Department,
   GapPairResult,
@@ -35,7 +36,6 @@ import type {
   TrainingWishStat,
   WeeklyKpis,
 } from "@/lib/types";
-import { getStore } from "./store-instance";
 
 export interface DashboardRecommendation {
   rule: RecommendationRule;
@@ -132,13 +132,13 @@ function sortedWeeklyWeeks(stats: ParticipationStat[]): string[] {
  * `codes` optionally narrows to specific questions (report use-case section).
  */
 async function collectFreeTexts(
+  store: Store,
   responses: SurveyResponse[],
   org: Organization,
   latestWeek: string | undefined,
   limit: number,
   codes?: readonly string[],
 ): Promise<FreeTextHighlight[]> {
-  const store = await getStore();
   const questionText = new Map<string, string>();
   for (const template of ["weekly", "monthly", "leadership"] as const) {
     for (const q of await store.listQuestions(template)) {
@@ -178,10 +178,10 @@ function effectiveHourlyRate(
 }
 
 async function assemble(
+  store: Store,
   org: Organization,
   weeks: string[],
 ): Promise<Omit<DashboardData, "orgs">> {
-  const store = await getStore();
   const departments = await store.listDepartments(org.id);
   const allResponses = await store.listResponses(org.id);
   const participations = await store.listParticipationStats(org.id);
@@ -266,15 +266,15 @@ async function assemble(
     toolUsage,
     trainingWishes,
     recommendations,
-    freeTexts: await collectFreeTexts(responses, org, latestWeek, 6),
+    freeTexts: await collectFreeTexts(store, responses, org, latestWeek, 6),
     totalResponses: allResponses.length,
   };
 }
 
 export async function getDashboardData(
+  store: Store,
   slug: string,
 ): Promise<DashboardData | null> {
-  const store = await getStore();
   const org = await store.getOrganizationBySlug(slug);
   if (!org) return null;
   const orgs = await store.listOrganizations();
@@ -289,7 +289,7 @@ export async function getDashboardData(
     ].sort();
   }
 
-  const data = await assemble(org, weeks);
+  const data = await assemble(store, org, weeks);
   return { ...data, orgs };
 }
 
@@ -309,11 +309,11 @@ export interface ReportData extends Omit<DashboardData, "orgs"> {
 }
 
 export async function getReportData(
+  store: Store,
   slug: string,
   month: string,
 ): Promise<ReportData | null> {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return null;
-  const store = await getStore();
   const org = await store.getOrganizationBySlug(slug);
   if (!org) return null;
 
@@ -322,7 +322,7 @@ export async function getReportData(
   const monthWeeks = allWeeks.filter((w) => monthOfIsoWeek(w) === month);
   if (monthWeeks.length === 0) return null;
 
-  const data = await assemble(org, monthWeeks);
+  const data = await assemble(store, org, monthWeeks);
   const allResponses = await store.listResponses(org.id);
 
   // SPEC §10: the baseline is the PROGRAM baseline (first two measurement
@@ -399,6 +399,7 @@ export async function getReportData(
     month,
     monthlyScopeWeek,
     useCases: await collectFreeTexts(
+      store,
       [...monthRows, ...monthlyRows],
       org,
       monthWeeks[monthWeeks.length - 1],
