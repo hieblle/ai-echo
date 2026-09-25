@@ -177,7 +177,7 @@ recommendations      id, org_id, cycle_id, rule_key, status ('open'|'done'|'dism
 reports              id, org_id, period (YYYY-MM), pdf_path, sent_at
 ```
 
-**Hinweis zur Umsetzung von `respondent_profiles`:** Das Pseudonym-Token wird beim Onboarding erzeugt und im Supabase-`user_metadata` des Users gespeichert (client-verfügbar). Beim Absenden einer Befragung schickt der Client das Token mit; der Server nutzt es NUR, um `tools_used` (Conditional Logic) und `question_history` (Rotation) zu lesen/schreiben — und schreibt die Antworten OHNE Token in `responses`. Die Zuordnung Token↔User existiert nirgends in der DB. Trade-off ist dokumentiert: bei Abteilungen < 5 werden Antworten gar nicht abteilungsscharf ausgewertet (siehe Abschnitt 7).
+**Hinweis zur Umsetzung von `respondent_profiles` (korrigiert in Phase 4, DECISIONS D4.2):** Der Schlüssel `respondent_key` ist ein serverseitig berechneter HMAC-SHA256 über die Membership-ID mit einem App-Secret (`PSEUDONYM_SECRET`); er wird nirgends gespeichert und nie an den Client gegeben. Der Server nutzt das Profil NUR für `tools_used` (Conditional Logic), `question_history` (Rotation) und den Onboarding-Status — und schreibt die Antworten OHNE jeden Schlüssel in `responses`. Eine Verknüpfung Profil ↔ Person ist nur mit Datenbank UND App-Secret möglich, also für den Betreiber (dbrains) technisch nicht ausgeschlossen, sondern organisatorisch (AVV, Vier-Augen-Prinzip) abgesichert. Die frühere Formulierung „Token liegt nur clientseitig" war technisch nicht haltbar (`user_metadata` liegt in `auth.users`). Trade-off bleibt: bei Abteilungen < k werden Antworten gar nicht abteilungsscharf ausgewertet (siehe Abschnitt 7).
 
 ---
 

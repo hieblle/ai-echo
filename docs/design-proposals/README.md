@@ -19,4 +19,5 @@ Companion Figma file (to be populated with these artboards):
 https://www.figma.com/design/kugtMn53f6SRupeYtF37v2
 
 These mockups are design exploration only — they are not part of the
-Next.js app and are not imported by any code.
+Next.js app and are not imported by any code. Phase 4 setup lives in
+`docs/SETUP-PHASE4.md`.

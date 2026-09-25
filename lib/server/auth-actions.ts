@@ -6,7 +6,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getAppUrl } from "./env";
+import { getAppUrl, getPlatformAdminEmails } from "./env";
 import { createSupabaseServerClient } from "./supabase-auth";
 
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
@@ -32,7 +32,8 @@ export async function requestMagicLink(formData: FormData): Promise<void> {
     email: parsed.data,
     options: {
       // Only invited people can log in — no self-service signup (SPEC §4.1).
-      shouldCreateUser: false,
+      // Platform admins (dbrains) bootstrap themselves: nobody invites them.
+      shouldCreateUser: getPlatformAdminEmails().includes(parsed.data),
       emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });

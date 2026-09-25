@@ -6,8 +6,17 @@ weiterarbeiten"). Neueste Einträge oben.
 
 ---
 
-## Offene Punkte (Stand Übergang Phase 3 → 4, 2026-09-25)
+## Offene Punkte (Stand Phase 4, 2026-09-25)
 
+- [ ] **Supabase-Projekt anlegen und Keys eintragen** (Cloud-Umgebung, Vercel,
+      lokal) → Migration einspielen, Integrationstests laufen lassen, Org 0
+      anlegen. Anleitung: `docs/SETUP-PHASE4.md`.
+- [ ] **Supabase Auth konfigurieren:** Site URL + Redirect URLs auf die
+      Vercel-Domain; vor dem Dogfooding mit ≥ 5 Personen einen Custom-SMTP
+      hinterlegen (Standardversand hat ein sehr niedriges Stundenlimit).
+- [ ] **Phase-4-Akzeptanz nachweisen:** Zwei-Org-Isolationstest gegen die
+      echte Datenbank (Integrationssuite) und interner Testlauf mit ≥ 5
+      Teilnehmenden über eine Woche (Einladung → Pulse → Aggregation).
 - [ ] **Hosting vor Kundenveröffentlichung:** Vercel Pro oder anderer Anbieter
       (D3.1). Bis dahin Vercel Hobby.
 - [ ] **E-Mail-Lösung für Massenversand/Skalierung:** Anbieter (Brevo, Resend,
@@ -19,6 +28,99 @@ weiterarbeiten"). Neueste Einträge oben.
       nachgereicht → Fragebogen dann als v1.2 einfrieren.
 - [ ] **Betriebsrat-/DSB-Zweiseiter** (Phase 5) muss die ehrliche
       Anonymitätszusage aus D3.3 (4) enthalten.
+
+---
+
+## Phase 4 — Persistenz, Auth & erste echte Testteilnehmer (2026-09-25, in Umsetzung)
+
+Umgesetzt nach SPEC.md §13 (Phase 4) auf Basis der Leitplanken D3.1–D3.3.
+Stand: Code vollständig (Schema + RLS, `SupabaseStore`, Magic-Link-Login,
+Rollen, Mitglieder-Befragungsfluss mit Zyklen und Teilnahmen, rollenbasiertes
+Dashboard, Org-Setup, Einladungen, Cron), Unit-Tests und Schema-Guards grün.
+Die Integrationstests gegen Supabase und der interne Testlauf (Org 0) folgen,
+sobald das Projekt angelegt ist (`docs/SETUP-PHASE4.md`). Die Demo-Routen
+laufen unverändert ohne Infrastruktur weiter.
+
+### D4.1 — Fragebogen und Regeln bleiben im Repo, nicht in der DB
+SPEC §5/§6 sehen Tabellen `survey_templates`, `questions` und
+`recommendation_rules` vor. Für den Piloten bleiben Fragen (v1.2-Kandidat)
+und Regeln versionierte Seeds in `lib/seed/`; der `SupabaseStore` bekommt
+sie beim Bau übergeben. Gründe: eine Quelle der Wahrheit, keine Sync-Logik,
+jede Änderung läuft durch Review und Tests. Tabellen kommen, sobald
+org-spezifische Fragen (Backlog #8) oder Kurs-URLs pro Org gebraucht werden.
+`cycle_questions` entfällt ebenfalls: die Org-Ziehung ist deterministisch aus
+(Org, Woche) reproduzierbar (D1.x).
+
+### D4.2 — Respondent-Key per HMAC statt Client-Token
+SPEC §6 wollte ein Pseudonym-Token im `user_metadata` des Users. Umgesetzt:
+`respondent_key = HMAC-SHA256(PSEUDONYM_SECRET, membership_id)`, serverseitig
+berechnet, nirgends gespeichert. `respondent_profiles` kennt nur diesen Hash,
+`responses` gar keinen Schlüssel (Schema-Test erzwingt das). Ehrliche Zusage:
+Eine Verknüpfung Profil ↔ Person braucht Datenbank UND App-Secret;
+gegenüber dbrains als Betreiber (hat beides) ist die Unverknüpfbarkeit
+organisatorisch (AVV, Vier-Augen-Prinzip), nicht technisch. Eine Rotation des
+Secrets verwaist alle Profile (Onboarding wäre neu nötig) — Secret sichern.
+SPEC §6 entsprechend korrigiert.
+
+### D4.3 — Mandantentrennung: Server-Schicht zuerst, RLS als zweite Linie
+Der `SupabaseStore` läuft mit dem Service-Role-Key (umgeht RLS). Die
+Isolation sitzt in `lib/server/auth.ts`: jede Produktroute löst den Viewer
+(serverseitig verifizierter JWT) und seine Mitgliedschaft auf; der Store
+bekommt nur die `org_id` einer verifizierten Mitgliedschaft. RLS ist trotzdem
+auf allen Tabellen aktiv: Mitglieder dürfen per Anon-Key nur ihren
+Org-Kontext lesen (Org, Abteilungen, Tools, eigene Mitgliedschaft, Zyklen,
+eigene Teilnahmen); `responses`, `respondent_profiles` und
+`recommendation_states` haben KEINE Client-Policies, anonyme Clients lesen
+gar nichts. Abweichung von D3.3 (2), das Dashboard-Lesezugriffe im
+Nutzerkontext vorsah: per RLS lesbare Rohantworten hätten Teamleitungen
+Zeilen unterhalb von k über die API zugänglich gemacht — Rohantworten
+erreichen nie einen Browser-Client (SPEC §7.2). Der Integrationstest prüft
+beides (wird ohne Keys übersprungen).
+
+### D4.4 — Zyklen binden Antworten an ihre Woche
+Mitglieder beantworten Pulse nur in einem OFFENEN Zyklus. `created_week` und
+der logische `cycle_id` (`weekly-2026-W39`, auch in der DB ein Textschlüssel,
+kein FK) sind die Woche des Zyklus, nicht die Wanduhr: alle Mitglieder teilen
+eine Org-Ziehung, Dashboard und Report scopen konsistent, ein Zyklus darf
+über die Wochengrenze offen bleiben. Onboarding hat keinen Zyklus (aktuelle
+Woche). Duplikat-Schutz ist die `participations`-Zeile (`completed_at` auf
+die Stunde gerundet); die Profil-Liste `completed_cycles` ist nur noch Demo.
+Reihenfolge beim Absenden: Antworten schreiben, dann Teilnahme abschließen —
+ein Wettlauf zweier Absendungen ist theoretisch möglich und akzeptiert.
+
+### D4.5 — Rollen-Sicht im Dashboard (SPEC §7.4)
+`team_lead`: nur die eigene Abteilung; die komplette Ansicht ist unterdrückt,
+wenn die Abteilung im Zeitraum unter k liegt, Wochenwerte werden einzeln
+k-geprüft; ROI, Empfehlungen und Freitexte sind Org-Ebene und nicht Teil der
+Team-Sicht; die Teilnahmequote ist org-weit (eine Team-Quote bräuchte einen
+Personen-Join). `employee`: keine Dashboard-Route, nur Teilnahmequote und
+Stimmung org-weit auf `/app` (Transparenz). `org_admin`: alles inkl. Report.
+`platform_admin` (dbrains): alle Orgs, aber keine Befragungen ohne eigene
+Mitgliedschaft — Admins sind keine Respondenten.
+
+### D4.6 — Bootstrap, Migrationen, Mail, Cron
+- `platform_admin` per `PLATFORM_ADMIN_EMAILS` (statt Tabelle): Bootstrap
+  ohne DB-Eingriff, 1–3 dbrains-Adressen; nur diese dürfen sich ohne
+  Einladung anmelden (Self-Signup bleibt aus, SPEC §4.1).
+- Migrationen: `scripts/db-migrate.mjs` (pg) statt Supabase-CLI, schreibt
+  aber in die CLI-Tabelle `supabase_migrations.schema_migrations`, damit
+  `supabase db push` später nahtlos übernehmen kann.
+- Mail (D3.2): ausschließlich Login-Links über Supabase Auth — Einladung =
+  `inviteUserByEmail`, Pulse/Reminder = `signInWithOtp`. Versand hinter dem
+  `Mailer`-Interface; `MAIL_PROVIDER=console` nur ohne Supabase sinnvoll.
+  Einladungen laufen sequenziell; bei 300+ Adressen (SPEC §16.2) vorher
+  Custom-SMTP und Rate-Limits in Supabase prüfen.
+- Cron (D3.1): eine tägliche Route entscheidet selbst (Montag → Pulse,
+  letzter Werktag → Monat + Führung, immer abgelaufene Zyklen schließen),
+  Reminder donnerstags — so reichen zwei Crons auch auf Vercel Hobby.
+  Zeiten in UTC (07:00/08:00 ≈ 09:00/10:00 Wien im Sommer).
+- Org-Admins können Zyklen manuell öffnen/schließen und Erinnerungen
+  auslösen (erster Testlauf, Demo beim Kunden).
+
+### D4.7 — Bewusst nicht in Phase 4
+Datenexport/Org-Löschung (Phase 5, DSGVO-Basics), PDF-Report und
+Mailversand des Reports (Phase 5), Bounce-Tracking für CSV-Einladungen über
+das Ergebnis-Resümee hinaus, Team-Teilnahmequote, Kurs-URLs pro Org.
 
 ---
 

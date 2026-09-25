@@ -5,8 +5,8 @@ on:
     branches: [main]
   pull_request:
 
-# No secrets, no external services — the prototype runs entirely on repo data
-# (CLAUDE.md: no database/auth/env before Phase 4).
+# No secrets, no external services: unit tests and the demo run on repo data;
+# the Supabase integration suite skips itself when no credentials are set.
 permissions:
   contents: read
 
