@@ -17,5 +17,7 @@ export default async function FinishPage({ searchParams }: FinishPageProps) {
   const env = getSupabaseEnv();
   if (!env) redirect("/app/setup");
   const next = await safeNextPath((await searchParams).next);
-  return <FinishLogin url={env.url} anonKey={env.anonKey} next={next} />;
+  return (
+    <FinishLogin url={env.url} publishableKey={env.publishableKey} next={next} />
+  );
 }

@@ -18,9 +18,9 @@ export default function SetupPage() {
       <ol className="list-decimal space-y-2 pl-5 text-sm">
         <li>
           Umgebungsvariablen setzen: <code>NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
-          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>,{" "}
-          <code>SUPABASE_SERVICE_ROLE_KEY</code> (siehe{" "}
-          <code>.env.example</code>).
+          <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> (sb_publishable_…),{" "}
+          <code>SUPABASE_SECRET_KEY</code> (sb_secret_…) — siehe{" "}
+          <code>.env.example</code>. Vertauschte Keys werden abgewiesen.
         </li>
         <li>
           Migrationen einspielen: <code>pnpm db:migrate</code>.

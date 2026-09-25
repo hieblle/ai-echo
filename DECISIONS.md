@@ -99,6 +99,14 @@ Stimmung org-weit auf `/app` (Transparenz). `org_admin`: alles inkl. Report.
 Mitgliedschaft — Admins sind keine Respondenten.
 
 ### D4.6 — Bootstrap, Migrationen, Mail, Cron
+- **Supabase-Keys:** neues Key-System (`sb_publishable_…` für Browser und
+  Nutzersessions, `sb_secret_…` für den Server-Store und Auth-Admin) statt
+  der Legacy-JWTs `anon`/`service_role`. Variablen
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_SECRET_KEY`, die alten
+  Namen bleiben als Fallback lesbar. `lib/server/env.ts` weist vertauschte
+  Keys ab, weil der Publishable-Wert an Browser geht (`/auth/finish`).
+  supabase-js ≥ 2.7x sendet beide Formate korrekt (`apikey`-Header, Secret
+  nie als Bearer).
 - `platform_admin` per `PLATFORM_ADMIN_EMAILS` (statt Tabelle): Bootstrap
   ohne DB-Eingriff, 1–3 dbrains-Adressen; nur diese dürfen sich ohne
   Einladung anmelden (Self-Signup bleibt aus, SPEC §4.1).

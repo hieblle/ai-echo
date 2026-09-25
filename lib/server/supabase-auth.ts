@@ -1,8 +1,8 @@
 /**
  * Cookie-based Supabase auth client for Server Components, Server Actions and
- * Route Handlers (@supabase/ssr). Uses the ANON key: it only ever handles the
- * session of the calling user. All data access goes through the store
- * (service role) after the server verified who is calling.
+ * Route Handlers (@supabase/ssr). Uses the PUBLISHABLE key: it only ever
+ * handles the session of the calling user. All data access goes through the
+ * store (secret key) after the server verified who is calling.
  */
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
@@ -17,7 +17,7 @@ export async function createSupabaseServerClient(): Promise<ServerSupabase | nul
   const env = getSupabaseEnv();
   if (!env) return null;
   const cookieStore = await cookies();
-  return createServerClient(env.url, env.anonKey, {
+  return createServerClient(env.url, env.publishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

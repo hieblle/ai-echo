@@ -21,18 +21,27 @@ Produktrouten (`/login`, `/app`, `/admin`) brauchen die Konfiguration.
 
 ## 2. Die Zugangsdaten zusammensuchen
 
+Supabase hat sein Key-System umgestellt: Statt der alten JWT-Keys `anon`
+und `service_role` gibt es jetzt einen **Publishable key**
+(`sb_publishable_…`, darf in den Browser) und **Secret keys**
+(`sb_secret_…`, nur für den Server). Die App nutzt genau diese beiden; die
+alten Keys funktionieren zur Not weiterhin (Fallback-Variablennamen in
+`.env.example`), sind aber nicht mehr nötig.
+
 Im Projekt links unten **Project Settings**:
 
 | Wo | Wert | Wird zu |
 | --- | --- | --- |
-| **API** → Project URL | `https://xxxx.supabase.co` | `NEXT_PUBLIC_SUPABASE_URL` |
-| **API** → Project API keys → `anon` `public` | langer Key | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
-| **API** → Project API keys → `service_role` `secret` | langer Key | `SUPABASE_SERVICE_ROLE_KEY` |
+| **Data API** (bzw. **API**) → Project URL | `https://xxxx.supabase.co` | `NEXT_PUBLIC_SUPABASE_URL` |
+| **API Keys** → Reiter „Publishable and secret API keys" → Publishable key | `sb_publishable_…` | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
+| **API Keys** → Secret keys → **Create new API key** (Name z. B. `app-server`) → Wert einmalig kopieren | `sb_secret_…` | `SUPABASE_SECRET_KEY` |
 | **Database** → Connection string → **URI**, Modus „Session" | `postgresql://postgres.xxxx:[PASSWORD]@…:5432/postgres` | `SUPABASE_DB_URL` (Passwort aus Schritt 1 einsetzen) |
 
-Der `service_role`-Key umgeht jede Sicherheitsregel der Datenbank. Er gehört
-nur in Umgebungsvariablen auf dem Server — nie in den Browser, nie in den
-Chat, nie ins Repo.
+Der Secret key umgeht jede Sicherheitsregel der Datenbank. Er gehört nur in
+Umgebungsvariablen auf dem Server — nie in den Browser, nie in den Chat, nie
+ins Repo. Die App weigert sich zu starten, wenn die beiden Keys vertauscht
+eingetragen sind (ein `sb_secret_…` in der Publishable-Variable würde sonst
+an Browser ausgeliefert).
 
 Zwei Geheimnisse selbst erzeugen (Terminal, einmalig):
 
@@ -52,8 +61,8 @@ Vollständige Liste mit Erklärungen: `.env.example`.
 | Variable | Wert |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | aus Schritt 2 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | aus Schritt 2 |
-| `SUPABASE_SERVICE_ROLE_KEY` | aus Schritt 2 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` aus Schritt 2 |
+| `SUPABASE_SECRET_KEY` | `sb_secret_…` aus Schritt 2 |
 | `SUPABASE_DB_URL` | aus Schritt 2 (nur dort, wo die Migration läuft) |
 | `NEXT_PUBLIC_APP_URL` | die öffentliche Adresse, z. B. `https://ai-echo-xyz.vercel.app` (lokal: `http://localhost:3000`) |
 | `PLATFORM_ADMIN_EMAILS` | `leon@dbrains.academy` (mehrere mit Komma) |
@@ -158,7 +167,7 @@ laufen lassen**, nie gegen Produktion.
 
 | Symptom | Ursache / Lösung |
 | --- | --- |
-| Seite „Datenbank nicht konfiguriert" | Eine der drei Supabase-Variablen fehlt an der Stelle, wo die App läuft (Vercel? lokal?). Nach dem Eintragen neu deployen bzw. Server neu starten. |
+| Seite „Datenbank nicht konfiguriert" | Eine der drei Supabase-Variablen fehlt an der Stelle, wo die App läuft (Vercel? lokal?), oder Publishable und Secret key sind vertauscht (dann steht ein Hinweis im Server-Log). Nach dem Eintragen neu deployen bzw. Server neu starten. |
 | Login-Link → „Link ungültig oder abgelaufen" | Redirect URL in Supabase fehlt (Schritt 5.1) oder Link älter als eine Stunde / schon benutzt. |
 | Keine Mail | Spam-Ordner; Stundenlimit des Supabase-Versands (Schritt 5.4); Adresse nicht eingeladen (die App verrät das absichtlich nicht). |
 | `pnpm db:migrate` bricht ab | `SUPABASE_DB_URL` prüfen (Passwort eingesetzt? Modus „Session"?). Netzwerk muss Port 5432 nach außen erlauben. |

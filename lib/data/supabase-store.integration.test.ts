@@ -3,8 +3,8 @@
  * Integration tests against a real Supabase project (Phase 4 acceptance,
  * SPEC §13): two orgs strictly isolated, responses without user link.
  *
- * Skipped unless NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY and
- * SUPABASE_SERVICE_ROLE_KEY are set (CI runs without secrets). Everything
+ * Skipped unless NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ * and SUPABASE_SECRET_KEY are set (CI runs without secrets). Everything
  * created here is prefixed "itest-" and removed afterwards.
  */
 
@@ -44,7 +44,7 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
   beforeAll(async () => {
     store = new SupabaseStore({
       url: env?.url ?? "",
-      serviceRoleKey: env?.serviceRoleKey ?? "",
+      secretKey: env?.secretKey ?? "",
       questions: QUESTIONS,
       rules: RECOMMENDATION_RULES,
     });
@@ -158,7 +158,7 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
     // Obtain a user session without email: magic link → token hash → verifyOtp.
     const link = await admin.auth.admin.generateLink({ type: "magiclink", email });
     expect(link.error).toBeNull();
-    const userClient = createClient(env?.url ?? "", env?.anonKey ?? "", {
+    const userClient = createClient(env?.url ?? "", env?.publishableKey ?? "", {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const verified = await userClient.auth.verifyOtp({
@@ -191,7 +191,7 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
   });
 
   it("anonymous clients read nothing", async () => {
-    const anon = createClient(env?.url ?? "", env?.anonKey ?? "", {
+    const anon = createClient(env?.url ?? "", env?.publishableKey ?? "", {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const result = await anon.from("organizations").select("id");

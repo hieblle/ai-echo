@@ -1,11 +1,12 @@
 /**
  * Supabase-backed `Store` (Phase 4, CLAUDE.md rule 2 / SPEC.md §13).
  *
- * Runs with the SERVICE ROLE key and is therefore server-only: it bypasses
- * Row Level Security, and tenant scoping is the caller's job (every method
- * takes the org id it may touch; the server layer derives that id from a
- * verified membership — DECISIONS D4.3). Raw responses never leave the
- * server: the dashboard service aggregates them k-anonymously.
+ * Runs with the project's SECRET key (`sb_secret_…`, the successor of the
+ * service_role JWT) and is therefore server-only: it bypasses Row Level
+ * Security, and tenant scoping is the caller's job (every method takes the
+ * org id it may touch; the server layer derives that id from a verified
+ * membership — DECISIONS D4.3). Raw responses never leave the server: the
+ * dashboard service aggregates them k-anonymously.
  *
  * Questions and recommendation rules stay versioned in the repo and are
  * handed in at construction (DECISIONS D4.1); everything else lives in
@@ -48,7 +49,8 @@ import type {
 
 export interface SupabaseStoreOptions {
   url: string;
-  serviceRoleKey: string;
+  /** `sb_secret_…` (or a legacy service_role JWT). Never ships to a browser. */
+  secretKey: string;
   questions: Question[];
   rules: RecommendationRule[];
   /** Injected client (tests); created from url + key when omitted. */
@@ -229,7 +231,7 @@ export class SupabaseStore implements Store {
   constructor(options: SupabaseStoreOptions) {
     this.db =
       options.client ??
-      createClient(options.url, options.serviceRoleKey, {
+      createClient(options.url, options.secretKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,

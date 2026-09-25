@@ -93,7 +93,7 @@ export function getAppSupabaseStore(): SupabaseStore | null {
   if (!env) return null;
   globalForStore.__kiBarometerAppStore = new SupabaseStore({
     url: env.url,
-    serviceRoleKey: env.serviceRoleKey,
+    secretKey: env.secretKey,
     questions: QUESTIONS,
     rules: RECOMMENDATION_RULES,
   });
@@ -110,7 +110,7 @@ export function requireAppStore(): Store {
   const store = getAppStore();
   if (!store) {
     throw new Error(
-      "Supabase is not configured (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)",
+      "Supabase is not configured (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY)",
     );
   }
   return store;
