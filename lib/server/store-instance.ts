@@ -68,7 +68,7 @@ async function buildSeededStore(): Promise<Store> {
 
 const globalForStore = globalThis as unknown as {
   __kiBarometerDemoStore?: Promise<Store>;
-  __kiBarometerAppStore?: Store;
+  __kiBarometerAppStore?: SupabaseStore;
 };
 
 export function getDemoStore(): Promise<Store> {
@@ -81,8 +81,11 @@ export function getDemoStore(): Promise<Store> {
   return globalForStore.__kiBarometerDemoStore;
 }
 
-/** The product store, or null while Supabase is not configured. */
-export function getAppStore(): Store | null {
+/**
+ * The concrete Supabase store (for the auth-admin client the mailer needs);
+ * everything else must go through `getAppStore()` and the Store interface.
+ */
+export function getAppSupabaseStore(): SupabaseStore | null {
   if (globalForStore.__kiBarometerAppStore) {
     return globalForStore.__kiBarometerAppStore;
   }
@@ -95,6 +98,11 @@ export function getAppStore(): Store | null {
     rules: RECOMMENDATION_RULES,
   });
   return globalForStore.__kiBarometerAppStore;
+}
+
+/** The product store, or null while Supabase is not configured. */
+export function getAppStore(): Store | null {
+  return getAppSupabaseStore();
 }
 
 /** Like `getAppStore`, but throws a clear error for code paths that need it. */
