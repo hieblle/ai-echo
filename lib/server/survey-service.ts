@@ -4,8 +4,11 @@
  * Composes the pure domain layer (rotation, conditional logic) with the store.
  * This is the ONLY place that decides which questions a respondent sees —
  * the client never assembles question sets (SPEC.md §5 server-first).
+ * `composeQuestions` is shared by the demo flow (personas) and the member
+ * flow (lib/server/member-survey-service.ts).
  */
 
+import type { Store } from "@/lib/data/store";
 import {
   applyConditionalLogic,
   resolveToolChoices,
@@ -23,6 +26,7 @@ import { DEMO_ORG_ID } from "@/lib/seed/demo-org";
 import type {
   Choice,
   DemoPersona,
+  Department,
   Organization,
   Question,
   RespondentProfile,
@@ -74,35 +78,35 @@ export function getMonthKey(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-/**
- * Build the survey session for a persona: load/bootstrap the profile, apply
- * rotation (weekly/monthly) and conditional logic, resolve tool rows.
- */
-export async function getSurveySession(
-  template: TemplateKey,
-  personaId: string,
-  now: Date,
-): Promise<SurveySession> {
-  const store = await getDemoStore();
+export interface ComposeInput {
+  store: Store;
+  org: Organization;
+  profile: RespondentProfile;
+  template: TemplateKey;
+  /** Week the cycle belongs to (org draw + no-repeat rule). */
+  isoWeek: string;
+  /** Month key for the monthly rotation. */
+  monthKey: string;
+  /** Stable per-respondent key for personalised substitutes. */
+  respondentKey: string;
+  /**
+   * The org's real departments: replaces the generic O1 catalogue so the
+   * onboarding answer maps 1:1 to a department id. Demo orgs pass nothing
+   * (their department ids equal the seed's O1 values).
+   */
+  departments?: Department[];
+}
 
-  const org = await store.getOrganization(DEMO_ORG_ID);
-  if (!org) throw new Error("demo organization missing");
+export interface ComposedSurvey {
+  questions: Question[];
+  toolChoices: Choice[];
+}
 
-  const personas = await store.listPersonas(DEMO_ORG_ID);
-  const persona = personas.find((p) => p.id === personaId);
-  if (!persona) throw new Error(`unknown persona: ${personaId}`);
-
-  if (template === "leadership" && persona.role_scope !== "lead") {
-    throw new Error("leadership survey requires a lead role");
-  }
-
-  let profile = await store.getProfile(DEMO_ORG_ID, personaId);
-  if (!profile) {
-    profile = bootstrapProfile(persona);
-    await store.saveProfile(profile);
-  }
-
-  const isoWeek = getIsoWeek(now);
+/** Rotation + conditional logic for one respondent (deterministic). */
+export async function composeQuestions(
+  input: ComposeInput,
+): Promise<ComposedSurvey> {
+  const { store, org, profile, template, isoWeek } = input;
   const pool = await store.listQuestions(template);
   // Data access stays behind the Store interface (CLAUDE.md rule 2): the tool
   // catalog is derived from the stored O2 question, not from seed imports.
@@ -142,7 +146,7 @@ export async function getSurveySession(
         draw,
         pool,
         history,
-        respondentKey: personaId,
+        respondentKey: input.respondentKey,
         isoWeek,
         anchors: WEEKLY_ANCHOR_CODES,
       });
@@ -158,7 +162,7 @@ export async function getSurveySession(
     const selection = pickMonthlyQuestions({
       pool,
       orgId: org.id,
-      month: getMonthKey(now),
+      month: input.monthKey,
     });
     questions = applyConditionalLogic({
       questions: selection,
@@ -173,13 +177,72 @@ export async function getSurveySession(
     });
   }
 
+  if (template === "onboarding" && input.departments) {
+    const departments = input.departments;
+    questions = questions.map((q) =>
+      q.code === "O1"
+        ? {
+            ...q,
+            options: {
+              kind: "choices",
+              choices: departments.map((d) => ({ value: d.id, label: d.name })),
+            },
+          }
+        : q,
+    );
+  }
+
+  return {
+    questions,
+    toolChoices: resolveToolChoices(profile, toolCatalog),
+  };
+}
+
+/**
+ * Build the demo survey session for a persona: load/bootstrap the profile,
+ * apply rotation (weekly/monthly) and conditional logic, resolve tool rows.
+ */
+export async function getSurveySession(
+  template: TemplateKey,
+  personaId: string,
+  now: Date,
+): Promise<SurveySession> {
+  const store = await getDemoStore();
+
+  const org = await store.getOrganization(DEMO_ORG_ID);
+  if (!org) throw new Error("demo organization missing");
+
+  const personas = await store.listPersonas(DEMO_ORG_ID);
+  const persona = personas.find((p) => p.id === personaId);
+  if (!persona) throw new Error(`unknown persona: ${personaId}`);
+
+  if (template === "leadership" && persona.role_scope !== "lead") {
+    throw new Error("leadership survey requires a lead role");
+  }
+
+  let profile = await store.getProfile(DEMO_ORG_ID, personaId);
+  if (!profile) {
+    profile = bootstrapProfile(persona);
+    await store.saveProfile(profile);
+  }
+
+  const isoWeek = getIsoWeek(now);
+  const composed = await composeQuestions({
+    store,
+    org,
+    profile,
+    template,
+    isoWeek,
+    monthKey: getMonthKey(now),
+    respondentKey: personaId,
+  });
+
   return {
     org,
     persona,
     profile,
     template,
     isoWeek,
-    questions,
-    toolChoices: resolveToolChoices(profile, toolCatalog),
+    ...composed,
   };
 }

@@ -1,8 +1,10 @@
 import { notFound, redirect } from "next/navigation";
+import { submitSurvey } from "@/app/actions";
 import { SurveyRunner } from "@/components/survey/survey-runner";
 import { parseIsoWeek } from "@/lib/domain/isoWeek";
 import { KNOWLEDGE_TIPS } from "@/lib/seed/tips";
 import { getSurveySession, isTemplateKey } from "@/lib/server/survey-service";
+import type { SurveyPayload } from "@/lib/server/survey-submit";
 
 // The store is stateful and per-respondent — never cache this route.
 export const dynamic = "force-dynamic";
@@ -36,10 +38,14 @@ export default async function SurveyPage({
   const tipText =
     session.org.form_of_address === "sie" ? tip?.text_sie : tip?.text;
 
+  async function submit(payload: SurveyPayload) {
+    "use server";
+    return submitSurvey({ ...payload, personaId });
+  }
+
   return (
     <SurveyRunner
       template={template}
-      personaId={personaId}
       form={session.org.form_of_address}
       questions={session.questions}
       toolChoices={session.toolChoices}
@@ -47,6 +53,8 @@ export default async function SurveyPage({
       kAnonymityMin={session.org.k_anonymity_min}
       tip={tipText ?? ""}
       showPrivacyNotice={!session.profile.onboarding_completed}
+      backHref={`/demo?persona=${encodeURIComponent(personaId)}`}
+      onSubmit={submit}
     />
   );
 }

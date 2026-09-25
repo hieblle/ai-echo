@@ -7,6 +7,7 @@ import {
   requireViewer,
 } from "@/lib/server/auth";
 import { getMemberOverview, type DueSurvey } from "@/lib/server/member-service";
+import { SURVEY_ACCESS_MESSAGES } from "@/lib/server/member-survey-service";
 import type { Membership, Organization, TemplateKey } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -114,13 +115,26 @@ function OrgCard({ org, membership, onboardingDone, due, completed }: OrgCardPro
 }
 
 interface AppHomeProps {
-  searchParams: Promise<{ denied?: string }>;
+  searchParams: Promise<{ denied?: string; survey?: string }>;
 }
+
+const NOTICES: Record<string, string> = {
+  "denied:admin": "Für diesen Bereich fehlt dir die Berechtigung.",
+  "denied:member":
+    "Als Plattform-Admin ohne Mitgliedschaft kannst du keine Befragung beantworten.",
+  ...Object.fromEntries(
+    Object.entries(SURVEY_ACCESS_MESSAGES).map(([k, v]) => [`survey:${k}`, v]),
+  ),
+};
 
 export default async function AppHome({ searchParams }: AppHomeProps) {
   const viewer = await requireViewer("/app");
   await activateMemberships(viewer);
-  const { denied } = await searchParams;
+  const { denied, survey } = await searchParams;
+  const notice =
+    (denied && NOTICES[`denied:${denied}`]) ||
+    (survey && NOTICES[`survey:${survey}`]) ||
+    null;
 
   const cards = [];
   for (const membership of viewer.memberships) {
@@ -148,9 +162,9 @@ export default async function AppHome({ searchParams }: AppHomeProps) {
         <h1 className="text-3xl font-bold tracking-tight">Deine Befragungen</h1>
       </header>
 
-      {denied === "admin" && (
+      {notice && (
         <p role="alert" className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-          Für diesen Bereich fehlt dir die Berechtigung.
+          {notice}
         </p>
       )}
 

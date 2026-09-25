@@ -7,14 +7,17 @@
  */
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { submitSurvey } from "@/app/actions";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   QuestionInput,
   isAnswerComplete,
 } from "@/components/survey/question-input";
 import { questionText } from "@/lib/domain/text";
+import type {
+  SubmitSurveyResult,
+  SurveyPayload,
+} from "@/lib/server/survey-submit";
 import type {
   AnswerValue,
   Choice,
@@ -50,7 +53,6 @@ function privacyPoints(form: FormOfAddress, k: number): string[] {
 
 interface SurveyRunnerProps {
   template: TemplateKey;
-  personaId: string;
   form: FormOfAddress;
   questions: Question[];
   toolChoices: Choice[];
@@ -61,11 +63,14 @@ interface SurveyRunnerProps {
   /** Wissens-Tipp der Woche, already resolved for the org's form of address. */
   tip: string;
   showPrivacyNotice: boolean;
+  /** Where "Zurück zur Übersicht" and "Abbrechen" lead. */
+  backHref: string;
+  /** Server action that stores the answers (demo or member flow). */
+  onSubmit: (payload: SurveyPayload) => Promise<SubmitSurveyResult>;
 }
 
 export function SurveyRunner({
   template,
-  personaId,
   form,
   questions,
   toolChoices,
@@ -73,6 +78,8 @@ export function SurveyRunner({
   kAnonymityMin,
   tip,
   showPrivacyNotice,
+  backHref,
+  onSubmit,
 }: SurveyRunnerProps) {
   const [privacyAccepted, setPrivacyAccepted] = useState(!showPrivacyNotice);
   const [index, setIndex] = useState(0);
@@ -92,17 +99,11 @@ export function SurveyRunner({
     : false;
   const skippable = question?.type === "text_optional";
 
-  const backHref = useMemo(
-    () => `/demo?persona=${encodeURIComponent(personaId)}`,
-    [personaId],
-  );
-
   async function handleSubmit(finalAnswers: typeof answers) {
     setSubmitting(true);
     setError(null);
-    const payload = {
+    const payload: SurveyPayload = {
       template,
-      personaId,
       isoWeek,
       answers: Object.entries(finalAnswers)
         .filter(
@@ -110,7 +111,7 @@ export function SurveyRunner({
         )
         .map(([question_code, answer]) => ({ question_code, answer })),
     };
-    const result = await submitSurvey(payload);
+    const result = await onSubmit(payload);
     setSubmitting(false);
     if (result.ok) {
       setDone(true);
