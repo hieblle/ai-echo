@@ -6,6 +6,97 @@ weiterarbeiten"). Neueste Einträge oben.
 
 ---
 
+## Offene Punkte (Stand Übergang Phase 3 → 4, 2026-09-25)
+
+- [ ] **Hosting vor Kundenveröffentlichung:** Vercel Pro oder anderer Anbieter
+      (D3.1). Bis dahin Vercel Hobby.
+- [ ] **E-Mail-Lösung für Massenversand/Skalierung:** Anbieter (Brevo, Resend,
+      Postmark, SES, …) und Orchestrierung (App-intern, n8n, Agenten) — D3.2.
+      Phase 4 kommt mit Login-Links aus.
+- [ ] **Supabase-Tarif:** Free für die Entwicklung; Pro vor dem ersten
+      Kundenpiloten (Free pausiert nach Inaktivität, keine Backups).
+- [ ] **Externes Testfeedback** (Testpersonen, Merlin-Demo) wird ggf.
+      nachgereicht → Fragebogen dann als v1.2 einfrieren.
+- [ ] **Betriebsrat-/DSB-Zweiseiter** (Phase 5) muss die ehrliche
+      Anonymitätszusage aus D3.3 (4) enthalten.
+
+---
+
+## Phase 3 — Testrunde & GO/NO-GO (2026-09-25)
+
+Interne Testrunde bei dbrains durchgeführt, kein Änderungsbedarf am
+Fragebogen gemeldet; externes Feedback (5–10 Testpersonen, Merlin-Demo) wird
+nachgereicht, falls es kommt. Bis dahin bleibt Fragebogen v1.1 unverändert
+und gilt als v1.2-Kandidat. Deployment läuft als Vercel-Preview auf dem
+Arbeitsbranch (`vercel.json` pinnt das Next.js-Preset). **GO für den
+Übergang in Phase 4** (Persistenz, Auth, erste echte Testteilnehmer).
+
+### D3.1 — Hosting: Vercel bis zur Kundenveröffentlichung, danach offen
+Für Phase 4 und die interne Nutzung (Org 0) bleibt die App auf Vercel
+(Hobby). Vor der Veröffentlichung beim ersten Kunden ist zu entscheiden:
+**Vercel Pro** (die Hobby-Bedingungen erlauben keine kommerzielle Nutzung;
+Pro hebt außerdem die Cron-Beschränkungen auf) **oder ein anderer Anbieter**
+(Docker-fähig: Railway, Render, Fly.io, Hetzner + Coolify). Ein eigener
+Server ist keine Option (Betriebsaufwand ohne Nutzen). Damit der Wechsel
+unter einem Tag bleibt, gelten ab Phase 4 Portabilitätsregeln:
+1. Keine Vercel-exklusiven Features (kein Vercel KV/Analytics/Edge-Sonderweg).
+2. Cron-Aufgaben (Zyklus öffnen, Reminder, Report) als abgesicherte Route
+   Handler unter `/api/cron/*`; der Zeitplan liegt außerhalb der App
+   (`vercel.json` heute, jeder Scheduler morgen).
+3. `output: "standalone"` in `next.config`, Region `fra1` in `vercel.json`.
+4. Secrets ausschließlich in Vercel, `.env.local` und der Cloud-Umgebung —
+   nie im Repo.
+
+Bewusste Bindung: **Supabase EU (Frankfurt)** für Auth, RLS und Migrationen.
+Darunter liegt normales PostgreSQL (Open Source, `pg_dump`), ein Anbieter-
+wechsel dort wäre aber Wochen, nicht Stunden — akzeptiert, wie in SPEC §14
+seit Tag 1 vorgesehen.
+
+### D3.2 — E-Mail: Phase 4 nur Login-Links, Massenversand offen
+Phase 4 verschickt nur die technisch nötigen Auth-Mails (Magic Link,
+Einladung) über den Supabase-eigenen Versand. Der hat ein sehr niedriges
+Stundenlimit und eine Supabase-Absenderadresse — für dbrains-intern (Org 0)
+ausreichend; falls das Limit beim Dogfooding stört, kann in Supabase Auth ein
+beliebiger SMTP-Zugang hinterlegt werden (reine Konfiguration, keine
+Codeänderung). Pulse-/Reminder-Mails werden in Phase 4 über denselben Weg
+minimal umgesetzt.
+
+Offen bleibt die Lösung für **Massenversand bei Skalierung** — Anbieter
+(Brevo/EU, Resend/EU-Region, Postmark, Amazon SES) und Orchestrierung
+(App-intern, n8n, Agenten). Unabhängig von der Wahl nötig: verifizierte
+Absender-Subdomain (z. B. `barometer.dbrains.academy`) mit SPF/DKIM/DMARC
+und ein AVV mit dem Anbieter (verarbeitet Namen und Mailadressen der
+Mitarbeitenden). Architekturvorgabe für Phase 4: Versand hinter einem eigenen
+Interface (`lib/mail/`, analog zum Store) mit `ConsoleMailer` für Tests und
+Entwicklung, damit der Anbieter später ohne Änderung an den Flows
+austauschbar ist.
+
+### D3.3 — Leitplanken für Phase 4 (aus der Architektur-Review)
+Verifiziert: Domäne pur und getestet; `Store`-Interface vollständig;
+Backend-Tausch an genau einer Stelle (`lib/server/store-instance.ts`); alle
+Datenzugriffe serverseitig (Server Actions, `dashboard-service.ts`), Roh-
+antworten erreichen den Client nie; `submitResponses` nimmt typseitig keine
+Personen-Kennung an. Für die Persistenz gilt:
+1. **Store-Weiche per Umgebungsvariable:** `memory` für die Demo-Route
+   („Woche simulieren" bleibt als Sales-Demo), `supabase` für echte Orgs —
+   keine Demo-Daten in der Produktivdatenbank.
+2. **RLS statt Vertrauen in Filter:** Dashboard-Lesezugriffe im Nutzerkontext
+   (RLS greift); der Service-Role-Key nur für den anonymen Schreibpfad der
+   Antworten. Zwei-Org-Isolationstest ist Akzeptanzkriterium (SPEC §13).
+3. **Aggregation bleibt vorerst im Server:** `listResponses` bekommt einen
+   Wochenfilter (billig, verschiebt das Problem weit); Aggregation in SQL /
+   `aggregates`-Tabelle erst bei Enterprise-Skalierung (SPAR/REWE).
+4. **Anonymität ehrlich formulieren:** D1.17 vor der Implementierung
+   abarbeiten. SPEC §6 („Token liegt nur clientseitig") ist technisch falsch —
+   `user_metadata` liegt in `auth.users`. Vollständige Unverknüpfbarkeit
+   gegenüber dem DB-Admin ist bei Rotation pro Person nicht erreichbar; die
+   vertretbare Zusage lautet: keine Verknüpfung in den Anwendungsdaten, nur
+   k-anonymisierte Ausgaben, DB-Zugriff nur bei dbrains unter AVV. Token
+   nur gehasht speichern, `question_history` älter als Vorwoche löschen,
+   SPEC §6 entsprechend korrigieren.
+
+---
+
 ## Phase 2 — Dashboard auf synthetischen Daten (2026-07-15)
 
 Umgesetzt nach SPEC.md §13 (Phase 2). Akzeptanz verifiziert: alle §10-Formeln
