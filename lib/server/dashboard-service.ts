@@ -49,9 +49,21 @@ export interface FreeTextHighlight {
   text: string;
 }
 
+/**
+ * Team view for a team_lead (SPEC §7.4): everything is computed on the rows
+ * of ONE department, and every number is k-guarded — below the threshold the
+ * whole view is suppressed, not just single cells.
+ */
+export interface DashboardScope {
+  departmentId: string;
+  departmentName: string;
+}
+
 export interface DashboardData {
   org: Organization;
   orgs: Organization[];
+  /** Set for a team view; `suppressed` when the department is below k. */
+  scope: (DashboardScope & { suppressed: boolean }) | null;
   departments: Department[];
   weeks: string[];
   history: WeeklyKpis[];
@@ -177,12 +189,29 @@ function effectiveHourlyRate(
   };
 }
 
+/** Team view: weekly indices are only shown where the team reached k. */
+function guardHistory(history: WeeklyKpis[], k: number): WeeklyKpis[] {
+  return history.map((h) =>
+    h.n_pulse >= k
+      ? h
+      : {
+          ...h,
+          adoption_rate: null,
+          power_user_share: null,
+          efficiency_index: null,
+          trust_index: null,
+          sentiment_index: null,
+        },
+  );
+}
+
 async function assemble(
   store: Store,
   org: Organization,
   weeks: string[],
+  scope?: DashboardScope,
 ): Promise<Omit<DashboardData, "orgs">> {
-  const departments = await store.listDepartments(org.id);
+  const allDepartments = await store.listDepartments(org.id);
   const allResponses = await store.listResponses(org.id);
   const participations = await store.listParticipationStats(org.id);
   const toolSettings = await store.listToolSettings(org.id);
@@ -190,13 +219,42 @@ async function assemble(
   const states = await store.listRecommendationStates(org.id);
 
   const weekSet = new Set(weeks);
-  const responses = allResponses.filter((r) => weekSet.has(r.created_week));
+  const orgResponses = allResponses.filter((r) => weekSet.has(r.created_week));
+  // A team view only ever computes on its own department's rows.
+  const responses = scope
+    ? orgResponses.filter((r) => r.department_id === scope.departmentId)
+    : orgResponses;
+  const departments = scope
+    ? allDepartments.filter((d) => d.id === scope.departmentId)
+    : allDepartments;
 
-  const history = computeKpiHistory({
+  // The heatmap is computed org-wide (k check per cell in the domain layer)
+  // and narrowed to the team's row + org total afterwards.
+  const heatmapAll = computeHeatmap({
+    responses: orgResponses,
+    departments: allDepartments,
+    k: org.k_anonymity_min,
+    weeks,
+  });
+  const heatmap = scope
+    ? heatmapAll.filter(
+        (c) => c.department_id === null || c.department_id === scope.departmentId,
+      )
+    : heatmapAll;
+  const scopeSuppressed = scope
+    ? heatmapAll
+        .filter((c) => c.department_id === scope.departmentId)
+        .every((c) => c.value === null)
+    : false;
+
+  const rawHistory = computeKpiHistory({
     responses,
     weeks,
     participations: participations.filter((p) => weekSet.has(p.week)),
   });
+  const history = scope
+    ? guardHistory(rawHistory, org.k_anonymity_min)
+    : rawHistory;
   const roiWindow = history.slice(-4);
   const hourly = effectiveHourlyRate(responses, org.hourly_rate_default);
   const roi = computeRoi({
@@ -236,8 +294,11 @@ async function assemble(
   });
 
   const latestWeek = weeks[weeks.length - 1];
+  // Pooled values are k-guarded via the scope as a whole (suppressed → the
+  // view shows nothing); within a qualified team they rest on ≥ k rows.
   return {
     org,
+    scope: scope ? { ...scope, suppressed: scopeSuppressed } : null,
     departments,
     weeks,
     history,
@@ -257,16 +318,14 @@ async function assemble(
     roi,
     gapPairs,
     nps: computeNps(responses),
-    heatmap: computeHeatmap({
-      responses,
-      departments,
-      k: org.k_anonymity_min,
-      weeks,
-    }),
+    heatmap,
     toolUsage,
     trainingWishes,
     recommendations,
-    freeTexts: await collectFreeTexts(store, responses, org, latestWeek, 6),
+    // Free texts are org-level only (SPEC §7.3) — never part of a team view.
+    freeTexts: scope
+      ? []
+      : await collectFreeTexts(store, responses, org, latestWeek, 6),
     totalResponses: allResponses.length,
   };
 }
@@ -274,6 +333,7 @@ async function assemble(
 export async function getDashboardData(
   store: Store,
   slug: string,
+  scope?: DashboardScope,
 ): Promise<DashboardData | null> {
   const org = await store.getOrganizationBySlug(slug);
   if (!org) return null;
@@ -289,8 +349,46 @@ export async function getDashboardData(
     ].sort();
   }
 
-  const data = await assemble(store, org, weeks);
+  const data = await assemble(store, org, weeks, scope);
   return { ...data, orgs };
+}
+
+/** Org-wide numbers every member may see (SPEC §7.4: transparency). */
+export interface PublicOrgKpis {
+  weeks: number;
+  latestWeek: string | null;
+  participationRate: number | null;
+  sentimentIndex: number | null;
+}
+
+export async function getPublicOrgKpis(
+  store: Store,
+  org: Organization,
+): Promise<PublicOrgKpis> {
+  const stats = await store.listParticipationStats(org.id);
+  const weeks = sortedWeeklyWeeks(stats).slice(-6);
+  if (weeks.length === 0) {
+    return { weeks: 0, latestWeek: null, participationRate: null, sentimentIndex: null };
+  }
+  const responses = await store.listResponses(org.id, { weeks });
+  const history = computeKpiHistory({
+    responses,
+    weeks,
+    participations: stats.filter((p) => weeks.includes(p.week)),
+  });
+  const latest = <K extends "participation_rate" | "sentiment_index">(key: K) => {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const v = history[i]?.[key];
+      if (v !== null && v !== undefined) return v;
+    }
+    return null;
+  };
+  return {
+    weeks: weeks.length,
+    latestWeek: weeks[weeks.length - 1] ?? null,
+    participationRate: latest("participation_rate"),
+    sentimentIndex: latest("sentiment_index"),
+  };
 }
 
 export interface ReportData extends Omit<DashboardData, "orgs"> {

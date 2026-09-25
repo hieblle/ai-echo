@@ -6,6 +6,10 @@ import {
   canViewDashboard,
   requireViewer,
 } from "@/lib/server/auth";
+import {
+  getPublicOrgKpis,
+  type PublicOrgKpis,
+} from "@/lib/server/dashboard-service";
 import { getMemberOverview, type DueSurvey } from "@/lib/server/member-service";
 import { SURVEY_ACCESS_MESSAGES } from "@/lib/server/member-survey-service";
 import type { Membership, Organization, TemplateKey } from "@/lib/types";
@@ -32,7 +36,15 @@ interface OrgCardProps {
   onboardingDone: boolean;
   due: DueSurvey[];
   completed: DueSurvey[];
+  /** Org-wide transparency numbers for employees (SPEC §7.4). */
+  publicKpis: PublicOrgKpis | null;
 }
+
+const nf = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 function SurveyRow({
   org,
@@ -67,7 +79,14 @@ function SurveyRow({
   );
 }
 
-function OrgCard({ org, membership, onboardingDone, due, completed }: OrgCardProps) {
+function OrgCard({
+  org,
+  membership,
+  onboardingDone,
+  due,
+  completed,
+  publicKpis,
+}: OrgCardProps) {
   return (
     <section className="space-y-4 rounded-lg border bg-card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -110,6 +129,30 @@ function OrgCard({ org, membership, onboardingDone, due, completed }: OrgCardPro
           </li>
         )}
       </ul>
+
+      {publicKpis && publicKpis.weeks > 0 && (
+        <dl className="grid grid-cols-2 gap-3 rounded-lg bg-muted/30 p-4 text-sm">
+          <div>
+            <dt className="text-muted-foreground">Teilnahmequote (gesamt)</dt>
+            <dd className="text-lg font-semibold">
+              {publicKpis.participationRate === null
+                ? "–"
+                : `${nf.format(publicKpis.participationRate * 100)} %`}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Stimmung zu KI (gesamt)</dt>
+            <dd className="text-lg font-semibold">
+              {publicKpis.sentimentIndex === null
+                ? "–"
+                : `${nf1.format(publicKpis.sentimentIndex)} / 10`}
+            </dd>
+          </div>
+          <p className="col-span-2 text-xs text-muted-foreground">
+            Anonyme Gesamtwerte der Organisation, Stand {publicKpis.latestWeek}.
+          </p>
+        </dl>
+      )}
     </section>
   );
 }
@@ -120,6 +163,9 @@ interface AppHomeProps {
 
 const NOTICES: Record<string, string> = {
   "denied:admin": "Für diesen Bereich fehlt dir die Berechtigung.",
+  "denied:dashboard": "Das Dashboard sehen nur Teamleitung und Geschäftsführung.",
+  "denied:team":
+    "Dir ist noch kein Team zugeordnet — bitte die Verwaltung deiner Organisation, das nachzutragen.",
   "denied:member":
     "Als Plattform-Admin ohne Mitgliedschaft kannst du keine Befragung beantworten.",
   ...Object.fromEntries(
@@ -141,6 +187,9 @@ export default async function AppHome({ searchParams }: AppHomeProps) {
     const org = await viewer.store.getOrganization(membership.org_id);
     if (!org) continue;
     const overview = await getMemberOverview(viewer.store, org, membership);
+    const publicKpis = canViewDashboard(membership.role)
+      ? null
+      : await getPublicOrgKpis(viewer.store, org);
     cards.push(
       <OrgCard
         key={membership.id}
@@ -149,6 +198,7 @@ export default async function AppHome({ searchParams }: AppHomeProps) {
         onboardingDone={overview.onboardingDone}
         due={overview.due}
         completed={overview.completed}
+        publicKpis={publicKpis}
       />,
     );
   }
