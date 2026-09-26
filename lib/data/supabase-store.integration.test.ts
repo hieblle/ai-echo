@@ -215,11 +215,14 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
     ]);
   });
 
-  it("anonymous clients read nothing", async () => {
+  it("anonymous clients read nothing (and the publishable key is accepted)", async () => {
     const anon = createClient(env?.url ?? "", env?.publishableKey ?? "", {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const result = await anon.from("organizations").select("id");
-    expect(result.data ?? []).toEqual([]);
+    // An "Invalid API key" here means the publishable key is wrong — that
+    // must fail loudly, not pass as "nothing readable".
+    expect(result.error).toBeNull();
+    expect(result.data).toEqual([]);
   });
 });
