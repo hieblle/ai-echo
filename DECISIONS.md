@@ -11,16 +11,22 @@ weiterarbeiten"). Neueste Einträge oben.
 - [ ] **Supabase-Projekt anlegen und Keys eintragen** (Cloud-Umgebung, Vercel,
       lokal) → Migration einspielen, Integrationstests laufen lassen, Org 0
       anlegen. Anleitung: `docs/SETUP-PHASE4.md`.
-- [ ] **Region des Dev-Projekts bestätigen:** Das erste Projekt liegt in
-      `eu-west-1` (Irland), nicht Frankfurt — für Entwicklung und Dogfooding
-      unkritisch (EU), das Produktiv-Projekt vor dem Kundenpiloten aber in
-      Frankfurt anlegen (SPEC §5, Zusage „Frankfurt" in Vertriebsunterlagen).
+- [x] **Region:** Das Projekt liegt in `eu-west-1` (Irland). Entschieden
+      (2026-09-26): „Frankfurt" in SPEC §5 ist eine Richtungsvorgabe, die
+      Anforderung ist EU-Hosting und DSGVO-Konformität — erfüllt. Kein
+      Wechsel nötig; in Vertriebsunterlagen „EU (Irland)" statt „Frankfurt"
+      schreiben.
 - [ ] **Supabase Auth konfigurieren:** Site URL + Redirect URLs auf die
       Vercel-Domain; vor dem Dogfooding mit ≥ 5 Personen einen Custom-SMTP
       hinterlegen (Standardversand hat ein sehr niedriges Stundenlimit).
-- [ ] **Phase-4-Akzeptanz nachweisen:** Zwei-Org-Isolationstest gegen die
-      echte Datenbank (Integrationssuite) und interner Testlauf mit ≥ 5
-      Teilnehmenden über eine Woche (Einladung → Pulse → Aggregation).
+- [x] **Isolations- und Anonymitätsnachweis gegen die echte Datenbank**
+      (2026-09-26): Integrationssuite grün — zwei Orgs strikt getrennt,
+      `responses` ohne Personenbezug (Spalten-Check), Mitglied sieht per RLS
+      nur die eigene Org und nie Rohantworten, anonyme Clients ohne Rechte,
+      Duplikat-Schutz auf `participations`.
+- [ ] **Interner Testlauf** mit ≥ 5 Teilnehmenden über eine Woche
+      (Einladung → Pulse → Aggregation) als „Org 0" — letzte offene
+      Akzeptanz von Phase 4.
 - [ ] **Hosting vor Kundenveröffentlichung:** Vercel Pro oder anderer Anbieter
       (D3.1). Bis dahin Vercel Hobby.
 - [ ] **E-Mail-Lösung für Massenversand/Skalierung:** Anbieter (Brevo, Resend,

@@ -220,9 +220,12 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const result = await anon.from("organizations").select("id");
-    // An "Invalid API key" here means the publishable key is wrong — that
+    // The migration revokes every table privilege from `anon`, so Postgres
+    // answers "permission denied" (42501) rather than an empty result. An
+    // "Invalid API key" would mean the publishable key itself is wrong — that
     // must fail loudly, not pass as "nothing readable".
-    expect(result.error).toBeNull();
-    expect(result.data).toEqual([]);
+    expect(result.error?.message ?? "").not.toMatch(/invalid api key/i);
+    if (result.error) expect(result.error.code).toBe("42501");
+    expect(result.data ?? []).toEqual([]);
   });
 });
