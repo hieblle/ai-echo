@@ -104,8 +104,10 @@ hier in der Tabelle — dann nur die neue Datei einspielen.
 **Weg A — im Supabase-Dashboard (kein Terminal nötig):**
 1. Die Datei auf GitHub öffnen, auf **Raw** klicken, alles markieren und
    kopieren.
-2. Im Supabase-Projekt links **SQL Editor** → **New query** → einfügen →
-   **Run**. Erwartete Meldung: „Success. No rows returned". Fragt Supabase
+2. Im Supabase-Projekt links **SQL Editor** → oben das **Plus-Symbol** →
+   **Create a new snippet** (so heißt dort eine neue Abfrage) → in das
+   leere Feld einfügen → unten rechts **Run** (oder Strg/Cmd+Enter).
+   Erwartete Meldung: „Success. No rows returned". Fragt Supabase
    „Run without RLS / Run and enable RLS": **Run and enable RLS**.
 3. Das für jede noch fehlende Datei wiederholen, in Reihenfolge der Namen.
    Ein zweiter Lauf derselben Datei schlägt fehl („already exists") oder
