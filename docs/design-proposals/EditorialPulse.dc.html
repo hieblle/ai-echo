@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wöchentlicher Pulse · Editorial</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0;font-family:"Manrope","Segoe UI",sans-serif;background:#1a1a1a}
+a{color:#111111;text-decoration:none}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 18px; background: #1a1a1a; color: #111111; display: flex;">
+  <div style="flex-grow: 1; box-sizing: border-box; padding: 22px 20px 20px 20px; display: flex; flex-direction: column; gap: 22px; background: #f8f8f3; border-radius: 16px; box-shadow: 0 18px 50px rgba(0,0,0,0.35);">
+
+    <!-- Header -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 15px; font-weight: 700; letter-spacing: -0.01em;">KI-Barometer</div>
+        <button type="button" aria-label="Abbrechen" style="width: 28px; height: 28px; border-radius: 999px; border: 1px solid #e6e6e0; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="#111111" stroke-width="1.3" stroke-linecap="round"></path></svg>
+        </button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #77776f;">
+          <span>Wöchentlicher Pulse · KW 39</span>
+          <span>Frage 2 von 5</span>
+        </div>
+        <div style="height: 2px; background: #e6e6e0; overflow: hidden;"><div style="width: 40%; height: 100%; background: {{ink}};"></div></div>
+      </div>
+    </div>
+
+    <!-- Question -->
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+      <div style="font-size: 9.5px; font-weight: 500; color: #77776f; letter-spacing: 0.06em; text-transform: uppercase;">Effizienz</div>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em;">Wie viele Stunden hat dir KI diese Woche <span style="color: #92928b; font-weight: 400;">geschätzt</span> gespart?</h1>
+    </div>
+
+    <!-- Choices -->
+    <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+      <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Gesparte Stunden</legend>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 14px; border-radius: 6px; background: #ffffff; border: 1px solid #e6e6e0; font-size: 13px; cursor: pointer;">
+        <span style="display: flex; align-items: center; gap: 12px;"><input type="radio" name="w21" value="none" style="width: 14px; height: 14px; margin: 0; accent-color: #111111;">Keine</span>
+        <span style="font-size: 9px; color: #9a9a93;">0 h</span>
+      </label>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 14px; border-radius: 6px; background: #ffffff; border: 1px solid #e6e6e0; font-size: 13px; cursor: pointer;">
+        <span style="display: flex; align-items: center; gap: 12px;"><input type="radio" name="w21" value="lt_1" style="width: 14px; height: 14px; margin: 0; accent-color: #111111;">Unter 1 Stunde</span>
+        <span style="font-size: 9px; color: #9a9a93;">0,5 h</span>
+      </label>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 14px; border-radius: 6px; background: {{ink}}; border: 1px solid {{ink}}; color: #ffffff; font-size: 13px; font-weight: 600; cursor: pointer;">
+        <span style="display: flex; align-items: center; gap: 12px;"><input type="radio" name="w21" value="1_3" checked style="width: 14px; height: 14px; margin: 0; accent-color: #ffffff;">1–3 Stunden</span>
+        <span style="font-size: 9px; color: #c9c9c2;">2 h</span>
+      </label>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 14px; border-radius: 6px; background: #ffffff; border: 1px solid #e6e6e0; font-size: 13px; cursor: pointer;">
+        <span style="display: flex; align-items: center; gap: 12px;"><input type="radio" name="w21" value="3_5" style="width: 14px; height: 14px; margin: 0; accent-color: #111111;">3–5 Stunden</span>
+        <span style="font-size: 9px; color: #9a9a93;">4 h</span>
+      </label>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 14px; border-radius: 6px; background: #ffffff; border: 1px solid #e6e6e0; font-size: 13px; cursor: pointer;">
+        <span style="display: flex; align-items: center; gap: 12px;"><input type="radio" name="w21" value="5_10" style="width: 14px; height: 14px; margin: 0; accent-color: #111111;">5–10 Stunden</span>
+        <span style="font-size: 9px; color: #9a9a93;">7,5 h</span>
+      </label>
+      <label style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 14px; border-radius: 6px; background: #ffffff; border: 1px solid #e6e6e0; font-size: 13px; cursor: pointer;">
+        <span style="display: flex; align-items: center; gap: 12px;"><input type="radio" name="w21" value="gt_10" style="width: 14px; height: 14px; margin: 0; accent-color: #111111;">Mehr als 10 Stunden</span>
+        <span style="font-size: 9px; color: #9a9a93;">12 h</span>
+      </label>
+    </fieldset>
+
+    <!-- Footer -->
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 14px;">
+      <div style="height: 1px; background: #e8e8e2;"></div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 9.5px; color: #77776f; line-height: 1.4;">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1.5" stroke="#77776f" stroke-width="1.2"></rect><path d="M5 6V4.5a2 2 0 0 1 4 0V6" stroke="#77776f" stroke-width="1.2"></path></svg>
+        Anonym · nur ab 5 Antworten je Abteilung ausgewertet
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #e6e6e0; background: #ffffff; font: inherit; font-size: 12px; font-weight: 500; color: #111111; cursor: pointer;">Zurück</button>
+        <button type="button" style="flex-grow: 1; height: 44px; border-radius: 999px; border: 0; background: {{ink}}; font: inherit; font-size: 12px; font-weight: 600; color: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          Weiter
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ink":{"editor":"color","default":"#111111","options":["#111111","#1f2a44","#2f3b2f","#4a2f2a"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { ink: this.props.ink ?? '#111111' };
+  }
+}
+</script>
+</body>
+</html>

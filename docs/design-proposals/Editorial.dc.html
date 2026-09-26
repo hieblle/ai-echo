@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>KI-Barometer Dashboard · Editorial</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0;font-family:"Manrope","Segoe UI",sans-serif;background:#1a1a1a}
+a{color:#111111;text-decoration:none}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 1200px; height: 900px; box-sizing: border-box; padding: 110px 60px; background: #1a1a1a; color: #111111; display: flex;">
+
+  <!-- App container -->
+  <div style="width: 1080px; height: 680px; box-sizing: border-box; padding: 22px 38px 26px 38px; background: #f8f8f3; border-radius: 16px; box-shadow: 0 18px 50px rgba(0,0,0,0.35); overflow: hidden; display: flex; flex-direction: column;">
+
+    <!-- Header -->
+    <header style="display: flex; align-items: center; justify-content: space-between; height: 40px; margin-bottom: 26px;">
+      <div style="display: flex; align-items: center; gap: 34px;">
+        <div style="font-size: 16px; font-weight: 700; letter-spacing: -0.01em;">KI-Barometer</div>
+        <nav aria-label="Hauptnavigation" style="display: flex; align-items: center; gap: 18px; font-size: 10.5px; font-weight: 500; color: #555550;">
+          <a href="#" aria-current="page" style="color: #111111; font-weight: 600;">Dashboard</a>
+          <a href="#" style="color: #555550;">Befragungen</a>
+          <a href="#" style="color: #555550;">Abteilungen</a>
+          <a href="#" style="color: #555550;">Empfehlungen</a>
+          <a href="#" style="color: #555550;">Monatsreport</a>
+          <a href="#" style="color: #555550;">Verwaltung</a>
+        </nav>
+      </div>
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <button type="button" aria-label="Benachrichtigungen" style="width: 18px; height: 18px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3L4 11Z" stroke="#222222" stroke-width="1.3" stroke-linejoin="round"></path><path d="M6.8 14h2.4" stroke="#222222" stroke-width="1.3" stroke-linecap="round"></path></svg></button>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 500;">
+          <span style="width: 24px; height: 24px; border-radius: 999px; background: #e8e8e2; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600;">LE</span>
+          Leon · dbrains
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="#222222" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top: analysis -->
+    <div style="display: grid; grid-template-columns: 31fr 39fr 30fr; gap: 36px; height: 286px;">
+
+      <!-- Performance summary (no card) -->
+      <section aria-label="Leitkennzahl" style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; max-width: 260px; font-size: 30px; font-weight: 500; line-height: 1.05; letter-spacing: -0.02em;">Behalte den <span style="color: #92928b; font-weight: 400;">Erfolg</span><br>der KI-Einführung</h1>
+        <div style="margin-top: 34px; font-size: 10.5px; color: #77776f;">Netto-Ersparnis pro Monat</div>
+        <div style="margin-top: 6px; font-size: 54px; font-weight: 400; line-height: 1; letter-spacing: -0.03em;">33.074 €</div>
+        <div style="margin-top: 10px; font-size: 10.5px; color: #77776f;">ROI-Multiple <span style="color: #111111; font-weight: 600;">13,8×</span> · 48 Lizenzen</div>
+        <div style="margin-top: auto; font-size: 10.5px; color: #77776f;">Letzte Aktualisierung: <span style="color: #111111; font-weight: 600;">KW 39, 26. September</span></div>
+      </section>
+
+      <!-- Chart -->
+      <section aria-label="Adoption und Teilnahme je Woche" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;">Adoption &amp; Teilnahme</h2>
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 9px; color: #77776f;">
+            <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #d8d8d0; display: inline-block;"></span>Teilnahme</span>
+            <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{ink}}; display: inline-block;"></span>Adoption</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px; border: 1px solid #e6e6e0; border-radius: 4px; background: #ffffff; color: #111111; font-weight: 500;">Letzte 6 Wochen <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="#222222" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+        </div>
+        <svg width="100%" height="230" viewBox="0 0 390 230" preserveAspectRatio="none" aria-label="Adoption und Teilnahme, KW 34 bis KW 39">
+          <defs>
+            <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#d8d8d0" stroke-width="1.6"></line></pattern>
+          </defs>
+          <g font-family="Manrope, sans-serif" font-size="8.5" fill="#a3a39b">
+            <text x="0" y="12">100</text><text x="0" y="50">80</text><text x="0" y="88">60</text><text x="0" y="126">40</text><text x="0" y="164">20</text><text x="0" y="202">0</text>
+          </g>
+          <g stroke="#ecece6" stroke-width="1"><line x1="26" y1="9" x2="390" y2="9"></line><line x1="26" y1="47" x2="390" y2="47"></line><line x1="26" y1="85" x2="390" y2="85"></line><line x1="26" y1="123" x2="390" y2="123"></line><line x1="26" y1="161" x2="390" y2="161"></line><line x1="26" y1="199" x2="390" y2="199"></line></g>
+          <!-- KW 34: participation 81, adoption 61 -->
+          <rect x="44" y="45.1" width="11" height="153.9" rx="2" fill="url(#hatch)"></rect><rect x="59" y="83.1" width="11" height="115.9" rx="2" fill="{{ink}}"></rect>
+          <!-- KW 35: 79 / 64 -->
+          <rect x="104" y="48.9" width="11" height="150.1" rx="2" fill="url(#hatch)"></rect><rect x="119" y="77.4" width="11" height="121.6" rx="2" fill="{{ink}}"></rect>
+          <!-- KW 36: 77 / 66 -->
+          <rect x="164" y="52.7" width="11" height="146.3" rx="2" fill="url(#hatch)"></rect><rect x="179" y="73.6" width="11" height="125.4" rx="2" fill="{{ink}}"></rect>
+          <!-- KW 37: 79 / 69 -->
+          <rect x="224" y="48.9" width="11" height="150.1" rx="2" fill="url(#hatch)"></rect><rect x="239" y="67.9" width="11" height="131.1" rx="2" fill="{{ink}}"></rect>
+          <!-- KW 38: 75 / 70 -->
+          <rect x="284" y="56.5" width="11" height="142.5" rx="2" fill="url(#hatch)"></rect><rect x="299" y="66" width="11" height="133" rx="2" fill="{{ink}}"></rect>
+          <!-- KW 39: 73 / 72 -->
+          <rect x="344" y="60.3" width="11" height="138.7" rx="2" fill="url(#hatch)"></rect><rect x="359" y="62.2" width="11" height="136.8" rx="2" fill="{{ink}}"></rect>
+          <g font-family="Manrope, sans-serif" font-size="8.5" fill="#a3a39b" text-anchor="middle">
+            <text x="57" y="222">KW 34</text><text x="117" y="222">KW 35</text><text x="177" y="222">KW 36</text><text x="237" y="222">KW 37</text><text x="297" y="222">KW 38</text><text x="357" y="222">KW 39</text>
+          </g>
+        </svg>
+      </section>
+
+      <!-- Recommendations (contacts analog) -->
+      <section aria-label="Empfehlungen" style="display: flex; flex-direction: column; gap: 4px;">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;">Empfehlungen</h2>
+        <p style="margin: 0 0 12px 0; font-size: 9.5px; color: #77776f;">Regelbasiert aus den letzten 4 Wochen, R1 bis R7.</p>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="width: 32px; height: 32px; border-radius: 999px; background: {{ink}}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-size: 9px; font-weight: 600;">R5</span>
+            <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+              <div style="font-size: 11.5px; font-weight: 600;">Lizenz prüfen</div>
+              <div style="font-size: 9.5px; color: #77776f;">Copilot 365 · 8 % Nennung</div>
+            </div>
+            <div style="font-size: 10px; color: #111111;">offen</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="width: 32px; height: 32px; border-radius: 999px; background: #e8e8e2; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600;">R4</span>
+            <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+              <div style="font-size: 11.5px; font-weight: 600;">Kurs verlinken</div>
+              <div style="font-size: 9.5px; color: #77776f;">Prompt-Grundlagen · 34 % Wunsch</div>
+            </div>
+            <div style="font-size: 10px; color: #77776f;">erledigt KW 37</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="width: 32px; height: 32px; border-radius: 999px; background: #e8e8e2; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600;">R6</span>
+            <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+              <div style="font-size: 11.5px; font-weight: 600;">Strategie-Townhall</div>
+              <div style="font-size: 9.5px; color: #77776f;">Gap Strategie 3,2 Punkte</div>
+            </div>
+            <div style="font-size: 10px; color: #77776f;">erledigt KW 35</div>
+          </div>
+        </div>
+        <a href="#" style="align-self: flex-start; margin-top: 16px; display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 999px; background: #eaeae3; font-size: 9.5px; font-weight: 500; color: #111111;">Alle anzeigen</a>
+      </section>
+    </div>
+
+    <!-- Divider -->
+    <div style="height: 1px; background: #e8e8e2; margin: 22px 0 22px 0;"></div>
+
+    <!-- Bottom: organisation -->
+    <div style="display: grid; grid-template-columns: 31fr 29fr 40fr; gap: 36px; flex-grow: 1; min-height: 0;">
+
+      <!-- Upcoming cycles -->
+      <section aria-label="Nächste Befragungen" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;">Nächste Zyklen</h2>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border: 1px solid #e6e6e0; border-radius: 4px; background: #ffffff; font-size: 9px; font-weight: 500;"><span style="width: 5px; height: 5px; border-radius: 999px; background: {{ink}}; display: inline-block;"></span>Befragungstag</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2" stroke="#222222" stroke-width="1.3"></rect><path d="M2.5 7h11M5.5 2v3M10.5 2v3" stroke="#222222" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 62px); gap: 8px;">
+          <div style="height: 66px; box-sizing: border-box; padding: 8px 8px 7px 9px; border-radius: 4px; background: {{ink}}; color: #ffffff; display: flex; flex-direction: column;">
+            <div style="font-size: 17px; font-weight: 500; line-height: 1;">28</div>
+            <div style="font-size: 8.5px; font-weight: 600; margin-top: 3px;">Pulse</div>
+            <div style="font-size: 8px; color: #c9c9c2; margin-top: auto;">Montag</div>
+          </div>
+          <div style="height: 66px; box-sizing: border-box; padding: 8px 8px 7px 9px; border-radius: 4px; background: #f0f0ec; display: flex; flex-direction: column;">
+            <div style="font-size: 17px; font-weight: 500; line-height: 1;">29</div>
+            <div style="font-size: 8px; color: #77776f; margin-top: auto;">Dienstag</div>
+          </div>
+          <div style="height: 66px; box-sizing: border-box; padding: 8px 8px 7px 9px; border-radius: 4px; background: {{ink}}; color: #ffffff; display: flex; flex-direction: column;">
+            <div style="font-size: 17px; font-weight: 500; line-height: 1;">30</div>
+            <div style="font-size: 8.5px; font-weight: 600; margin-top: 3px;">Monat</div>
+            <div style="font-size: 8px; color: #c9c9c2; margin-top: auto;">Mittwoch</div>
+          </div>
+          <div style="height: 66px; box-sizing: border-box; padding: 8px 8px 7px 9px; border-radius: 4px; background: #f0f0ec; display: flex; flex-direction: column;">
+            <div style="font-size: 17px; font-weight: 500; line-height: 1;">1</div>
+            <div style="font-size: 8.5px; font-weight: 600; margin-top: 3px; color: #555550;">Erinnerung</div>
+            <div style="font-size: 8px; color: #77776f; margin-top: auto;">Donnerstag</div>
+          </div>
+          <div style="height: 66px; box-sizing: border-box; padding: 8px 8px 7px 9px; border-radius: 4px; background: #f0f0ec; display: flex; flex-direction: column;">
+            <div style="font-size: 17px; font-weight: 500; line-height: 1;">2</div>
+            <div style="font-size: 8px; color: #77776f; margin-top: auto;">Freitag</div>
+          </div>
+          <div aria-hidden="true" style="height: 66px; border-radius: 4px; background: #f0f0ec; overflow: hidden; display: flex; align-items: flex-end; justify-content: center;">
+            <svg width="62" height="66" viewBox="0 0 62 66"><g stroke="#111111" stroke-width="0.8" stroke-opacity="0.55"><line x1="31" y1="62" x2="-3" y2="62"></line><line x1="31" y1="62" x2="-2.3" y2="54.9"></line><line x1="31" y1="62" x2="-0.1" y2="48.2"></line><line x1="31" y1="62" x2="3.5" y2="42"></line><line x1="31" y1="62" x2="8.3" y2="36.7"></line><line x1="31" y1="62" x2="14" y2="32.5"></line><line x1="31" y1="62" x2="20.5" y2="29.7"></line><line x1="31" y1="62" x2="27.4" y2="28.2"></line><line x1="31" y1="62" x2="34.6" y2="28.2"></line><line x1="31" y1="62" x2="41.5" y2="29.7"></line><line x1="31" y1="62" x2="48" y2="32.5"></line><line x1="31" y1="62" x2="53.7" y2="36.7"></line><line x1="31" y1="62" x2="58.5" y2="42"></line><line x1="31" y1="62" x2="62.1" y2="48.2"></line><line x1="31" y1="62" x2="64.3" y2="54.9"></line><line x1="31" y1="62" x2="65" y2="62"></line></g></svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Weekly rhythm (schedule analog) -->
+      <section aria-label="Wochenrhythmus" style="display: flex; flex-direction: column; gap: 10px;">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;">Ablauf dieser Woche</h2>
+        <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 27px; border-bottom: 1px solid #ecece6;"><span style="font-size: 8.5px; color: #9a9a93;">Mo 07:00</span><span style="font-size: 10px;">Pulse KW 39 geöffnet</span></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 27px; border-bottom: 1px solid #ecece6;"><span style="font-size: 8.5px; color: #9a9a93;">Mo bis Fr</span><span style="font-size: 10px;">35 von 47 Antworten</span></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 27px; border-bottom: 1px solid #ecece6;"><span style="font-size: 8.5px; color: #9a9a93;">Do 08:00</span><span style="font-size: 10px;">Erinnerung an 12 Offene</span></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 27px; border-bottom: 1px solid #ecece6;"><span style="font-size: 8.5px; color: #9a9a93;">Fr 18:00</span><span style="font-size: 10px;">Zyklus schließt</span></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 27px; border-bottom: 1px solid #ecece6;"><span style="font-size: 8.5px; color: #9a9a93;">Mi 30.09.</span><span style="font-size: 10px;">Monatsbefragung &amp; Führung</span></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 27px;"><span style="font-size: 8.5px; color: #9a9a93;">Do 01.10.</span><span style="font-size: 10px;">Monatsreport September</span></div>
+        </div>
+      </section>
+
+      <!-- Latest feedback (events analog) -->
+      <section aria-label="Neueste Rückmeldungen" style="display: flex; flex-direction: column; gap: 12px; min-height: 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;">Neueste Rückmeldungen</h2>
+          <a href="#" style="display: inline-flex; align-items: center; height: 20px; padding: 0 9px; border-radius: 999px; background: #eaeae3; font-size: 9px; font-weight: 500; color: #111111;">Alle anzeigen</a>
+        </div>
+        <article style="box-sizing: border-box; padding: 14px 16px; background: #ffffff; border: 1px solid #ecece7; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.025); display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 28px; height: 28px; border-radius: 999px; background: #e6e9df; display: inline-flex; align-items: center; justify-content: center;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1.5" stroke="#222222" stroke-width="1.2"></rect><path d="M5 6V4.5a2 2 0 0 1 4 0V6" stroke="#222222" stroke-width="1.2"></path></svg></span>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+              <div style="font-size: 11px; font-weight: 600;">Anonyme Rückmeldung</div>
+              <div style="font-size: 8.5px; color: #77776f;">Pulse KW 39 · Frage „Störfaktor der Woche"</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 38px;">
+            <div style="font-size: 11px; font-weight: 600;">Vorlage für Service-Berichte</div>
+            <div style="font-size: 9.5px; color: #555550; line-height: 1.5;">„Wir bräuchten eine Vorlage für Service-Berichte. Dann könnte die KI den ersten Entwurf schreiben und wir müssten nicht jedes Mal bei null anfangen, gerade im Innendienst mit …"</div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-left: 38px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 8.5px; color: #555550;">
+              <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 999px; background: #ecece5; font-weight: 500;">Effizienz</span>
+              <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 999px; background: #ecece5; font-weight: 500;">Service</span>
+              <span style="color: #9a9a93;">6 ähnliche Rückmeldungen</span>
+            </div>
+            <div style="font-size: 8.5px; color: #9a9a93;">KW 39 · ohne Zeitstempel</div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-left: 38px;">
+            <div style="display: flex; align-items: center;">
+              <span style="width: 18px; height: 18px; border-radius: 999px; background: #d8d8d0; border: 2px solid #ffffff; display: inline-block;"></span>
+              <span style="width: 18px; height: 18px; border-radius: 999px; background: #c9c9c2; border: 2px solid #ffffff; display: inline-block; margin-left: -7px;"></span>
+              <span style="width: 18px; height: 18px; border-radius: 999px; background: #b6b6ae; border: 2px solid #ffffff; display: inline-block; margin-left: -7px;"></span>
+              <span style="margin-left: 6px; font-size: 8.5px; color: #77776f;">Thema in 3 Abteilungen</span>
+            </div>
+            <a href="#" style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 10px; border-radius: 999px; background: #f0f0ea; font-size: 9px; font-weight: 500; color: #111111;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M4 1v6M1 4h6" stroke="#111111" stroke-width="1.2" stroke-linecap="round"></path></svg>Als Maßnahme übernehmen</a>
+          </div>
+        </article>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ink":{"editor":"color","default":"#111111","options":["#111111","#1f2a44","#2f3b2f","#4a2f2a"]},"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { ink: this.props.ink ?? '#111111' };
+  }
+}
+</script>
+</body>
+</html>

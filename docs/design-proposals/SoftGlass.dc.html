@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>KI-Barometer Dashboard · Soft UI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap">
+<style>
+body{margin:0;font-family:"Poppins","Segoe UI",sans-serif;background:#c4c4c7}
+a{color:#1b1b1d;text-decoration:none}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 1200px; height: 1200px; box-sizing: border-box; padding: 238px 40px 0 40px; background: linear-gradient(180deg, #dadadc 0%, #c7c7ca 45%, #b1b0b4 100%); color: #1b1b1d; font-weight: 400; display: flex; flex-direction: column;">
+
+  <!-- App window -->
+  <div style="position: relative; width: 1120px; height: 722px; box-sizing: border-box; background: #f5f5f7; border-radius: 8px; box-shadow: 0 24px 70px rgba(30,30,35,0.22), 0 2px 8px rgba(30,30,35,0.06); overflow: hidden; display: flex;">
+
+    <!-- Floating left panel: navigation + survey drawer -->
+    <div style="position: relative; z-index: 2; margin: 8px 0 8px 8px; width: 428px; flex-shrink: 0; display: flex; border-radius: 22px; background: #f7f7f8; box-shadow: 0 12px 35px rgba(30,30,35,0.08); overflow: hidden;">
+
+      <!-- Primary sidebar -->
+      <nav aria-label="Hauptnavigation" style="width: 236px; box-sizing: border-box; padding: 20px 12px 18px 20px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: center; gap: 7px; height: 18px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6" cy="9" r="4.2" fill="{{accent}}"></circle><circle cx="10.5" cy="6" r="2.6" fill="#1b1b1d"></circle></svg>
+          <div style="font-size: 12.5px; letter-spacing: 0.12em; color: #1b1b1d;">ki-barometer</div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 12px; margin-top: 6px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="margin-top: 8px;"><path d="M9.5 3 4.5 8l5 5M4.5 8h8" stroke="#343438" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <h1 style="margin: 0; font-size: 24px; font-weight: 400; line-height: 1.15; letter-spacing: -0.01em;">Management<br>Übersicht</h1>
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 8px; height: 28px; font-size: 10.5px; color: #9a9aa0;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="#343438" stroke-width="1.3"></circle><path d="M10.6 10.6 14 14" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          <input type="search" placeholder="Suche im System" aria-label="Suche im System" style="border: 0; background: transparent; font: inherit; color: inherit; outline: none; width: 100%;">
+        </label>
+
+        <div style="height: 1px; background: #e7e7ea; margin-right: 8px;"></div>
+
+        <div style="display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: #55565a;">
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V7.5Z" stroke="#343438" stroke-width="1.3" stroke-linejoin="round"></path></svg>
+            Dashboard
+          </a>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <a href="#" aria-current="page" style="flex-grow: 1; display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; background: #ffffff; box-shadow: 0 2px 10px rgba(30,30,35,0.06); color: #1b1b1d;">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="3" width="11" height="10" rx="2.5" stroke="#343438" stroke-width="1.3"></rect><path d="M5.5 8.2 7.2 9.9 10.8 6.3" stroke="#343438" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              Befragungen
+            </a>
+            <button type="button" aria-label="Schließen" style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 999px; border: 0; background: #ffffff; box-shadow: 0 2px 10px rgba(30,30,35,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="#1b1b1d" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            </button>
+          </div>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path><circle cx="6" cy="4.5" r="1.3" fill="#ffffff" stroke="#343438" stroke-width="1.2"></circle><circle cx="10.5" cy="8" r="1.3" fill="#ffffff" stroke="#343438" stroke-width="1.2"></circle><circle cx="7" cy="11.5" r="1.3" fill="#ffffff" stroke="#343438" stroke-width="1.2"></circle></svg>
+            Abteilungen
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Empfehlungen
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="margin-left: auto;"><path d="M6 2.5v7M2.5 6h7" stroke="#9a9aa0" stroke-width="1.2" stroke-linecap="round"></path></svg>
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6" cy="6" r="2.4" stroke="#343438" stroke-width="1.3"></circle><path d="M2.5 13c.5-2.3 1.9-3.5 3.5-3.5S9 10.7 9.5 13M10.5 4.6a2 2 0 0 1 0 3.6M13.5 13c-.3-1.6-1.1-2.7-2.3-3.2" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Mitglieder
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="margin-left: auto;"><path d="M6 2.5v7M2.5 6h7" stroke="#9a9aa0" stroke-width="1.2" stroke-linecap="round"></path></svg>
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="#343438" stroke-width="1.3"></rect><path d="M5.5 10.5V7M8 10.5V5.5M10.5 10.5V8.5" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Kennzahlen
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="4" width="12" height="8.5" rx="2" stroke="#343438" stroke-width="1.3"></rect><path d="M2 7h12" stroke="#343438" stroke-width="1.3"></path><path d="M4.5 10.5h3" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Lizenzen &amp; Kosten
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="margin-left: auto;"><path d="M6 2.5v7M2.5 6h7" stroke="#9a9aa0" stroke-width="1.2" stroke-linecap="round"></path></svg>
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.5" stroke="#343438" stroke-width="1.3"></circle><circle cx="5.5" cy="8" r="0.8" fill="#343438"></circle><circle cx="8" cy="8" r="0.8" fill="#343438"></circle><circle cx="10.5" cy="8" r="0.8" fill="#343438"></circle></svg>
+            Mehr
+          </a>
+        </div>
+
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px;">
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="3" width="11" height="9" rx="2.5" stroke="#343438" stroke-width="1.3"></rect><path d="M5.5 7.2h5" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path><path d="M5.5 14h5" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Benachrichtigungen
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="2.1" stroke="#343438" stroke-width="1.3"></circle><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Einstellungen
+          </a>
+          <a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 999px; color: #55565a;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="5.5" r="2.6" stroke="#343438" stroke-width="1.3"></circle><path d="M3 13.5c.6-2.6 2.4-4 5-4s4.4 1.4 5 4" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Konto
+          </a>
+        </div>
+      </nav>
+
+      <!-- Secondary panel: surveys as stacked cards -->
+      <aside aria-label="Befragungen" style="width: 192px; box-sizing: border-box; padding: 18px 16px 14px 12px; background: #f0f0f2; display: flex; flex-direction: column; gap: 12px;">
+
+        <div style="background: #ffffff; border-radius: 18px; padding: 14px 14px 10px 14px; box-shadow: 0 8px 28px rgba(30,30,35,0.05); display: flex; flex-direction: column; gap: 6px; min-height: 145px; box-sizing: border-box;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; font-weight: 500;">KI-Einblick</div>
+            <span style="width: 20px; height: 20px; border-radius: 999px; background: #f4f4f6; display: inline-flex; align-items: center; justify-content: center;"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+          <div style="font-size: 10.5px; color: #6f7076; line-height: 1.45;">Die Adoption stieg im dritten Quartal <span style="font-weight: 500; color: #1b1b1d;">von 61 % auf 72 %.</span></div>
+          <svg width="100%" height="34" viewBox="0 0 150 34" aria-hidden="true" style="margin-top: auto;">
+            <defs><pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="#e2e2e6"></circle></pattern></defs>
+            <rect x="0" y="0" width="150" height="34" fill="url(#dots)"></rect>
+            <rect x="96" y="6" width="4" height="4" fill="{{accent}}"></rect><rect x="102" y="6" width="4" height="4" fill="#1b1b1d"></rect><rect x="114" y="6" width="4" height="4" fill="{{accent}}"></rect>
+            <rect x="90" y="12" width="4" height="4" fill="#1b1b1d"></rect><rect x="96" y="12" width="4" height="4" fill="#1b1b1d"></rect><rect x="108" y="12" width="4" height="4" fill="{{accent}}"></rect><rect x="120" y="12" width="4" height="4" fill="#1b1b1d"></rect>
+            <rect x="96" y="18" width="4" height="4" fill="{{accent}}"></rect><rect x="102" y="18" width="4" height="4" fill="#1b1b1d"></rect><rect x="108" y="18" width="4" height="4" fill="#1b1b1d"></rect><rect x="114" y="18" width="4" height="4" fill="{{accent}}"></rect>
+            <rect x="102" y="24" width="4" height="4" fill="#1b1b1d"></rect><rect x="114" y="24" width="4" height="4" fill="{{accent}}"></rect>
+          </svg>
+        </div>
+
+        <!-- Weekly pulse with a paper preview peeking above -->
+        <div style="position: relative; padding-top: 40px;">
+          <div aria-hidden="true" style="position: absolute; left: 14px; top: 0; width: 118px; height: 66px; background: #ffffff; border-radius: 6px; box-shadow: 0 8px 22px rgba(30,30,35,0.10); transform: rotate(-7deg); box-sizing: border-box; padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="font-size: 7px; letter-spacing: 0.14em; color: #1b1b1d;">PULSE</div>
+            <div style="height: 2px; width: 70%; background: #e7e7ea; border-radius: 999px;"></div>
+            <div style="height: 2px; width: 55%; background: #e7e7ea; border-radius: 999px;"></div>
+            <div style="height: 2px; width: 62%; background: #e7e7ea; border-radius: 999px;"></div>
+            <div style="height: 4px; width: 40%; background: {{accent}}; border-radius: 999px; margin-top: 2px;"></div>
+          </div>
+          <a href="#" style="position: relative; display: flex; align-items: center; justify-content: space-between; height: 68px; box-sizing: border-box; padding: 0 14px 0 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 28px rgba(30,30,35,0.05);">
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="font-size: 12px; font-weight: 500;">Wöchentlicher Pulse</div>
+              <div style="font-size: 10.5px; color: #8d8d93;">6 Zyklen · 1 offen</div>
+            </div>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </a>
+        </div>
+
+        <!-- Monthly with a report preview peeking above -->
+        <div style="position: relative; padding-top: 30px;">
+          <div aria-hidden="true" style="position: absolute; left: 6px; right: 6px; top: 0; height: 52px; background: #f7f7f8; border-radius: 16px; box-shadow: 0 6px 20px rgba(30,30,35,0.06); box-sizing: border-box; padding: 9px 12px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; gap: 6px;"><div style="height: 3px; width: 38%; background: #dadadf; border-radius: 999px;"></div><div style="height: 3px; width: 22%; background: #dadadf; border-radius: 999px;"></div></div>
+            <div style="display: flex; gap: 6px;"><div style="height: 3px; width: 28%; background: #dadadf; border-radius: 999px;"></div><div style="height: 3px; width: 30%; background: #f1a487; border-radius: 999px;"></div></div>
+          </div>
+          <a href="#" style="position: relative; display: flex; align-items: center; justify-content: space-between; height: 68px; box-sizing: border-box; padding: 0 14px 0 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 28px rgba(30,30,35,0.05);">
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="font-size: 12px; font-weight: 500;">Monatsbefragung</div>
+              <div style="font-size: 10.5px; color: #8d8d93;">2 Zyklen</div>
+            </div>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </a>
+        </div>
+
+        <a href="#" style="display: flex; align-items: center; justify-content: space-between; height: 68px; box-sizing: border-box; padding: 0 14px 0 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 28px rgba(30,30,35,0.05);">
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 12px; font-weight: 500;">Führungskräfte</div>
+            <div style="font-size: 10.5px; color: #8d8d93;">2 Zyklen</div>
+          </div>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+
+        <a href="#" style="display: flex; align-items: center; justify-content: space-between; height: 68px; box-sizing: border-box; padding: 0 14px 0 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 28px rgba(30,30,35,0.05);">
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 12px; font-weight: 500;">Onboarding</div>
+            <div style="font-size: 10.5px; color: #8d8d93;">47 Antworten</div>
+          </div>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+      </aside>
+    </div>
+
+    <!-- Drag handle between panel and content -->
+    <div aria-hidden="true" style="position: absolute; left: 442px; top: 350px; width: 2px; height: 22px; border-radius: 999px; background: #c9c9ce; z-index: 3;"></div>
+
+    <!-- Main content -->
+    <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 24px 12px 0 22px; display: flex; flex-direction: column; gap: 0;">
+
+      <!-- Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; height: 34px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 16px 0 8px; border-radius: 999px; background: #ffffff; box-shadow: 0 2px 12px rgba(30,30,35,0.06);">
+            <span style="width: 18px; height: 18px; border-radius: 999px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span></span>
+            <span style="font-size: 11px; color: #55565a; {{blurStyle}}">Befragungen Übersicht</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 18px;">
+            <button type="button" aria-label="Kommentare" style="width: 18px; height: 18px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.5c3.3 0 5.5 2 5.5 4.6 0 2.7-2.2 4.7-5.5 4.7-.6 0-1.2-.1-1.7-.2L3.5 13l.6-2.6C3.1 9.5 2.5 8.4 2.5 7.1 2.5 4.5 4.7 2.5 8 2.5Z" stroke="#343438" stroke-width="1.3" stroke-linejoin="round"></path></svg></button>
+            <button type="button" aria-label="Merken" style="width: 18px; height: 18px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 2.5h7v11L8 10.5 4.5 13.5v-11Z" stroke="#343438" stroke-width="1.3" stroke-linejoin="round"></path></svg></button>
+            <button type="button" aria-label="Filter" style="width: 18px; height: 18px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 3.5h11L9.5 8.5v4l-3 1.2V8.5L2.5 3.5Z" stroke="#343438" stroke-width="1.3" stroke-linejoin="round"></path></svg></button>
+          </div>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; width: 250px; font-size: 10.5px; color: #8d8d93;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.6" stroke="#343438" stroke-width="1.3"></circle><path d="M10.6 10.6 14 14" stroke="#343438" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          <input type="search" placeholder="Suche in Befragungen …" aria-label="Suche in Befragungen" style="border: 0; background: transparent; font: inherit; color: inherit; outline: none; flex-grow: 1;">
+          <span style="font-size: 9.5px; color: #9a9aa0;">⌘ S</span>
+        </label>
+      </div>
+
+      <!-- Top row -->
+      <div style="display: grid; grid-template-columns: 144px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-bottom: 26px;">
+        <section aria-label="Adoption" style="height: 150px; box-sizing: border-box; padding: 16px 16px 14px 18px; border-radius: 20px; background: rgba(255,255,255,0.62); border: 1px solid rgba(255,255,255,0.45); box-shadow: 0 8px 28px rgba(30,30,35,0.03); display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: flex-end;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+          <div style="margin-top: auto; display: flex; flex-direction: column; gap: 4px; {{blurStyle}}">
+            <div style="font-size: 34px; font-weight: 300; letter-spacing: -0.02em; line-height: 1;">72<span style="font-size: 18px; color: #8d8d93;">%</span></div>
+            <div style="font-size: 9px; color: #9a9aa0; text-align: right;">Adoption / 100 %</div>
+          </div>
+        </section>
+
+        <section aria-label="Empfehlungen" style="height: 150px; box-sizing: border-box; padding: 16px 18px 12px 18px; border-radius: 20px; background: rgba(255,255,255,0.62); border: 1px solid rgba(255,255,255,0.45); box-shadow: 0 8px 28px rgba(30,30,35,0.03); display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; font-weight: 500;">Empfehlungen</div>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #e98989; display: inline-block;"></span>1</div>
+              <div style="font-size: 10px; color: #6f7076; padding-left: 11px;">Offen</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #f1a487; display: inline-block;"></span>2</div>
+              <div style="font-size: 10px; color: #6f7076; padding-left: 11px;">Erledigt</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;"><span style="width: 5px; height: 5px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>0</div>
+              <div style="font-size: 10px; color: #6f7076; padding-left: 11px;">Verworfen</div>
+            </div>
+          </div>
+          <div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; font-size: 8.5px; color: #9a9aa0;"><span>Kritisch</span><span>Akzeptabel</span></div>
+            <div style="height: 2px; border-radius: 999px; background: linear-gradient(90deg, #e98989 0%, #f1a487 34%, {{accent}} 60%, #e8e8eb 60%);"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 8.5px; color: #9a9aa0;"><span>KW 33</span><span>KW 34</span><span>KW 35</span><span>KW 36</span><span>KW 37</span><span>KW 38</span></div>
+          </div>
+        </section>
+
+        <section aria-label="Kosten und Ersparnis" style="height: 150px; box-sizing: border-box; padding: 16px 18px 14px 18px; border-radius: 20px; background: rgba(255,255,255,0.62); border: 1px solid rgba(255,255,255,0.45); box-shadow: 0 8px 28px rgba(30,30,35,0.03); display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; font-weight: 500;">Kosten &amp; Ersparnis</div>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 7px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 12.5px; font-weight: 500;">54 €</span><span style="font-size: 9px; color: #6f7076;">(Lizenz pro Kopf / 7 %)</span></div>
+            <div style="height: 2.5px; border-radius: 999px; background: #e8e8eb; overflow: hidden;"><div style="width: 7%; height: 100%; background: {{accent}}; border-radius: 999px;"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 7px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 12.5px; font-weight: 500;">743 €</span><span style="font-size: 9px; color: #6f7076;">(Ersparnis pro Kopf / 100 %)</span></div>
+            <div style="height: 2.5px; border-radius: 999px; background: #e8e8eb; overflow: hidden;"><div style="width: 100%; height: 100%; background: {{accent}}; border-radius: 999px;"></div></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Departments table -->
+      <section aria-label="Abteilungen" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 4px;">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 400; {{blurStyle}}">Meine Abteilungen</h2>
+          <button type="button" aria-label="Abteilung hinzufügen" style="width: 18px; height: 18px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="3" stroke="#9a9aa0" stroke-width="1.2"></rect><path d="M8 5.5v5M5.5 8h5" stroke="#9a9aa0" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
+        </div>
+        <div style="display: grid; grid-template-columns: 30px 1.9fr 1.1fr 1.1fr 1.1fr 0.8fr 30px; gap: 0 10px; align-items: center; padding: 0 12px; font-size: 9.5px; color: #9a9aa0; {{blurStyle}}">
+          <div></div><div>Abteilung</div><div>Adoption</div><div>Vertrauen</div><div>Nächster Pulse</div><div>Antworten</div><div></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div style="display: grid; grid-template-columns: 30px 1.9fr 1.1fr 1.1fr 1.1fr 0.8fr 30px; gap: 0 10px; align-items: center; height: 46px; padding: 0 12px; border-radius: 18px; font-size: 10.5px; color: #55565a;">
+            <span style="width: 14px; height: 14px; border-radius: 999px; border: 1px solid #dadadf; display: inline-block;"></span>
+            <div style="font-size: 11.5px; color: #1b1b1d; {{blurStyle}}">Vertrieb &amp; Export</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2d667; display: inline-block;"></span>Auf Kurs</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2d667; display: inline-block;"></span>Auf Kurs</div>
+            <div>28-Sep-2026</div>
+            <div>11 von 12</div>
+            <span style="width: 16px; height: 16px; border-radius: 4px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1.5 4h5M4 1.5 6.5 4 4 6.5" stroke="#9a9aa0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+          <div style="display: grid; grid-template-columns: 30px 1.9fr 1.1fr 1.1fr 1.1fr 0.8fr 30px; gap: 0 10px; align-items: center; height: 46px; padding: 0 12px; border-radius: 18px; background: #ffffff; box-shadow: 0 8px 28px rgba(30,30,35,0.05); font-size: 10.5px; color: #1b1b1d;">
+            <span style="width: 14px; height: 14px; border-radius: 999px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #dadadf; display: inline-block;"></span></span>
+            <div style="font-size: 11.5px; color: #1b1b1d;">Konstruktion &amp; Entwicklung</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2b36a; display: inline-block;"></span>Beobachten</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2d667; display: inline-block;"></span>Auf Kurs</div>
+            <div>28-Sep-2026</div>
+            <div>12 von 14</div>
+            <span style="width: 16px; height: 16px; border-radius: 4px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1.5 4h5M4 1.5 6.5 4 4 6.5" stroke="#9a9aa0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+          <div style="display: grid; grid-template-columns: 30px 1.9fr 1.1fr 1.1fr 1.1fr 0.8fr 30px; gap: 0 10px; align-items: center; height: 46px; padding: 0 12px; border-radius: 18px; font-size: 10.5px; color: #55565a;">
+            <span style="width: 14px; height: 14px; border-radius: 999px; border: 1px solid #dadadf; display: inline-block;"></span>
+            <div style="font-size: 11.5px; color: #1b1b1d; {{blurStyle}}">Verwaltung &amp; Finanzen</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2d667; display: inline-block;"></span>Auf Kurs</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2d667; display: inline-block;"></span>Auf Kurs</div>
+            <div>28-Sep-2026</div>
+            <div>6 von 8</div>
+            <span style="width: 16px; height: 16px; border-radius: 4px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1.5 4h5M4 1.5 6.5 4 4 6.5" stroke="#9a9aa0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+          <div style="display: grid; grid-template-columns: 30px 1.9fr 1.1fr 1.1fr 1.1fr 0.8fr 30px; gap: 0 10px; align-items: center; height: 46px; padding: 0 12px; border-radius: 18px; font-size: 10.5px; color: #55565a;">
+            <span style="width: 14px; height: 14px; border-radius: 999px; border: 1px solid #dadadf; display: inline-block;"></span>
+            <div style="font-size: 11.5px; color: #1b1b1d; {{blurStyle}}">Service-Innendienst</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e2b36a; display: inline-block;"></span>Beobachten</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e5a18d; display: inline-block;"></span>Kritisch</div>
+            <div>28-Sep-2026</div>
+            <div>7 von 9</div>
+            <span style="width: 16px; height: 16px; border-radius: 4px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1.5 4h5M4 1.5 6.5 4 4 6.5" stroke="#9a9aa0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+          <div style="display: grid; grid-template-columns: 30px 1.9fr 1.1fr 1.1fr 1.1fr 0.8fr 30px; gap: 0 10px; align-items: center; height: 46px; padding: 0 12px; border-radius: 18px; font-size: 10.5px; color: #9a9aa0;">
+            <span style="width: 14px; height: 14px; border-radius: 999px; border: 1px solid #dadadf; display: inline-block;"></span>
+            <div style="font-size: 11.5px; color: #1b1b1d; {{blurStyle}}">Marketing</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><svg width="10" height="10" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1.5" stroke="#9a9aa0" stroke-width="1.2"></rect><path d="M5 6V4.5a2 2 0 0 1 4 0V6" stroke="#9a9aa0" stroke-width="1.2"></path></svg>n &lt; 5</div>
+            <div style="display: flex; align-items: center; gap: 7px;"><svg width="10" height="10" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1.5" stroke="#9a9aa0" stroke-width="1.2"></rect><path d="M5 6V4.5a2 2 0 0 1 4 0V6" stroke="#9a9aa0" stroke-width="1.2"></path></svg>n &lt; 5</div>
+            <div>28-Sep-2026</div>
+            <div>4 von 4</div>
+            <span style="width: 16px; height: 16px; border-radius: 4px; border: 1px solid #dadadf; display: inline-flex; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1.5 4h5M4 1.5 6.5 4 4 6.5" stroke="#9a9aa0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Participation -->
+      <section aria-label="Teilnahme" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 4px;">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 400; {{blurStyle}}">Teilnahme &amp; Rücklauf</h2>
+          <button type="button" aria-label="Zyklus öffnen" style="width: 18px; height: 18px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="3" stroke="#9a9aa0" stroke-width="1.2"></rect><path d="M8 5.5v5M5.5 8h5" stroke="#9a9aa0" stroke-width="1.2" stroke-linecap="round"></path></svg></button>
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 256px; gap: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; padding: 6px 8px 0 8px;">
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 10px; color: #6f7076; {{blurStyle}}">
+              <div style="font-size: 10.5px; color: #55565a;">Rücklauf je Zyklus</div>
+              <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 5px; height: 5px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span><span>KW 36<br><span style="color: #9a9aa0;">79 %</span></span></div>
+              <div style="display: flex; align-items: center; gap: 7px;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #dadadf; display: inline-block;"></span><span>KW 37<br><span style="color: #9a9aa0;">75 %</span></span></div>
+            </div>
+            <svg width="220" height="128" viewBox="0 0 220 128" aria-label="Teilnahmequote 73 Prozent">
+              <defs><linearGradient id="gauge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e98989"></stop><stop offset="0.55" stop-color="#f1a487"></stop><stop offset="1" stop-color="{{accent}}"></stop></linearGradient></defs>
+              <path d="M20 112 A90 90 0 0 1 200 112" fill="none" stroke="#e5e5e8" stroke-width="5" stroke-linecap="round"></path>
+              <path d="M20 112 A90 90 0 0 1 200 112" fill="none" stroke="url(#gauge)" stroke-width="5" stroke-linecap="round" stroke-dasharray="206 283"></path>
+              <text x="110" y="72" text-anchor="middle" font-size="9.5" fill="#8d8d93" font-family="Poppins, sans-serif">Teilnahmequote</text>
+              <text x="110" y="112" text-anchor="middle" font-size="38" font-weight="300" fill="#1b1b1d" font-family="Poppins, sans-serif">73%<tspan font-size="10" fill="#8d8d93">/100%</tspan></text>
+            </svg>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 10.5px; color: #55565a; padding-left: 8px;">
+              <div style="display: flex; align-items: flex-start; gap: 7px;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #f1a487; display: inline-block; margin-top: 5px;"></span><span>KW 38 · Pulse<br><span style="color: #1b1b1d;">35 von 47</span></span></div>
+              <div style="display: flex; align-items: flex-start; gap: 7px;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #e98989; display: inline-block; margin-top: 5px;"></span><span>September · Monat<br><span style="color: #1b1b1d;">28 von 47</span></span></div>
+            </div>
+          </div>
+
+          <section aria-label="Stimmen aus dem Team" style="box-sizing: border-box; padding: 16px 18px; border-radius: 20px; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.45); display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="font-size: 11.5px; font-weight: 500; line-height: 1.3;">Stimmen aus dem Team<br>der letzten 4 Wochen</div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" style="margin-top: 3px;"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#55565a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <button type="button" aria-label="Zurück" style="width: 16px; height: 16px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" stroke="#343438" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+              <div style="flex-grow: 1; height: 1px; background: #dadadf; position: relative;"><div style="position: absolute; left: 0; top: -1px; width: 34px; height: 3px; background: #1b1b1d; border-radius: 999px;"></div></div>
+              <button type="button" aria-label="Weiter" style="width: 16px; height: 16px; border: 0; padding: 0; background: transparent; cursor: pointer;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#343438" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 10.5px; color: #55565a;">
+              <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline;"><span>Exportkorrespondenz jetzt in einer Stunde</span><span style="font-size: 12px; color: #1b1b1d;">KW 38</span></div>
+              <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline;"><span>Vorlage für Service-Berichte fehlt</span><span style="font-size: 12px; color: #1b1b1d;">KW 37</span></div>
+              <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline;"><span>Zahlen prüfe ich doppelt</span><span style="font-size: 12px; color: #1b1b1d;">KW 37</span></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#f5d95e","options":["#f5d95e","#f1a487","#c8d7a8","#a9c4ec"]},"presentationBlur":{"editor":"boolean","default":true},"$preview":{"width":1200,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const blur = this.props.presentationBlur ?? true;
+    return {
+      accent: this.props.accent ?? '#f5d95e',
+      blurStyle: blur ? 'filter: blur(2.4px); opacity: 0.92;' : ''
+    };
+  }
+}
+</script>
+</body>
+</html>
