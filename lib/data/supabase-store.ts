@@ -675,14 +675,21 @@ export class SupabaseStore implements Store {
         .eq("org_id", orgId),
       "listParticipationStats",
     );
-    return rows.map((r) => ({
-      org_id: r.org_id,
-      cycle_id: r.cycle_id,
-      template_key: r.template_key,
-      week: r.week,
-      invited: Number(r.invited),
-      completed: Number(r.completed),
-    }));
+    // A cycle that is still open and has no completion yet is "in progress",
+    // not a 0 % week — keep it out of the dashboard until someone answers.
+    const openEmpty = new Set(
+      (await this.listCycles(orgId, { status: "open" })).map((c) => c.id),
+    );
+    return rows
+      .filter((r) => !(openEmpty.has(r.cycle_id) && Number(r.completed) === 0))
+      .map((r) => ({
+        org_id: r.org_id,
+        cycle_id: r.cycle_id,
+        template_key: r.template_key,
+        week: r.week,
+        invited: Number(r.invited),
+        completed: Number(r.completed),
+      }));
   }
 
   async addParticipationStats(): Promise<void> {

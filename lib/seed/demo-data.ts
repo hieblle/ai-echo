@@ -874,6 +874,11 @@ export interface GenerateOrgWeekArgs {
   /** Chronological, consecutive ISO weeks; the window the demo covers. */
   weeks: string[];
   weekIndex: number;
+  /**
+   * Which §16.3 profile drives the numbers; defaults to the org's own id.
+   * Lets a showcase customer with a database id reuse e.g. Merlin's profile.
+   */
+  profileId?: string;
 }
 
 export interface GeneratedDemoData {
@@ -896,10 +901,11 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
   const { org, departments, headcounts, toolSettings, weeks, weekIndex } = args;
   assertConsecutiveWeeks(weeks);
   const isoWeek = required(weeks[weekIndex], `weeks[${weekIndex}]`);
-  const profile = ORG_PROFILES[org.id];
+  const profileId = args.profileId ?? org.id;
+  const profile = ORG_PROFILES[profileId];
   if (!profile) {
     throw new Error(
-      `demo-data: no demo profile for org "${org.id}" — the generator covers the SPEC.md §16.3 demo orgs`,
+      `demo-data: no demo profile for "${profileId}" — the generator covers the SPEC.md §16.3 demo orgs`,
     );
   }
 
@@ -1145,10 +1151,13 @@ export function generateOrgWeek(args: GenerateOrgWeekArgs): GeneratedDemoData {
     // O1 — department (catalog value closest to the real org department; the
     // row's department_id carries the real department).
     for (const respondent of onboarders) {
+      // Demo orgs map their department ids to the O1 catalogue; a real org's
+      // O1 lists its own departments, so the department id IS the answer.
       emit(onboardingCycleId, respondent.department_id, "employee", "O1", {
         kind: "choice",
         value:
-          profile.onboarding.o1ByDepartment[respondent.department_id] ?? "other",
+          profile.onboarding.o1ByDepartment[respondent.department_id] ??
+          respondent.department_id,
       });
     }
 

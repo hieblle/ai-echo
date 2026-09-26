@@ -433,7 +433,12 @@ export class MemoryStore implements Store {
           completed: rows.filter((p) => p.status === "completed").length,
         } satisfies ParticipationStat;
       })
-      .filter((s) => s.invited > 0);
+      // An open cycle nobody answered yet is in progress, not a 0 % week.
+      .filter((s) => s.invited > 0)
+      .filter((s) => {
+        const cycle = this.cycles.find((c) => c.id === s.cycle_id);
+        return !(cycle?.status === "open" && s.completed === 0);
+      });
     return structuredClone([...fromDemo, ...fromCycles]);
   }
 

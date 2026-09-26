@@ -111,17 +111,20 @@ export async function openCycle(
   );
 
   let mailed = 0;
-  for (const m of fresh) {
-    try {
-      await mailer.sendLoginLink({
-        email: m.email,
-        orgName: org.name,
-        template,
-        kind: "invitation",
-      });
-      mailed += 1;
-    } catch (err) {
-      console.error(`openCycle: mail to ${m.email} failed:`, err);
+  // Showcase orgs carry placeholder addresses — never mail them.
+  if (!org.is_demo) {
+    for (const m of fresh) {
+      try {
+        await mailer.sendLoginLink({
+          email: m.email,
+          orgName: org.name,
+          template,
+          kind: "invitation",
+        });
+        mailed += 1;
+      } catch (err) {
+        console.error(`openCycle: mail to ${m.email} failed:`, err);
+      }
     }
   }
   return { cycle, created: !existed, invited: fresh.length, mailed };
@@ -152,7 +155,7 @@ export async function sendReminders(
     );
     for (const p of pending) {
       const m = members.get(p.membership_id);
-      if (!m || m.status === "removed") continue;
+      if (!m || m.status === "removed" || org.is_demo) continue;
       try {
         await mailer.sendLoginLink({
           email: m.email,

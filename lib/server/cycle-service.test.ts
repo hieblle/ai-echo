@@ -129,6 +129,14 @@ describe("openCycle", () => {
     const r = await openCycle(store, mailer, ORG, "weekly", MONDAY);
     expect(r).toMatchObject({ invited: 3, mailed: 2 });
   });
+
+  it("never mails the placeholder members of a showcase org", async () => {
+    const demoOrg = { ...ORG, is_demo: true };
+    const r = await openCycle(store, mailer, demoOrg, "weekly", MONDAY);
+    expect(r).toMatchObject({ invited: 3, mailed: 0 });
+    expect(await sendReminders(store, mailer, demoOrg, THURSDAY)).toEqual({ cycles: 1, mailed: 0 });
+    expect(mailer.loginLinks).toHaveLength(0);
+  });
 });
 
 describe("sendReminders", () => {
