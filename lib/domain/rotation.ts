@@ -26,15 +26,22 @@ export const WEEKLY_DRAW_MAX = 5;
 export const WEEKLY_DRAW_DEFAULT = 5;
 
 /**
- * Questions anchored in EVERY weekly draw. W1.1 feeds the lead KPI
- * (Adoption-Rate, SPEC §10: "an allen W1.1-Antworten der Woche") — without a
- * weekly draw the only W1.1 answers come from the non-user short variant,
- * which is structurally biased toward "none". SPEC §9's no-repeat rule and
- * §10's weekly adoption measurement conflict here; resolved in favor of §10
- * (documented in DECISIONS.md D2.10): anchors repeat weekly by design and
- * are exempt from exclusion and personalization.
+ * Questions anchored in EVERY weekly draw (DECISIONS.md D2.10, D4.8):
+ *
+ * - W1.1 feeds the lead KPI (Adoption-Rate, SPEC §10: "an allen
+ *   W1.1-Antworten der Woche") — without a weekly draw the only W1.1 answers
+ *   come from the non-user short variant, which is structurally biased
+ *   toward "none".
+ * - W2.1 (saved hours) feeds the ROI. As a rotating question it was asked in
+ *   only one or two weeks of a four-week window, so the monthly saved-hours
+ *   figure depended on the luck of the draw (factor 2–4).
+ *
+ * SPEC §9's no-repeat rule and §10's weekly measurement conflict here;
+ * resolved in favor of §10: anchors repeat weekly by design and are exempt
+ * from exclusion and personalization. Non-users still get the short variant
+ * (conditional.ts) and therefore never answer W2.1 — they count as 0 hours.
  */
-export const WEEKLY_ANCHOR_CODES: readonly string[] = ["W1.1"];
+export const WEEKLY_ANCHOR_CODES: readonly string[] = ["W1.1", "W2.1"];
 
 /** Monthly deep-dive size bounds (SPEC.md §4.1/§8: "8–12 Fragen"). */
 export const MONTHLY_DRAW_MIN = 8;
@@ -209,8 +216,10 @@ function drawWeekly(
   }
 
   // First pass: guarantee dimension coverage (constraint a, only for 4+).
+  // A dimension an anchor already covers needs no second question.
   if (count >= 4) {
     for (const dimension of WEEKLY_DIMENSIONS) {
+      if (picked.some((q) => q.dimension === dimension)) continue;
       const question = shuffled.find(
         (q) => q.dimension === dimension && !pickedCodes.has(q.code),
       );

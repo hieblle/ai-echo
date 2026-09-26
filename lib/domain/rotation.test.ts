@@ -437,7 +437,11 @@ describe("pickMonthlyQuestions", () => {
 // --- Weekly anchors (D2.10) -----------------------------------------------------
 
 describe("pickWeeklyQuestions · anchors", () => {
-  it("includes the anchor in every draw across many weeks", () => {
+  it("anchors exactly the adoption and saved-hours questions (D2.10, D4.8)", () => {
+    expect([...WEEKLY_ANCHOR_CODES]).toEqual(["W1.1", "W2.1"]);
+  });
+
+  it("includes every anchor in every draw across many weeks", () => {
     for (let w = 10; w < 30; w++) {
       const draw = pickWeeklyQuestions({
         pool: POOL,
@@ -445,7 +449,9 @@ describe("pickWeeklyQuestions · anchors", () => {
         isoWeek: `2026-W${String(w).padStart(2, "0")}`,
         anchors: WEEKLY_ANCHOR_CODES,
       });
-      expect(codesOf(draw)).toContain("W1.1");
+      for (const code of WEEKLY_ANCHOR_CODES) {
+        expect(codesOf(draw)).toContain(code);
+      }
       expect(draw).toHaveLength(5);
     }
   });
