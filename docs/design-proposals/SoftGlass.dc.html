@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>KI-Barometer Dashboard · Soft Glass</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap">
+<style>
+body{margin:0;font-family:"Outfit","Segoe UI",sans-serif;background:#dfe1e5}
+a{color:#1f2226;text-decoration:none}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1060px; box-sizing: border-box; padding: 24px; background: linear-gradient(160deg, #eceef1 0%, #d8dbe0 100%); color: #1f2226; font-weight: 400; display: flex;">
+
+  <!-- Frosted app window -->
+  <div style="flex-grow: 1; display: flex; gap: 0; background: rgba(255,255,255,0.62); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.8); border-radius: 26px; box-shadow: 0 30px 80px rgba(31,34,38,0.14), 0 2px 6px rgba(31,34,38,0.05); overflow: hidden;">
+
+    <!-- Sidebar -->
+    <nav aria-label="Hauptnavigation" style="width: 218px; box-sizing: border-box; padding: 22px 16px 20px 20px; display: flex; flex-direction: column; gap: 22px; border-right: 1px solid rgba(31,34,38,0.06);">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="#1f2226" stroke-width="1.6"></circle><path d="M11 11 L15.5 6.5" stroke="{{accent}}" stroke-width="2.2" stroke-linecap="round"></path><circle cx="11" cy="11" r="1.6" fill="#1f2226"></circle></svg>
+        <div style="font-size: 15px; font-weight: 500; letter-spacing: 0.01em;">KI-Barometer</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 12px; color: #6b7079;">Organisation</div>
+        <div style="font-size: 17px; font-weight: 500; line-height: 1.2;">Moorbach Antriebstechnik</div>
+      </div>
+
+      <label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,0.7); border: 1px solid rgba(31,34,38,0.06); font-size: 12px; color: #6b7079;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="#6b7079" stroke-width="1.4"></circle><path d="M10.5 10.5 14 14" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round"></path></svg>
+        <input type="search" placeholder="Suchen" aria-label="Suchen" style="border: 0; background: transparent; font: inherit; color: inherit; outline: none; width: 100%;">
+      </label>
+
+      <div style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 7.5 8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V7.5Z" stroke="#4a4f57" stroke-width="1.3" stroke-linejoin="round"></path></svg>
+          Übersicht
+        </a>
+        <a href="#" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 14px rgba(31,34,38,0.08); color: #1f2226; font-weight: 500;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6" stroke="#1f2226" stroke-width="1.5" stroke-linecap="round"></path></svg>
+          Dashboard
+        </a>
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5" stroke="#4a4f57" stroke-width="1.3"></rect><path d="M5.5 8.2 7.2 9.9 10.8 6.3" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Befragungen
+          <span style="margin-left: auto; font-size: 11px; color: #6b7079;">1 offen</span>
+        </a>
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 2.5h6l3 3V13a.5.5 0 0 1-.5.5h-8.5a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z" stroke="#4a4f57" stroke-width="1.3" stroke-linejoin="round"></path><path d="M6 9h4M6 11h3" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          Monatsreport
+        </a>
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6" cy="6" r="2.5" stroke="#4a4f57" stroke-width="1.3"></circle><path d="M2.5 13c.5-2.3 1.9-3.5 3.5-3.5S9 10.7 9.5 13M10.5 4.5a2 2 0 0 1 0 3.8M13.5 13c-.3-1.6-1.1-2.7-2.3-3.2" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          Mitglieder
+        </a>
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4.5h10M3 8h10M3 11.5h10" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path><circle cx="6" cy="4.5" r="1.3" fill="#ffffff" stroke="#4a4f57" stroke-width="1.2"></circle><circle cx="10.5" cy="8" r="1.3" fill="#ffffff" stroke="#4a4f57" stroke-width="1.2"></circle><circle cx="7" cy="11.5" r="1.3" fill="#ffffff" stroke="#4a4f57" stroke-width="1.2"></circle></svg>
+          Verwaltung
+        </a>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #4a4f57;">
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3L4 11Z" stroke="#4a4f57" stroke-width="1.3" stroke-linejoin="round"></path><path d="M6.8 14h2.4" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          Benachrichtigungen
+        </a>
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="2.2" stroke="#4a4f57" stroke-width="1.3"></circle><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          Einstellungen
+        </a>
+        <a href="#" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 12px; color: #4a4f57;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="5.5" r="2.7" stroke="#4a4f57" stroke-width="1.3"></circle><path d="M3 13.5c.6-2.6 2.4-4 5-4s4.4 1.4 5 4" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          Konto · Leon
+        </a>
+      </div>
+    </nav>
+
+    <!-- Drawer: Befragungen (stacked cards) -->
+    <aside aria-label="Befragungen" style="width: 232px; box-sizing: border-box; padding: 22px 16px 20px 16px; display: flex; flex-direction: column; gap: 14px; background: rgba(255,255,255,0.35); border-right: 1px solid rgba(31,34,38,0.06);">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3 5 8l5 5" stroke="#1f2226" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <div style="font-size: 20px; font-weight: 400; line-height: 1.1;">Befragungen</div>
+        </div>
+        <button type="button" aria-label="Schließen" style="width: 30px; height: 30px; border-radius: 999px; border: 0; background: #ffffff; box-shadow: 0 2px 8px rgba(31,34,38,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="#1f2226" stroke-width="1.4" stroke-linecap="round"></path></svg>
+        </button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: #ffffff; border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(31,34,38,0.07); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 13px; font-weight: 500;">Diese Woche</div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="font-size: 12px; color: #4a4f57; line-height: 1.45;">Die Adoption stieg im dritten Monat von 61 % auf <span style="font-weight: 600; color: #1f2226;">72 %</span>. Der Pulse KW 38 ist noch bis Freitag offen.</div>
+          <div style="height: 6px; border-radius: 999px; background: #eef0f3; overflow: hidden;"><div style="width: 73%; height: 100%; border-radius: 999px; background: {{accent}};"></div></div>
+          <div style="font-size: 11px; color: #6b7079;">35 von 47 haben geantwortet</div>
+        </div>
+
+        <a href="#" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(31,34,38,0.06); display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 13px; font-weight: 500;">Wöchentlicher Pulse</div>
+            <div style="font-size: 11px; color: #6b7079;">KW 38 · offen</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <a href="#" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(31,34,38,0.06); display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 13px; font-weight: 500;">Monatliche Vertiefung</div>
+            <div style="font-size: 11px; color: #6b7079;">September · geschlossen</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <a href="#" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(31,34,38,0.06); display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 13px; font-weight: 500;">Führungskräfte</div>
+            <div style="font-size: 11px; color: #6b7079;">6 von 6 · September</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <a href="#" style="background: #ffffff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(31,34,38,0.06); display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="font-size: 13px; font-weight: 500;">Onboarding</div>
+            <div style="font-size: 11px; color: #6b7079;">47 von 47 · abgeschlossen</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+      </div>
+
+      <div style="margin-top: auto; font-size: 11px; color: #6b7079; line-height: 1.45;">Antworten werden nur ab 5 Personen je Abteilung ausgewertet.</div>
+    </aside>
+
+    <!-- Main -->
+    <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 18px 22px 22px 22px; display: flex; flex-direction: column; gap: 16px;">
+
+      <!-- Top bar -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 10px; border-radius: 999px; background: #ffffff; box-shadow: 0 4px 14px rgba(31,34,38,0.08); font-size: 13px; font-weight: 500;">
+            <span style="width: 8px; height: 8px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>
+            Dashboard · 6 Wochen bis KW 38
+          </div>
+          <button type="button" aria-label="Filter" style="width: 34px; height: 34px; border-radius: 999px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M4.5 8h7M6.5 12h3" stroke="#4a4f57" stroke-width="1.4" stroke-linecap="round"></path></svg>
+          </button>
+          <button type="button" aria-label="Zeitraum" style="width: 34px; height: 34px; border-radius: 999px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2" stroke="#4a4f57" stroke-width="1.3"></rect><path d="M2.5 7h11M5.5 2v3M10.5 2v3" stroke="#4a4f57" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="#" style="display: flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: #1f2226; color: #ffffff; font-size: 13px; font-weight: 500;">Monatsreport öffnen</a>
+          <label style="display: flex; align-items: center; gap: 8px; height: 36px; width: 240px; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,0.7); border: 1px solid rgba(31,34,38,0.06); font-size: 12px; color: #6b7079;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="#6b7079" stroke-width="1.4"></circle><path d="M10.5 10.5 14 14" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round"></path></svg>
+            <input type="search" placeholder="Abteilung, Empfehlung, Woche …" aria-label="Im Dashboard suchen" style="border: 0; background: transparent; font: inherit; color: inherit; outline: none; width: 100%;">
+            <span style="font-size: 11px; color: #9a9fa7;">⌘K</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Row 1: Empfehlungen · ROI · Perception Gap -->
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+        <section aria-label="Empfehlungen" style="background: #ffffff; border-radius: 18px; padding: 18px 20px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; font-weight: 500;">Empfehlungen</div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 999px; background: #e8895f; display: inline-block;"></span>1</div>
+              <div style="font-size: 11px; color: #6b7079;">Offen</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>2</div>
+              <div style="font-size: 11px; color: #6b7079;">Erledigt</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>0</div>
+              <div style="font-size: 11px; color: #6b7079;">Verworfen</div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #f6f7f9;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #6b7079;"><span>R5 · Lizenz prüfen</span><span>Copilot 365</span></div>
+            <div style="font-size: 12px; color: #1f2226; line-height: 1.4;">1.440 € pro Monat, aber nur 8 % nennen das Tool als meistgenutzt.</div>
+            <div style="height: 5px; border-radius: 999px; background: linear-gradient(90deg, #e8895f 0%, {{accent}} 60%, #eef0f3 60%);"></div>
+          </div>
+        </section>
+
+        <section aria-label="ROI" style="background: #ffffff; border-radius: 18px; padding: 18px 20px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; font-weight: 500;">Ersparnis &amp; Lizenzkosten</div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 3l4 4-4 4" stroke="#6b7079" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 8px;">
+            <div style="font-size: 30px; font-weight: 300; letter-spacing: -0.02em;">33.074 €</div>
+            <div style="font-size: 12px; color: #6b7079;">netto pro Monat · 13,8×</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;"><span>Ersparnis pro Kopf</span><span style="color: #6b7079;">743 € / Monat</span></div>
+            <div style="height: 6px; border-radius: 999px; background: #eef0f3; overflow: hidden;"><div style="width: 100%; height: 100%; border-radius: 999px; background: {{accent}};"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px;"><span>Lizenz pro Kopf</span><span style="color: #6b7079;">54 € / Monat</span></div>
+            <div style="height: 6px; border-radius: 999px; background: #eef0f3; overflow: hidden;"><div style="width: 7%; height: 100%; border-radius: 999px; background: #e8895f;"></div></div>
+          </div>
+          <div style="font-size: 11px; color: #6b7079;">2,7 h pro Kopf und Woche · 48 Lizenzen · Selbsteinschätzung</div>
+        </section>
+
+        <section aria-label="Perception Gap" style="background: #ffffff; border-radius: 18px; padding: 18px 20px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; font-weight: 500;">Perception Gap</div>
+            <div style="font-size: 11px; color: #6b7079;">Tool-NPS <span style="color: #1f2226; font-weight: 500;">+48</span></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+              <div style="width: 84px; color: #4a4f57;">Strategie</div>
+              <svg width="100%" height="18" viewBox="0 0 200 18" preserveAspectRatio="none" aria-hidden="true"><line x1="6" y1="9" x2="194" y2="9" stroke="#eef0f3" stroke-width="2"></line><line x1="118" y1="9" x2="134" y2="9" stroke="#c9ccd2" stroke-width="2"></line><circle cx="118" cy="9" r="5" fill="#1f2226"></circle><circle cx="134" cy="9" r="5" fill="{{accent}}"></circle></svg>
+              <div style="width: 34px; text-align: right; font-weight: 500;">+0,4</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+              <div style="width: 84px; color: #4a4f57;">Kompetenz</div>
+              <svg width="100%" height="18" viewBox="0 0 200 18" preserveAspectRatio="none" aria-hidden="true"><line x1="6" y1="9" x2="194" y2="9" stroke="#eef0f3" stroke-width="2"></line><line x1="126" y1="9" x2="130" y2="9" stroke="#c9ccd2" stroke-width="2"></line><circle cx="130" cy="9" r="5" fill="#1f2226"></circle><circle cx="126" cy="9" r="5" fill="{{accent}}"></circle></svg>
+              <div style="width: 34px; text-align: right; font-weight: 500;">−0,1</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+              <div style="width: 84px; color: #4a4f57;">Nutzen</div>
+              <svg width="100%" height="18" viewBox="0 0 200 18" preserveAspectRatio="none" aria-hidden="true"><line x1="6" y1="9" x2="194" y2="9" stroke="#eef0f3" stroke-width="2"></line><line x1="140" y1="9" x2="152" y2="9" stroke="#c9ccd2" stroke-width="2"></line><circle cx="140" cy="9" r="5" fill="#1f2226"></circle><circle cx="152" cy="9" r="5" fill="{{accent}}"></circle></svg>
+              <div style="width: 34px; text-align: right; font-weight: 500;">+0,3</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 14px; font-size: 11px; color: #6b7079;">
+            <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 999px; background: #1f2226; display: inline-block;"></span>Mitarbeitende</span>
+            <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>Führung</span>
+            <span style="margin-left: auto;">Alle Paare unter 3 Punkten</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- Row 2: four indices -->
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+        <section aria-label="Adoption" style="background: #ffffff; border-radius: 18px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 12px; color: #6b7079;">Adoption</div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;">72 %</div><div style="font-size: 11px; color: #3d8f57; font-weight: 500;">+6 Pp.</div></div>
+          <svg width="100%" height="26" viewBox="0 0 160 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="4,20 34,18 64,15 94,13 124,9 154,6" fill="none" stroke="#d3d6db" stroke-width="1.6"></polyline><circle cx="154" cy="6" r="3.2" fill="{{accent}}"></circle></svg>
+        </section>
+        <section aria-label="Effizienz" style="background: #ffffff; border-radius: 18px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 12px; color: #6b7079;">Effizienz</div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;">7,4</div><div style="font-size: 11px; color: #3d8f57; font-weight: 500;">+0,3</div></div>
+          <svg width="100%" height="26" viewBox="0 0 160 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="4,17 34,16 64,17 94,12 124,11 154,8" fill="none" stroke="#d3d6db" stroke-width="1.6"></polyline><circle cx="154" cy="8" r="3.2" fill="{{accent}}"></circle></svg>
+        </section>
+        <section aria-label="Vertrauen" style="background: #ffffff; border-radius: 18px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 12px; color: #6b7079;">Vertrauen</div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;">7,2</div><div style="font-size: 11px; color: #3d8f57; font-weight: 500;">+0,2</div></div>
+          <svg width="100%" height="26" viewBox="0 0 160 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="4,15 34,14 64,14 94,13 124,11 154,9" fill="none" stroke="#d3d6db" stroke-width="1.6"></polyline><circle cx="154" cy="9" r="3.2" fill="{{accent}}"></circle></svg>
+        </section>
+        <section aria-label="Stimmung" style="background: #ffffff; border-radius: 18px; padding: 16px 18px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 12px; color: #6b7079;">Stimmung</div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;">7,3</div><div style="font-size: 11px; color: #6b7079; font-weight: 500;">±0,0</div></div>
+          <svg width="100%" height="26" viewBox="0 0 160 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="4,12 34,10 64,12 94,11 124,12 154,11" fill="none" stroke="#d3d6db" stroke-width="1.6"></polyline><circle cx="154" cy="11" r="3.2" fill="{{accent}}"></circle></svg>
+        </section>
+      </div>
+
+      <!-- Row 3: heatmap as a table -->
+      <section aria-label="Abteilungen" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px;">
+          <div style="font-size: 18px; font-weight: 400;">Abteilungen im Vergleich</div>
+          <div style="font-size: 11px; color: #6b7079;">Letzte 4 Wochen · nur ab 5 Antworten</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) 0.7fr; gap: 0 12px; padding: 0 18px; font-size: 11px; color: #6b7079;">
+          <div>Abteilung</div><div>Adoption</div><div>Effizienz</div><div>Vertrauen</div><div>Stimmung</div><div style="text-align: right;">Antworten</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) 0.7fr; gap: 0 12px; align-items: center; height: 46px; padding: 0 18px; border-radius: 14px; background: rgba(255,255,255,0.72); font-size: 13px;">
+            <div style="font-weight: 500;">Vertrieb &amp; Export</div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>78 %</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,6</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,4</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,5</span></div>
+            <div style="text-align: right; color: #6b7079;">11</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) 0.7fr; gap: 0 12px; align-items: center; height: 46px; padding: 0 18px; border-radius: 14px; background: #ffffff; box-shadow: 0 8px 24px rgba(31,34,38,0.07); font-size: 13px;">
+            <div style="font-weight: 500;">Konstruktion &amp; Entwicklung</div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>64 %</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>6,9</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #e8895f; display: inline-block;"></span>6,1</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>6,8</span></div>
+            <div style="text-align: right; color: #6b7079;">12</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) 0.7fr; gap: 0 12px; align-items: center; height: 46px; padding: 0 18px; border-radius: 14px; background: rgba(255,255,255,0.72); font-size: 13px;">
+            <div style="font-weight: 500;">Verwaltung &amp; Finanzen</div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>75 %</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,7</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,6</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,8</span></div>
+            <div style="text-align: right; color: #6b7079;">6</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) 0.7fr; gap: 0 12px; align-items: center; height: 46px; padding: 0 18px; border-radius: 14px; background: rgba(255,255,255,0.45); border: 1px dashed rgba(31,34,38,0.14); font-size: 13px; color: #6b7079;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 500;">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1.5" stroke="#6b7079" stroke-width="1.3"></rect><path d="M5 6V4.5a2 2 0 0 1 4 0V6" stroke="#6b7079" stroke-width="1.3"></path></svg>
+              Marketing
+            </div>
+            <div style="font-size: 12px;">n &lt; 5</div><div style="font-size: 12px;">n &lt; 5</div><div style="font-size: 12px;">n &lt; 5</div><div style="font-size: 12px;">n &lt; 5</div>
+            <div style="text-align: right;">4</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) 0.7fr; gap: 0 12px; align-items: center; height: 46px; padding: 0 18px; border-radius: 14px; background: rgba(255,255,255,0.72); font-size: 13px;">
+            <div style="font-weight: 500;">Service-Innendienst</div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>71 %</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,3</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>7,0</span></div>
+            <div><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f4f5f7; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #6fbf85; display: inline-block;"></span>7,2</span></div>
+            <div style="text-align: right; color: #6b7079;">7</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Row 4: participation gauge · voices -->
+      <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px;">
+        <section aria-label="Teilnahme" style="background: #ffffff; border-radius: 18px; padding: 18px 20px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center;">
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px;">
+            <div style="font-size: 14px; font-weight: 500;">Teilnahme</div>
+            <div style="display: flex; flex-direction: column; gap: 6px; color: #4a4f57;">
+              <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #d3d6db; display: inline-block;"></span>KW 36 <span style="margin-left: auto; color: #1f2226;">79 %</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: #d3d6db; display: inline-block;"></span>KW 37 <span style="margin-left: auto; color: #1f2226;">75 %</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{accent}}; display: inline-block;"></span>KW 38 <span style="margin-left: auto; color: #1f2226;">73 %</span></div>
+            </div>
+          </div>
+          <svg width="210" height="118" viewBox="0 0 210 118" aria-label="Teilnahmequote 73 Prozent">
+            <defs><linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e8895f"></stop><stop offset="1" stop-color="{{accent}}"></stop></linearGradient></defs>
+            <path d="M22 104 A83 83 0 0 1 188 104" fill="none" stroke="#eef0f3" stroke-width="12" stroke-linecap="round"></path>
+            <path d="M22 104 A83 83 0 0 1 188 104" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="190 261"></path>
+            <text x="105" y="92" text-anchor="middle" font-size="36" font-weight="300" fill="#1f2226" font-family="Outfit, sans-serif">73<tspan font-size="16" fill="#6b7079">/100 %</tspan></text>
+            <text x="105" y="112" text-anchor="middle" font-size="11" fill="#6b7079" font-family="Outfit, sans-serif">35 von 47 diese Woche</text>
+          </svg>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #4a4f57;">
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 11px; color: #6b7079;">Erinnerung</span><span>Donnerstag, 08:00 · automatisch</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 11px; color: #6b7079;">Nächster Pulse</span><span>Montag, KW 39</span></div>
+            <a href="#" style="align-self: flex-start; margin-top: 4px; display: flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 999px; background: #f4f5f7; font-size: 12px; font-weight: 500; color: #1f2226;">Jetzt erinnern</a>
+          </div>
+        </section>
+
+        <section aria-label="Stimmen aus dem Team" style="background: #ffffff; border-radius: 18px; padding: 18px 20px; box-shadow: 0 10px 30px rgba(31,34,38,0.06); display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; font-weight: 500;">Stimmen aus dem Team</div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" aria-label="Zurück" style="width: 26px; height: 26px; border-radius: 999px; border: 0; background: #f4f5f7; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" stroke="#1f2226" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+              <button type="button" aria-label="Weiter" style="width: 26px; height: 26px; border-radius: 999px; border: 0; background: #f4f5f7; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 1.5 7 5 3.5 8.5" stroke="#1f2226" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0;">
+            <div style="display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eef0f3; font-size: 12px;"><span style="color: #1f2226; line-height: 1.4;">„Exportkorrespondenz in drei Sprachen geht jetzt in einer Stunde statt einem Tag."</span><span style="color: #6b7079; white-space: nowrap;">KW 38</span></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eef0f3; font-size: 12px;"><span style="color: #1f2226; line-height: 1.4;">„Ich prüfe jede Zahl doppelt, das kostet die gesparte Zeit teilweise wieder."</span><span style="color: #6b7079; white-space: nowrap;">KW 37</span></div>
+            <div style="display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 12px;"><span style="color: #1f2226; line-height: 1.4;">„Wir bräuchten eine Vorlage für Service-Berichte."</span><span style="color: #6b7079; white-space: nowrap;">KW 37</span></div>
+          </div>
+          <div style="font-size: 11px; color: #6b7079;">Freitexte ohne Abteilung und ohne Zeitstempel · 6 in den letzten 4 Wochen</div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#f2c94c","options":["#f2c94c","#f2a65a","#8fb7f0","#7fcf9a"]},"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#f2c94c' };
+  }
+}
+</script>
+</body>
+</html>
