@@ -83,10 +83,21 @@ eintragen. Eine neue Session sieht die Variablen automatisch.
 (Vorlage `.env.example`), `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
 Die Datei ist per `.gitignore` ausgeschlossen.
 
-## 4. Datenbank-Schema einspielen (1 Befehl)
+## 4. Datenbank-Schema einspielen
 
-Im Projektordner (lokal oder in einer Claude-Session), mit gesetztem
-`SUPABASE_DB_URL`:
+Zwei gleichwertige Wege — beide legen alle Tabellen, die Sicherheitsregeln
+(RLS) und die Teilnahme-Statistik an und merken sich, dass die Migration
+gelaufen ist (Details in `supabase/migrations/`).
+
+**Weg A — im Supabase-Dashboard (kein Terminal nötig):**
+1. Die Datei `supabase/migrations/20260925120000_init.sql` auf GitHub öffnen,
+   auf **Raw** klicken, alles markieren und kopieren.
+2. Im Supabase-Projekt links **SQL Editor** → **New query** → einfügen →
+   **Run**. Erwartete Meldung: „Success. No rows returned".
+3. Ein zweiter Lauf schlägt fehl („already exists") — das ist in Ordnung,
+   die Migration ist dann schon drin.
+
+**Weg B — im Terminal (lokal), mit `SUPABASE_DB_URL` in `.env.local`:**
 
 ```bash
 pnpm db:migrate
@@ -94,8 +105,13 @@ pnpm db:migrate
 
 Erwartete Ausgabe: `applied 20260925120000_init.sql` und
 `1 migration(s) applied.` Ein zweiter Aufruf meldet `Database is up to date.`
-Das Skript legt alle Tabellen, die Sicherheitsregeln (RLS) und die
-Teilnahme-Statistik an — Details in `supabase/migrations/`.
+
+Hinweis: Die Claude-Cloud-Umgebung erlaubt nur HTTPS nach außen, keine
+direkten Datenbank-Verbindungen (Port 5432) — von dort geht nur Weg A bzw.
+Claude nutzt danach die API. Damit Claude die API des Projekts erreichen
+kann, muss die Projekt-Domain (`<projekt-ref>.supabase.co`) in den
+Netzwerk-Einstellungen der Cloud-Umgebung erlaubt sein (Menü der Umgebung →
+Edit → Network access).
 
 ## 5. Supabase Auth konfigurieren (Login-Links)
 
@@ -170,6 +186,7 @@ laufen lassen**, nie gegen Produktion.
 | Seite „Datenbank nicht konfiguriert" | Eine der drei Supabase-Variablen fehlt an der Stelle, wo die App läuft (Vercel? lokal?), oder Publishable und Secret key sind vertauscht (dann steht ein Hinweis im Server-Log). Nach dem Eintragen neu deployen bzw. Server neu starten. |
 | Login-Link → „Link ungültig oder abgelaufen" | Redirect URL in Supabase fehlt (Schritt 5.1) oder Link älter als eine Stunde / schon benutzt. |
 | Keine Mail | Spam-Ordner; Stundenlimit des Supabase-Versands (Schritt 5.4); Adresse nicht eingeladen (die App verrät das absichtlich nicht). |
-| `pnpm db:migrate` bricht ab | `SUPABASE_DB_URL` prüfen (Passwort eingesetzt? Modus „Session"?). Netzwerk muss Port 5432 nach außen erlauben. |
+| `pnpm db:migrate` bricht ab | `SUPABASE_DB_URL` prüfen (Passwort eingesetzt? Modus „Session"?). Das Netzwerk muss Port 5432 nach außen erlauben — sonst Weg A (SQL Editor). |
+| Claude meldet „Host not in allowlist" | Die Projekt-Domain in der Cloud-Umgebung unter Network access freigeben (Schritt 4). |
 | Teamleitung sieht „Kein Team zugeordnet" | In der Verwaltung dem Mitglied eine Abteilung geben. |
 | Cron läuft nicht | `CRON_SECRET` in Vercel fehlt, oder das Deployment ist kein Production-Deployment (Vercel führt Crons nur dort aus). |

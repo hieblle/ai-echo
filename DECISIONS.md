@@ -11,6 +11,10 @@ weiterarbeiten"). Neueste Einträge oben.
 - [ ] **Supabase-Projekt anlegen und Keys eintragen** (Cloud-Umgebung, Vercel,
       lokal) → Migration einspielen, Integrationstests laufen lassen, Org 0
       anlegen. Anleitung: `docs/SETUP-PHASE4.md`.
+- [ ] **Region des Dev-Projekts bestätigen:** Das erste Projekt liegt in
+      `eu-west-1` (Irland), nicht Frankfurt — für Entwicklung und Dogfooding
+      unkritisch (EU), das Produktiv-Projekt vor dem Kundenpiloten aber in
+      Frankfurt anlegen (SPEC §5, Zusage „Frankfurt" in Vertriebsunterlagen).
 - [ ] **Supabase Auth konfigurieren:** Site URL + Redirect URLs auf die
       Vercel-Domain; vor dem Dogfooding mit ≥ 5 Personen einen Custom-SMTP
       hinterlegen (Standardversand hat ein sehr niedriges Stundenlimit).

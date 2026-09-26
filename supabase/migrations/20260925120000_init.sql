@@ -215,3 +215,18 @@ create policy "users read their own participations"
 
 -- respondent_profiles, responses, recommendation_states: RLS on, no policies.
 -- Only the service role (server) can read or write them.
+
+-- --- Bookkeeping ---------------------------------------------------------------
+-- Self-register, so a migration pasted into the SQL editor is recorded exactly
+-- like one applied by `pnpm db:migrate` (which inserts the same row and
+-- ignores the conflict).
+
+create schema if not exists supabase_migrations;
+create table if not exists supabase_migrations.schema_migrations (
+  version    text primary key,
+  statements text[],
+  name       text
+);
+insert into supabase_migrations.schema_migrations (version, name)
+values ('20260925120000', 'init')
+on conflict (version) do nothing;

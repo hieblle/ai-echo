@@ -17,7 +17,32 @@ import type { Organization } from "@/lib/types";
 import { SupabaseStore } from "./supabase-store";
 
 const env = getSupabaseEnv();
-const run = env !== null;
+
+/**
+ * A blocked network is not a code defect: when the project's API host is
+ * unreachable (e.g. an egress allowlist without the Supabase domain), the
+ * suite skips with a warning instead of failing the whole run.
+ */
+async function reachable(url: string, key: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${url}/auth/v1/health`, {
+      headers: { apikey: key },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (res.status === 403 || res.status === 407) {
+      console.warn(
+        `[integration] ${new URL(url).host} is blocked by the network policy — skipping`,
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn(`[integration] ${new URL(url).host} unreachable (${String(err)}) — skipping`);
+    return false;
+  }
+}
+
+const run = env !== null && (await reachable(env.url, env.publishableKey));
 
 const stamp = Date.now().toString(36);
 const orgFixture = (suffix: string): Omit<Organization, "id"> => ({
