@@ -45,10 +45,11 @@ const DEPARTMENTS: [name: string, headcount: number][] = [
   ["Service-Innendienst", 9],
 ];
 
-const TOOLS: [value: string, monthlyCostEur: number][] = [
-  ["copilot365", 1440],
-  ["chatgpt", 800],
-  ["deepl_write", 350],
+/** Monthly invoice total and the number of seats behind it (D4.8). */
+const TOOLS: [value: string, monthlyCostEur: number, seats: number][] = [
+  ["copilot365", 1440, 48],
+  ["chatgpt", 800, 32],
+  ["deepl_write", 350, 35],
 ];
 
 const FIRST_NAMES = [
@@ -160,13 +161,14 @@ async function main() {
     departments.push(dept);
     headcounts[dept.id] = headcount;
   }
-  for (const [value, cost] of TOOLS) {
+  for (const [value, cost, seats] of TOOLS) {
     const label = TOOL_CATALOG.find((c) => c.value === value)?.label ?? value;
     await store.upsertToolSetting({
       org_id: org.id,
       tool_value: value,
       tool_label: label,
       monthly_license_cost_eur: cost,
+      seats,
       active: true,
     });
   }

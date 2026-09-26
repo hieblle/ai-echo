@@ -78,6 +78,7 @@ function toolSetting(
   tool_value: string,
   monthly_license_cost_eur: number,
   active = true,
+  seats: number | null = null,
 ): OrgToolSetting {
   return {
     id: `ts-${tool_value}`,
@@ -85,6 +86,7 @@ function toolSetting(
     tool_value,
     tool_label: tool_value,
     monthly_license_cost_eur,
+    seats,
     active,
   };
 }
@@ -99,9 +101,12 @@ function weeklyKpis(partial: Partial<WeeklyKpis> & { week: string }): WeeklyKpis
     adoption_rate: null,
     power_user_share: null,
     saved_hours_sum: 0,
+    n_saved_hours: 0,
     efficiency_index: null,
     trust_index: null,
     sentiment_index: null,
+    n_invited: null,
+    n_completed: null,
     participation_rate: null,
     ...partial,
   };
@@ -212,11 +217,14 @@ describe("computeWeeklyKpis", () => {
       week: "2026-W01",
     });
     expect(kpis.saved_hours_sum).toBeCloseTo(14.5, 10);
+    // "none" is a real answer and counts toward the W2.1 sample
+    expect(kpis.n_saved_hours).toBe(4);
   });
 
-  it("reports 0 saved hours (not null) without W2.1 answers", () => {
+  it("reports 0 saved hours (not null) and a zero sample without W2.1 answers", () => {
     const kpis = computeWeeklyKpis({ responses: [], week: "2026-W01" });
     expect(kpis.saved_hours_sum).toBe(0);
+    expect(kpis.n_saved_hours).toBe(0);
   });
 
   it("computes the weekly efficiency index from W2.3 only", () => {
@@ -330,6 +338,8 @@ describe("computeWeeklyKpis", () => {
       participation: participation("2026-W01", 10, 8),
     });
     expect(kpis.participation_rate).toBeCloseTo(0.8, 10);
+    expect(kpis.n_invited).toBe(10);
+    expect(kpis.n_completed).toBe(8);
   });
 
   it("returns null participation_rate without a stat or with invited 0", () => {
@@ -353,9 +363,12 @@ describe("computeWeeklyKpis", () => {
       adoption_rate: null,
       power_user_share: null,
       saved_hours_sum: 0,
+      n_saved_hours: 0,
       efficiency_index: null,
       trust_index: null,
       sentiment_index: null,
+      n_invited: null,
+      n_completed: null,
       participation_rate: null,
     });
   });
@@ -431,57 +444,151 @@ describe("computeEfficiencyIndex", () => {
 
 // --- 4. computeRoi ---------------------------------------------------------------------
 
-describe("computeRoi", () => {
-  it("computes gross, net, multiple and participation extrapolation over the window", () => {
+describe("computeRoi (D4.8: per head, then scaled to the population)", () => {
+  /** Two measured weeks: 20 completed pulses each, 10 h and 14 h reported. */
+  const measured = [
+    weeklyKpis({
+      week: "2026-W01",
+      n_pulse: 20,
+      saved_hours_sum: 10,
+      n_saved_hours: 15,
+      n_invited: 40,
+      n_completed: 20,
+      participation_rate: 0.5,
+    }),
+    weeklyKpis({
+      week: "2026-W02",
+      n_pulse: 20,
+      saved_hours_sum: 14,
+      n_saved_hours: 16,
+      n_invited: 40,
+      n_completed: 20,
+      participation_rate: 0.5,
+    }),
+  ];
+
+  it("measures hours per head over completed pulses and scales to the invited members", () => {
     const roi = computeRoi({
-      weekly: [
-        weeklyKpis({ week: "2026-W01", saved_hours_sum: 6, participation_rate: 0.5 }),
-        weeklyKpis({ week: "2026-W02", saved_hours_sum: 4, participation_rate: null }),
-      ],
+      weekly: measured,
       hourlyRate: 100,
       toolSettings: [
-        toolSetting("chatgpt", 200),
+        toolSetting("chatgpt", 2000),
         toolSetting("copilot365", 999, false), // inactive → excluded
       ],
     });
-    expect(roi.saved_hours).toBe(10);
-    // 10h at 50% average participation → 20h extrapolated
-    expect(roi.saved_hours_extrapolated).toBeCloseTo(20, 10);
-    expect(roi.gross_savings_eur).toBe(1000);
-    expect(roi.license_costs_eur).toBe(200);
-    expect(roi.net_savings_eur).toBe(800);
-    expect(roi.roi_multiple).toBe(5);
+    expect(roi.saved_hours).toBe(24);
+    expect(roi.heads).toBe(40);
+    // 24 h over 40 completed pulses (non-users without W2.1 count as 0)
+    expect(roi.hours_per_head_week).toBeCloseTo(0.6, 10);
+    expect(roi.population).toBe(40);
+    expect(roi.population_source).toBe("invited");
+    // per head and month: 0.6 h × 52/12 × 100 €
+    expect(roi.savings_per_head_eur).toBeCloseTo(260, 10);
+    expect(roi.license_cost_per_head_eur).toBeCloseTo(50, 10);
+    // whole population: 0.6 × 52/12 × 40 = 104 h → 10.400 €
+    expect(roi.saved_hours_extrapolated).toBeCloseTo(104, 10);
+    expect(roi.gross_savings_eur).toBeCloseTo(10_400, 10);
+    expect(roi.license_costs_eur).toBe(2000);
+    expect(roi.net_savings_eur).toBeCloseTo(8400, 10);
+    expect(roi.roi_multiple).toBeCloseTo(5.2, 10);
+    // the multiple is the per-head ratio — independent of the population size
+    expect(roi.roi_multiple).toBeCloseTo(
+      roi.savings_per_head_eur! / roi.license_cost_per_head_eur!,
+      10,
+    );
+  });
+
+  it("scales to the licensed headcount when seats exceed the invited members", () => {
+    const roi = computeRoi({
+      weekly: measured,
+      hourlyRate: 100,
+      toolSettings: [
+        toolSetting("copilot365", 3000, true, 100),
+        toolSetting("chatgpt", 500, true, 25), // overlapping licences → max, not sum
+        toolSetting("internal_ai", 900, true, null), // flat rate, no seats
+      ],
+    });
+    expect(roi.population).toBe(100);
+    expect(roi.population_source).toBe("seats");
+    expect(roi.license_costs_eur).toBe(4400);
+    expect(roi.license_cost_per_head_eur).toBeCloseTo(44, 10);
+    expect(roi.saved_hours_extrapolated).toBeCloseTo(260, 10);
+    expect(roi.gross_savings_eur).toBeCloseTo(26_000, 10);
+    expect(roi.net_savings_eur).toBeCloseTo(21_600, 10);
+  });
+
+  it("never scales to fewer people than were invited, even with a small seat count", () => {
+    const roi = computeRoi({
+      weekly: measured,
+      hourlyRate: 100,
+      toolSettings: [toolSetting("copilot365", 300, true, 10)],
+    });
+    expect(roi.population).toBe(40);
+    expect(roi.population_source).toBe("invited");
+  });
+
+  it("ignores weeks in which W2.1 was not asked instead of counting them as zero", () => {
+    const roi = computeRoi({
+      weekly: [
+        ...measured,
+        // W2.1 not in this week's draw: 20 pulses, no answers → no evidence
+        weeklyKpis({
+          week: "2026-W03",
+          n_pulse: 20,
+          saved_hours_sum: 0,
+          n_saved_hours: 0,
+          n_invited: 40,
+          n_completed: 20,
+          participation_rate: 0.5,
+        }),
+      ],
+      hourlyRate: 100,
+      toolSettings: [],
+    });
+    expect(roi.heads).toBe(40);
+    expect(roi.hours_per_head_week).toBeCloseTo(0.6, 10);
+  });
+
+  it("falls back to the respondent proxy without participation stats", () => {
+    const roi = computeRoi({
+      weekly: [
+        weeklyKpis({ week: "2026-W01", n_pulse: 8, saved_hours_sum: 8, n_saved_hours: 6 }),
+      ],
+      hourlyRate: 100,
+      toolSettings: [toolSetting("chatgpt", 100)],
+    });
+    expect(roi.heads).toBe(8);
+    expect(roi.hours_per_head_week).toBe(1);
+    expect(roi.population).toBe(8);
+    expect(roi.population_source).toBe("respondents");
+    expect(roi.saved_hours_extrapolated).toBeCloseTo((52 / 12) * 8, 10);
   });
 
   it("returns a null multiple when license costs are 0", () => {
     const roi = computeRoi({
-      weekly: [weeklyKpis({ week: "2026-W01", saved_hours_sum: 5, participation_rate: 1 })],
+      weekly: measured,
       hourlyRate: 80,
       toolSettings: [],
     });
     expect(roi.roi_multiple).toBeNull();
-    expect(roi.net_savings_eur).toBe(400);
-    // full participation → extrapolation equals the reported sum
-    expect(roi.saved_hours_extrapolated).toBe(5);
-  });
-
-  it("returns null extrapolation without any participation data", () => {
-    const roi = computeRoi({
-      weekly: [weeklyKpis({ week: "2026-W01", saved_hours_sum: 8 })],
-      hourlyRate: 100,
-      toolSettings: [toolSetting("chatgpt", 100)],
-    });
-    expect(roi.saved_hours_extrapolated).toBeNull();
+    expect(roi.license_cost_per_head_eur).toBe(0);
+    expect(roi.net_savings_eur).toBe(roi.gross_savings_eur);
   });
 
   it("is null-safe on an empty window", () => {
-    const roi = computeRoi({ weekly: [], hourlyRate: 100, toolSettings: [] });
+    const roi = computeRoi({ weekly: [], hourlyRate: 100, toolSettings: [toolSetting("chatgpt", 100)] });
     expect(roi).toEqual({
       saved_hours: 0,
+      heads: 0,
+      hours_per_head_week: null,
+      population: null,
+      population_source: null,
       saved_hours_extrapolated: null,
-      gross_savings_eur: 0,
-      license_costs_eur: 0,
-      net_savings_eur: 0,
+      savings_per_head_eur: null,
+      license_cost_per_head_eur: null,
+      gross_savings_eur: null,
+      license_costs_eur: 100,
+      net_savings_eur: null,
       roi_multiple: null,
     });
   });

@@ -162,24 +162,37 @@ export function ReportView({ data, dashboardHref }: ReportViewProps) {
         <div className="mt-4 rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">ROI im Berichtsmonat</p>
           <p className="text-2xl font-semibold">
-            {nf.format(roi.net_savings_eur)} € Netto-Ersparnis
+            {roi.net_savings_eur === null ? "–" : nf.format(roi.net_savings_eur)} € Netto-Ersparnis
             {roi.roi_multiple !== null && (
               <span className="ml-2 text-base font-normal text-muted-foreground">
                 (Multiple: {nf1.format(roi.roi_multiple)}×)
               </span>
             )}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {nf.format(roi.saved_hours)} gemeldete Stunden ×{" "}
-            {nf.format(data.roiHourlyRate)} €/h
-            {data.roiRateFromF5 ? " (Ø aus F5)" : " (Org-Standard)"} −{" "}
-            {nf.format(roi.license_costs_eur)} € Lizenzkosten. Hochgerechnet
-            auf Nichtteilnehmende:{" "}
-            {roi.saved_hours_extrapolated === null
-              ? "–"
-              : `${nf.format(roi.saved_hours_extrapolated)} h`}
-            .
-          </p>
+          {roi.hours_per_head_week === null || roi.population === null ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Im Berichtsmonat liegen keine Stundenangaben (W2.1) vor.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pro Kopf: {nf1.format(roi.hours_per_head_week)} h pro Woche gespart
+              (Ø aus {nf.format(roi.heads)} ausgefüllten Pulsen, {nf.format(roi.saved_hours)} h
+              gemeldet; wer keine KI nutzt, zählt mit 0 h) ×{" "}
+              {nf.format(data.roiHourlyRate)} €/h
+              {data.roiRateFromF5 ? " (Ø aus F5)" : " (Org-Standard)"} × 4,33
+              Wochen = {nf.format(roi.savings_per_head_eur ?? 0)} € pro Monat,
+              gegenüber {nf.format(roi.license_cost_per_head_eur ?? 0)} € Lizenz
+              pro Kopf. Hochgerechnet auf {nf.format(roi.population)} Personen
+              ({roi.population_source === "seats"
+                ? "Lizenzen"
+                : roi.population_source === "invited"
+                  ? "eingeladene Mitglieder"
+                  : "Antwortende"}
+              ): {nf.format(roi.saved_hours_extrapolated ?? 0)} h,{" "}
+              {nf.format(roi.gross_savings_eur ?? 0)} € brutto −{" "}
+              {nf.format(roi.license_costs_eur)} € Lizenzkosten.
+            </p>
+          )}
         </div>
       </section>
 

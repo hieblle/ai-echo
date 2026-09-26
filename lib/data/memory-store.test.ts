@@ -80,6 +80,7 @@ function makeToolSetting(
     tool_value: "chatgpt",
     tool_label: "ChatGPT",
     monthly_license_cost_eur: 20,
+    seats: null,
     active: true,
     ...overrides,
   };

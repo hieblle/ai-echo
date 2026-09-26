@@ -41,6 +41,8 @@ const TEMPLATE_LABELS = {
 
 const ERR: Record<string, string> = {
   invalid: "Bitte die Eingaben prüfen.",
+  migration:
+    "Datenbank-Update fehlt: Die Anzahl Lizenzen kann erst gespeichert werden, wenn die Migration 20260926120000_tool_seats.sql eingespielt ist (docs/SETUP-PHASE4.md, Abschnitt 4).",
   email: "Keine gültige E-Mail-Adresse gefunden.",
   member: "Mitglied nicht gefunden.",
   self: "Die eigene Rolle kann nicht herabgestuft und die eigene Mitgliedschaft nicht entfernt werden.",
@@ -314,8 +316,10 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
       <section className="space-y-3 rounded-lg border bg-card p-5">
         <h2 className="text-lg font-semibold">KI-Tools und Lizenzkosten</h2>
         <p className="text-sm text-muted-foreground">
-          Monatliche Lizenzkosten pro Tool fließen in die ROI-Rechnung ein
-          (SPEC §10); ungenutzte bezahlte Tools lösen Empfehlung R5 aus.
+          Kosten = Rechnungsbetrag pro Monat für alle Lizenzen des Tools. Die
+          Anzahl der Lizenzen rechnet die gemessene Ersparnis pro Kopf auf alle
+          Lizenznutzer hoch; ohne Angabe gelten die eingeladenen Mitglieder.
+          Ungenutzte bezahlte Tools lösen Empfehlung R5 aus.
         </p>
         <ul className="divide-y rounded-md border text-sm">
           {tools.map((t) => (
@@ -324,8 +328,10 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
                 <input type="hidden" name="tool_value" value={t.tool_value} />
                 <input type="hidden" name="tool_label" value={t.tool_label} />
                 <span className="min-w-40 flex-1 font-medium">{t.tool_label}</span>
-                <input name="cost" type="number" min={0} step="1" defaultValue={t.monthly_license_cost_eur} className={`${inputClass} h-8 w-28`} aria-label={`Lizenzkosten ${t.tool_label}`} />
+                <input name="cost" type="number" min={0} step="1" defaultValue={t.monthly_license_cost_eur} className={`${inputClass} h-8 w-24`} aria-label={`Lizenzkosten ${t.tool_label}`} />
                 <span className="text-muted-foreground">€/Monat</span>
+                <input name="seats" type="number" min={0} step="1" defaultValue={t.seats ?? ""} placeholder="–" className={`${inputClass} h-8 w-20`} aria-label={`Anzahl Lizenzen ${t.tool_label}`} />
+                <span className="text-muted-foreground">Lizenzen</span>
                 <input type="hidden" name="active" value="off" />
                 <label className="flex items-center gap-1 text-xs">
                   <input type="checkbox" name="active" value="on" defaultChecked={t.active} />
@@ -354,6 +360,9 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
           </Field>
           <Field label="Kosten €/Monat" htmlFor="cost">
             <input id="cost" name="cost" type="number" min={0} step="1" defaultValue={0} className={`${inputClass} w-32`} />
+          </Field>
+          <Field label="Anzahl Lizenzen" htmlFor="seats" hint="Leer lassen, wenn unbekannt oder Pauschale.">
+            <input id="seats" name="seats" type="number" min={0} step="1" className={`${inputClass} w-32`} />
           </Field>
           <Button type="submit" size="sm">Hinzufügen</Button>
         </form>

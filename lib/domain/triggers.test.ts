@@ -46,9 +46,12 @@ function weeklySeries(
     adoption_rate: null,
     power_user_share: null,
     saved_hours_sum: 0,
+    n_saved_hours: 0,
     efficiency_index: null,
     trust_index: null,
     sentiment_index: null,
+    n_invited: null,
+    n_completed: null,
     participation_rate: null,
     [metric]: value,
   }));
@@ -94,6 +97,7 @@ function makeToolSetting(
     tool_value,
     tool_label,
     monthly_license_cost_eur,
+    seats: null,
     active,
   };
 }

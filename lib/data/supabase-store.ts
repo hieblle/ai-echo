@@ -78,6 +78,8 @@ interface ToolSettingRow {
   tool_value: string;
   tool_label: string;
   monthly_license_cost_eur: number | string;
+  /** Absent before migration 20260926120000 ran — mapped to null. */
+  seats?: number | null;
   active: boolean;
 }
 
@@ -129,6 +131,22 @@ interface QueryResult<T> {
   error: { message: string } | null;
 }
 
+/**
+ * A write needed a column that a not-yet-applied migration adds. Callers
+ * turn this into a clear hint instead of a generic failure.
+ */
+export class MigrationPendingError extends Error {
+  readonly migration: string;
+
+  constructor(migration: string, detail: string) {
+    super(
+      `${detail} — apply supabase/migrations/${migration} (docs/SETUP-PHASE4.md §4)`,
+    );
+    this.name = "MigrationPendingError";
+    this.migration = migration;
+  }
+}
+
 function unwrap<T>(result: QueryResult<T>, what: string): T {
   if (result.error) throw new Error(`${what}: ${result.error.message}`);
   if (result.data === null) throw new Error(`${what}: no data returned`);
@@ -162,6 +180,7 @@ function mapToolSetting(row: ToolSettingRow): OrgToolSetting {
     tool_value: row.tool_value,
     tool_label: row.tool_label,
     monthly_license_cost_eur: Number(row.monthly_license_cost_eur),
+    seats: row.seats == null ? null : Number(row.seats),
     active: row.active,
   };
 }
@@ -393,15 +412,29 @@ export class SupabaseStore implements Store {
   async upsertToolSetting(
     setting: Omit<OrgToolSetting, "id">,
   ): Promise<OrgToolSetting> {
-    const row = unwrap<ToolSettingRow>(
-      await this.db
+    const upsert = (values: Record<string, unknown>) =>
+      this.db
         .from("org_settings_tools")
-        .upsert(setting, { onConflict: "org_id,tool_value" })
+        .upsert(values, { onConflict: "org_id,tool_value" })
         .select("*")
-        .single(),
-      "upsertToolSetting",
-    );
-    return mapToolSetting(row);
+        .single();
+
+    let result = await upsert(setting);
+    // Before migration 20260926120000 the `seats` column does not exist
+    // (PostgREST: "Could not find the 'seats' column"). A null seat count
+    // then simply is not written; a real one needs the migration — say so.
+    if (result.error && /'seats' column/.test(result.error.message)) {
+      if (setting.seats !== null) {
+        throw new MigrationPendingError(
+          "20260926120000_tool_seats.sql",
+          "upsertToolSetting: the seats column is missing",
+        );
+      }
+      const { seats: _omitted, ...withoutSeats } = setting;
+      void _omitted;
+      result = await upsert(withoutSeats);
+    }
+    return mapToolSetting(unwrap<ToolSettingRow>(result, "upsertToolSetting"));
   }
 
   async deleteToolSetting(orgId: OrgId, toolValue: string): Promise<void> {

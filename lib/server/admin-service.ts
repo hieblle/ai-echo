@@ -32,6 +32,15 @@ export interface ToolInput {
   tool_value: string;
   tool_label: string;
   monthly_license_cost_eur: number;
+  /** Licences behind the cost; omitted/0 = unknown (D4.8). */
+  seats?: number | null;
+}
+
+/** Normalizes a seat count: positive integers only, everything else = unknown. */
+export function normalizeSeats(value: number | null | undefined): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  const seats = Math.trunc(value);
+  return seats > 0 ? seats : null;
 }
 
 export interface CreateOrgInput {
@@ -74,6 +83,7 @@ export async function createOrganizationWithSetup(
       tool_value: tool.tool_value,
       tool_label: tool.tool_label,
       monthly_license_cost_eur: Math.max(0, tool.monthly_license_cost_eur),
+      seats: normalizeSeats(tool.seats),
       active: true,
     });
   }

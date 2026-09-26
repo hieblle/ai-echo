@@ -17,7 +17,7 @@ import type {
   DashboardRecommendation,
 } from "@/lib/server/dashboard-service";
 import { cn } from "@/lib/utils";
-import type { WeeklyKpis } from "@/lib/types";
+import type { RoiPopulationSource, WeeklyKpis } from "@/lib/types";
 
 const nf = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat("de-DE", {
@@ -45,6 +45,28 @@ function pct(value: number | null): string {
 
 function idx(value: number | null): string {
   return value === null ? "–" : nf1.format(value);
+}
+
+function eur(value: number | null): string {
+  return value === null ? "–" : nf.format(value);
+}
+
+function hours(value: number | null, digits = 0): string {
+  if (value === null) return "–";
+  return `${(digits === 0 ? nf : nf1).format(value)} h`;
+}
+
+function populationLabel(source: RoiPopulationSource | null): string {
+  switch (source) {
+    case "seats":
+      return "Lizenzen";
+    case "invited":
+      return "eingeladene Mitglieder";
+    case "respondents":
+      return "Antwortende";
+    default:
+      return "–";
+  }
 }
 
 function latestNonNull(history: WeeklyKpis[], key: HistoryKey): number | null {
@@ -335,7 +357,7 @@ export function DashboardView({
             />
           </section>
 
-          {/* ROI-Kachel (Leitkennzahl, SPEC §3) — org level only */}
+          {/* ROI-Kachel (Leitkennzahl, SPEC §3, D4.8) — org level only */}
           {!scope && (
             <section
               aria-label="ROI"
@@ -346,40 +368,49 @@ export function DashboardView({
                   Netto-Ersparnis pro Monat
                 </p>
                 <p className="text-5xl font-semibold tracking-tight">
-                  {nf.format(roi.net_savings_eur)}{" "}
+                  {eur(roi.net_savings_eur)}{" "}
                   <span className="text-2xl text-muted-foreground">€</span>
                 </p>
-                {roi.roi_multiple !== null && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    ROI-Multiple: {nf1.format(roi.roi_multiple)}×
-                  </p>
-                )}
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {roi.roi_multiple !== null && (
+                    <>ROI-Multiple: {nf1.format(roi.roi_multiple)}× · </>
+                  )}
+                  {roi.population === null
+                    ? "noch keine Stundenangaben"
+                    : `für ${nf.format(roi.population)} Personen (${populationLabel(roi.population_source)})`}
+                </p>
               </div>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
                 <div>
-                  <dt className="text-muted-foreground">Gesparte Stunden</dt>
-                  <dd className="font-medium">{nf.format(roi.saved_hours)} h</dd>
+                  <dt className="text-muted-foreground">Gespart pro Kopf und Woche</dt>
+                  <dd className="font-medium">{hours(roi.hours_per_head_week, 1)}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Hochgerechnet*</dt>
-                  <dd className="font-medium">
-                    {roi.saved_hours_extrapolated === null
-                      ? "–"
-                      : `${nf.format(roi.saved_hours_extrapolated)} h`}
-                  </dd>
+                  <dt className="text-muted-foreground">Ersparnis pro Kopf und Monat</dt>
+                  <dd className="font-medium">{eur(roi.savings_per_head_eur)} €</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Lizenz pro Kopf und Monat</dt>
+                  <dd className="font-medium">{eur(roi.license_cost_per_head_eur)} €</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Gespart gesamt pro Monat</dt>
+                  <dd className="font-medium">{hours(roi.saved_hours_extrapolated)}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Brutto-Ersparnis</dt>
-                  <dd className="font-medium">{nf.format(roi.gross_savings_eur)} €</dd>
+                  <dd className="font-medium">{eur(roi.gross_savings_eur)} €</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Lizenzkosten</dt>
+                  <dt className="text-muted-foreground">Lizenzkosten gesamt</dt>
                   <dd className="font-medium">{nf.format(roi.license_costs_eur)} €</dd>
                 </div>
-                <p className="col-span-2 text-xs text-muted-foreground sm:col-span-4">
-                  Basis: letzte 4 Wochen, {nf.format(data.roiHourlyRate)} €/h {data.roiRateFromF5 ? "(Ø aus F5)" : "(Org-Standard)"} ·
-                  *auf Nichtteilnehmende hochgerechnet (konservativer Erstwert:
-                  nur gemeldete Stunden, SPEC §10).
+                <p className="col-span-2 text-xs text-muted-foreground sm:col-span-3">
+                  Basis: letzte {data.roiWindowWeeks} Wochen, {nf.format(roi.saved_hours)} h
+                  gemeldet in {nf.format(roi.heads)} ausgefüllten Pulsen (wer keine KI
+                  nutzt, zählt mit 0 h) · {nf.format(data.roiHourlyRate)} €/h{" "}
+                  {data.roiRateFromF5 ? "(Ø aus F5)" : "(Org-Standard)"} · Monat = 4,33
+                  Wochen · Selbsteinschätzung der Befragten (W2.1).
                 </p>
               </dl>
             </section>

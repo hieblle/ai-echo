@@ -23,6 +23,7 @@ import type {
   HeatmapCell,
   OrgToolSetting,
   ParticipationStat,
+  RoiPopulationSource,
   RoiSnapshot,
   SurveyResponse,
   ToolUsageStat,
@@ -251,10 +252,13 @@ export function computeWeeklyKpis(args: {
           .length / w11.length;
 
   // Saved hours: sum of W2.1 class midpoints. A week without W2.1 answers
-  // saved 0 reported hours (a sum, not an average — hence 0, not null).
+  // saved 0 reported hours (a sum, not an average — hence 0, not null);
+  // `n_saved_hours` lets the ROI tell "not asked" from "everyone said none".
   let saved_hours_sum = 0;
+  let n_saved_hours = 0;
   for (const midpoint of mappedChoiceValues(rows, "W2.1", W21_CLASS_MIDPOINTS)) {
     saved_hours_sum += midpoint;
+    n_saved_hours += 1;
   }
 
   // Weekly efficiency trend deliberately uses W2.3 only; the monthly M1.3 is
@@ -282,9 +286,12 @@ export function computeWeeklyKpis(args: {
     adoption_rate,
     power_user_share,
     saved_hours_sum,
+    n_saved_hours,
     efficiency_index,
     trust_index,
     sentiment_index,
+    n_invited: participation ? participation.invited : null,
+    n_completed: participation ? participation.completed : null,
     participation_rate,
   };
 }
@@ -342,14 +349,31 @@ export function computeEfficiencyIndex(args: {
 
 // --- 4. ROI ---------------------------------------------------------------------
 
+/** A month has 52/12 weeks; weekly per-head figures are scaled with this. */
+export const WEEKS_PER_MONTH = 52 / 12;
+
 /**
- * ROI tile numbers (SPEC.md §10) over the passed weekly window (the caller
- * passes the last 4 weeks ≈ one month).
+ * ROI tile numbers (SPEC.md §10, DECISIONS D4.8) over the passed weekly
+ * window (the dashboard passes the last 4 weeks, the report its month).
  *
- * Conservative per SPEC: `saved_hours` is ONLY the sum of reported W2.1
- * midpoints (M1.1 self-estimates are deliberately not folded in). The
- * participation-based extrapolation to non-participants is the secondary
- * value and only produced for a plausible average participation (0 < p <= 1).
+ * Savings and licence costs must share one population, so the ROI is
+ * measured per head and then scaled:
+ *
+ * 1. `hours_per_head_week` = Σ reported W2.1 midpoints ÷ Σ completed pulses,
+ *    over the weeks in which W2.1 was answered at all (a week where the
+ *    question was not asked must not dilute the mean with false zeros).
+ *    Non-users answer the short variant without W2.1 and therefore count
+ *    as 0 hours — they are part of the population, not missing data.
+ * 2. `population` = the licensed headcount: the largest seat count among the
+ *    active tools (licences usually overlap, so the max is the conservative
+ *    guess for "people with a licence"), but never fewer than the invited
+ *    members (everyone measured counts). Without seats and stats it falls
+ *    back to the respondents themselves.
+ * 3. Monthly figures = per head × WEEKS_PER_MONTH × population; licence
+ *    costs are the monthly invoice total of the active tools.
+ *
+ * `saved_hours` (the plain reported sum) stays as the measured floor. M1.1
+ * self-estimates are deliberately not folded in (SPEC §10 "konservativ").
  */
 export function computeRoi(args: {
   weekly: WeeklyKpis[];
@@ -359,33 +383,72 @@ export function computeRoi(args: {
   const { weekly, hourlyRate, toolSettings } = args;
 
   let saved_hours = 0;
-  for (const entry of weekly) saved_hours += entry.saved_hours_sum;
-
-  const participationRates: number[] = [];
+  let heads = 0;
+  let maxRespondents = 0;
+  const invitedCounts: number[] = [];
   for (const entry of weekly) {
-    if (entry.participation_rate !== null) {
-      participationRates.push(entry.participation_rate);
-    }
+    saved_hours += entry.saved_hours_sum;
+    if (entry.n_invited !== null) invitedCounts.push(entry.n_invited);
+    const completed = entry.n_completed ?? entry.n_pulse;
+    maxRespondents = Math.max(maxRespondents, completed);
+    if (entry.n_saved_hours > 0) heads += completed;
   }
-  const avgParticipation = mean(participationRates);
-  const saved_hours_extrapolated =
-    avgParticipation !== null && avgParticipation > 0 && avgParticipation <= 1
-      ? saved_hours / avgParticipation
-      : null;
+  const hours_per_head_week = heads > 0 ? saved_hours / heads : null;
 
   let license_costs_eur = 0;
+  let maxSeats = 0;
   for (const setting of toolSettings) {
-    if (setting.active) license_costs_eur += setting.monthly_license_cost_eur;
+    if (!setting.active) continue;
+    license_costs_eur += setting.monthly_license_cost_eur;
+    if (setting.seats !== null && setting.seats > 0) {
+      maxSeats = Math.max(maxSeats, setting.seats);
+    }
   }
 
-  const gross_savings_eur = saved_hours * hourlyRate;
-  const net_savings_eur = gross_savings_eur - license_costs_eur;
+  const invited = mean(invitedCounts);
+  let population: number | null = null;
+  let population_source: RoiPopulationSource | null = null;
+  if (maxSeats > 0 && maxSeats >= (invited ?? 0)) {
+    population = maxSeats;
+    population_source = "seats";
+  } else if (invited !== null && invited > 0) {
+    population = invited;
+    population_source = "invited";
+  } else if (maxRespondents > 0) {
+    population = maxRespondents;
+    population_source = "respondents";
+  }
+
+  const savings_per_head_eur =
+    hours_per_head_week === null
+      ? null
+      : hours_per_head_week * WEEKS_PER_MONTH * hourlyRate;
+  const license_cost_per_head_eur =
+    population === null ? null : license_costs_eur / population;
+  const saved_hours_extrapolated =
+    hours_per_head_week === null || population === null
+      ? null
+      : hours_per_head_week * WEEKS_PER_MONTH * population;
+  const gross_savings_eur =
+    saved_hours_extrapolated === null
+      ? null
+      : saved_hours_extrapolated * hourlyRate;
+  const net_savings_eur =
+    gross_savings_eur === null ? null : gross_savings_eur - license_costs_eur;
   const roi_multiple =
-    license_costs_eur === 0 ? null : gross_savings_eur / license_costs_eur;
+    gross_savings_eur === null || license_costs_eur === 0
+      ? null
+      : gross_savings_eur / license_costs_eur;
 
   return {
     saved_hours,
+    heads,
+    hours_per_head_week,
+    population,
+    population_source,
     saved_hours_extrapolated,
+    savings_per_head_eur,
+    license_cost_per_head_eur,
     gross_savings_eur,
     license_costs_eur,
     net_savings_eur,

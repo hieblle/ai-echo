@@ -235,7 +235,14 @@ export interface OrgToolSetting {
   /** Tool value from the O2 catalog (e.g. "copilot365"). */
   tool_value: string;
   tool_label: string;
+  /** What the org pays for this tool per month (all seats, the invoice total). */
   monthly_license_cost_eur: number;
+  /**
+   * Number of licences (seats) behind the monthly cost, or null when unknown
+   * or flat-rate. The ROI scales per-head savings to the licensed headcount
+   * (D4.8); without any seat count it falls back to the invited members.
+   */
+  seats: number | null;
   active: boolean;
 }
 
@@ -300,23 +307,46 @@ export interface WeeklyKpis {
   power_user_share: number | null;
   /** Sum of W2.1 class midpoints (hours) this week. */
   saved_hours_sum: number;
+  /** Number of W2.1 answers this week (0 = the question was not asked/answered). */
+  n_saved_hours: number;
   efficiency_index: number | null;
   trust_index: number | null;
   sentiment_index: number | null;
+  /** Invited / completed of this week's weekly cycle (null without a stat). */
+  n_invited: number | null;
+  n_completed: number | null;
   /** completed ÷ invited of this week's weekly cycle. */
   participation_rate: number | null;
 }
 
 /** ROI tile numbers (SPEC.md §10). */
+/** Whose headcount the org-level ROI figures are scaled to (D4.8). */
+export type RoiPopulationSource = "seats" | "invited" | "respondents";
+
+/**
+ * ROI tile numbers (SPEC.md §10, D4.8): measured per head, then scaled to
+ * the population so savings and licence costs share one basis.
+ */
 export interface RoiSnapshot {
-  /** Conservative: sum of reported saved hours in the window. */
+  /** Reported saved hours in the window (Σ W2.1 class midpoints) — the measured floor. */
   saved_hours: number;
-  /** Secondary value: extrapolated to non-participants via participation. */
+  /** Completed pulses behind `hours_per_head_week` (weeks in which W2.1 was answered). */
+  heads: number;
+  /** Ø saved hours per completed pulse and week; non-users count as 0. Null without W2.1 data. */
+  hours_per_head_week: number | null;
+  /** Headcount the monthly figures are scaled to, and where it comes from. */
+  population: number | null;
+  population_source: RoiPopulationSource | null;
+  /** Saved hours per month for the whole population. */
   saved_hours_extrapolated: number | null;
-  gross_savings_eur: number;
+  /** Per head and month. */
+  savings_per_head_eur: number | null;
+  license_cost_per_head_eur: number | null;
+  /** Whole population, per month. */
+  gross_savings_eur: number | null;
   license_costs_eur: number;
-  net_savings_eur: number;
-  /** null when license costs are 0. */
+  net_savings_eur: number | null;
+  /** gross ÷ licence costs; null without savings data or when costs are 0. */
   roi_multiple: number | null;
 }
 

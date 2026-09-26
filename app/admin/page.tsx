@@ -15,6 +15,8 @@ const OK: Record<string, string> = {
 const ERR: Record<string, string> = {
   invalid: "Bitte alle Pflichtfelder korrekt ausfüllen.",
   slug: "Diesen Kurznamen (Slug) gibt es schon — bitte einen anderen wählen.",
+  migration:
+    "Die Organisation wurde angelegt, aber die Anzahl Lizenzen konnte nicht gespeichert werden: Migration 20260926120000_tool_seats.sql fehlt (docs/SETUP-PHASE4.md, Abschnitt 4). Danach die Tools in der Verwaltung der Organisation nachtragen.",
   org: "Organisation nicht gefunden.",
   email: "Bitte genau eine gültige E-Mail-Adresse angeben.",
   send: "Die Einladung konnte nicht verschickt werden (Mailversand). Bitte später erneut versuchen.",
@@ -124,10 +126,15 @@ export default async function PlatformAdminPage({ searchParams }: AdminPageProps
           </Field>
 
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">KI-Tools und monatliche Lizenzkosten (€)</legend>
+            <legend className="text-sm font-medium">KI-Tools, monatliche Lizenzkosten (€) und Anzahl Lizenzen</legend>
+            <p className="text-xs text-muted-foreground">
+              Kosten = Rechnungsbetrag pro Monat für alle Lizenzen. Die Anzahl
+              rechnet die Ersparnis pro Kopf auf alle Lizenznutzer hoch; ohne
+              Angabe gelten die eingeladenen Mitglieder.
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {toolCatalog.map((tool) => (
-                <label key={tool.value} className="flex items-center gap-2 rounded-md border p-2 text-sm">
+                <label key={tool.value} className="flex flex-wrap items-center gap-2 rounded-md border p-2 text-sm">
                   <input type="checkbox" name={`tool:${tool.value}`} />
                   <input type="hidden" name={`label:${tool.value}`} value={tool.label} />
                   <span className="flex-1">{tool.label}</span>
@@ -137,8 +144,17 @@ export default async function PlatformAdminPage({ searchParams }: AdminPageProps
                     min={0}
                     step="1"
                     placeholder="€/Monat"
-                    className={`${inputClass} h-8 w-28`}
+                    className={`${inputClass} h-8 w-24`}
                     aria-label={`Lizenzkosten ${tool.label}`}
+                  />
+                  <input
+                    name={`seats:${tool.value}`}
+                    type="number"
+                    min={0}
+                    step="1"
+                    placeholder="Lizenzen"
+                    className={`${inputClass} h-8 w-24`}
+                    aria-label={`Anzahl Lizenzen ${tool.label}`}
                   />
                 </label>
               ))}

@@ -44,8 +44,8 @@ describe("createOrganizationWithSetup (F1)", () => {
       k_anonymity_min: 3,
       departments: ["Vertrieb & Export", "Technik", " Technik ", ""],
       tools: [
-        { tool_value: "copilot365", tool_label: "Microsoft Copilot 365", monthly_license_cost_eur: 900 },
-        { tool_value: "deepl", tool_label: "DeepL", monthly_license_cost_eur: -1 },
+        { tool_value: "copilot365", tool_label: "Microsoft Copilot 365", monthly_license_cost_eur: 900, seats: 30 },
+        { tool_value: "deepl", tool_label: "DeepL", monthly_license_cost_eur: -1, seats: 0 },
       ],
     });
     expect(org.slug).toBe("merlin-technology-gmbh");
@@ -55,8 +55,9 @@ describe("createOrganizationWithSetup (F1)", () => {
       "Technik",
     ]);
     expect(await store.listToolSettings(org.id)).toMatchObject([
-      { tool_value: "copilot365", monthly_license_cost_eur: 900, active: true },
-      { tool_value: "deepl", monthly_license_cost_eur: 0 },
+      { tool_value: "copilot365", monthly_license_cost_eur: 900, seats: 30, active: true },
+      // 0 seats = unknown, negative cost = 0
+      { tool_value: "deepl", monthly_license_cost_eur: 0, seats: null },
     ]);
   });
 

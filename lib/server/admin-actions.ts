@@ -9,6 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { MigrationPendingError } from "@/lib/data/supabase-store";
 import {
   canAdminOrg,
   getOrgAccess,
@@ -19,8 +20,10 @@ import {
 import {
   createOrganizationWithSetup,
   inviteMembers,
+  normalizeSeats,
   parseEmailList,
   resendInvitation,
+  type ToolInput,
 } from "./admin-service";
 import {
   closeCycle,
@@ -78,7 +81,7 @@ export async function createOrgAction(formData: FormData): Promise<void> {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
-  const tools: { tool_value: string; tool_label: string; monthly_license_cost_eur: number }[] = [];
+  const tools: ToolInput[] = [];
   for (const [key, value] of formData.entries()) {
     const match = /^tool:(.+)$/.exec(key);
     if (!match || value !== "on") continue;
@@ -87,6 +90,7 @@ export async function createOrgAction(formData: FormData): Promise<void> {
       tool_value: toolValue,
       tool_label: text(formData, `label:${toolValue}`) || toolValue,
       monthly_license_cost_eur: number(formData, `cost:${toolValue}`, 0),
+      seats: number(formData, `seats:${toolValue}`, 0),
     });
   }
 
@@ -99,6 +103,10 @@ export async function createOrgAction(formData: FormData): Promise<void> {
     revalidatePath("/admin");
     back("/admin", { ok: "created", org: org.slug });
   } catch (err) {
+    if (err instanceof MigrationPendingError) {
+      revalidatePath("/admin");
+      back("/admin", { err: "migration" });
+    }
     if (err instanceof Error && /slug|duplicate|unique/i.test(err.message)) {
       back("/admin", { err: "slug" });
     }
@@ -238,14 +246,20 @@ export async function upsertToolAction(
   const toolValue = text(formData, "tool_value");
   const label = text(formData, "tool_label") || toolValue;
   if (!toolValue || toolValue.length > 60) back(path, { err: "invalid" });
-  await access.store.upsertToolSetting({
-    org_id: access.org.id,
-    tool_value: toolValue,
-    tool_label: label,
-    monthly_license_cost_eur: Math.max(0, number(formData, "cost", 0)),
-    // Checkbox "on" next to a hidden "off" fallback for the unchecked case.
-    active: formData.getAll("active").includes("on"),
-  });
+  try {
+    await access.store.upsertToolSetting({
+      org_id: access.org.id,
+      tool_value: toolValue,
+      tool_label: label,
+      monthly_license_cost_eur: Math.max(0, number(formData, "cost", 0)),
+      seats: normalizeSeats(number(formData, "seats", 0)),
+      // Checkbox "on" next to a hidden "off" fallback for the unchecked case.
+      active: formData.getAll("active").includes("on"),
+    });
+  } catch (err) {
+    if (err instanceof MigrationPendingError) back(path, { err: "migration" });
+    throw err;
+  }
   revalidatePath(path);
   back(path, { ok: "tool" });
 }

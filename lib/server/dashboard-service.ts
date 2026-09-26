@@ -79,6 +79,8 @@ export interface DashboardData {
   /** Hourly rate the ROI uses; from F5 answers when present (SPEC §12). */
   roiHourlyRate: number;
   roiRateFromF5: boolean;
+  /** Weeks the ROI per-head measurement rests on (dashboard: 4, report: its month). */
+  roiWindowWeeks: number;
   roi: RoiSnapshot;
   gapPairs: GapPairResult[];
   nps: { value: number; n: number } | null;
@@ -205,11 +207,15 @@ function guardHistory(history: WeeklyKpis[], k: number): WeeklyKpis[] {
   );
 }
 
+/** Dashboard ROI window: the last four measured weeks. */
+const ROI_WINDOW_WEEKS = 4;
+
 async function assemble(
   store: Store,
   org: Organization,
   weeks: string[],
   scope?: DashboardScope,
+  roiWindowWeeks: number = ROI_WINDOW_WEEKS,
 ): Promise<Omit<DashboardData, "orgs">> {
   const allDepartments = await store.listDepartments(org.id);
   const allResponses = await store.listResponses(org.id);
@@ -255,7 +261,7 @@ async function assemble(
   const history = scope
     ? guardHistory(rawHistory, org.k_anonymity_min)
     : rawHistory;
-  const roiWindow = history.slice(-4);
+  const roiWindow = history.slice(-roiWindowWeeks);
   const hourly = effectiveHourlyRate(responses, org.hourly_rate_default);
   const roi = computeRoi({
     weekly: roiWindow,
@@ -315,6 +321,7 @@ async function assemble(
     efficiencyCombined: computeEfficiencyIndex({ responses, weeks }),
     roiHourlyRate: hourly.rate,
     roiRateFromF5: hourly.fromF5,
+    roiWindowWeeks: roiWindow.length,
     roi,
     gapPairs,
     nps: computeNps(responses),
@@ -420,7 +427,9 @@ export async function getReportData(
   const monthWeeks = allWeeks.filter((w) => monthOfIsoWeek(w) === month);
   if (monthWeeks.length === 0) return null;
 
-  const data = await assemble(store, org, monthWeeks);
+  // The report's ROI rests on every week of its month (4 or 5), not on a
+  // fixed 4-week slice — the per-head measurement is a mean, not a sum.
+  const data = await assemble(store, org, monthWeeks, undefined, monthWeeks.length);
   const allResponses = await store.listResponses(org.id);
 
   // SPEC §10: the baseline is the PROGRAM baseline (first two measurement

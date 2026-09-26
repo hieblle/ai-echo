@@ -117,6 +117,7 @@ function toolSetting(
   orgSlug: string,
   toolValue: string,
   monthlyLicenseCostEur: number,
+  seats: number | null,
 ): OrgToolSetting {
   const catalogEntry = TOOL_CATALOG.find((c) => c.value === toolValue);
   if (!catalogEntry) {
@@ -128,24 +129,27 @@ function toolSetting(
     tool_value: toolValue,
     tool_label: catalogEntry.label,
     monthly_license_cost_eur: monthlyLicenseCostEur,
+    seats,
     active: true,
   };
 }
 
 /**
- * Configured tools per org (§16.3). Merlin's Copilot licences cost 1.440 €/month
- * while W1.2 usage stays < 15 % — the intentional R5 anomaly (SPEC.md §11).
+ * Configured tools per org (§16.3): monthly invoice total and the number of
+ * seats behind it (D4.8; a flat-rate internal tool has no seat count).
+ * Merlin's Copilot licences cost 1.440 €/month while W1.2 usage stays
+ * < 15 % — the intentional R5 anomaly (SPEC.md §11).
  */
 export const DEMO_ORG_TOOL_SETTINGS: OrgToolSetting[] = [
-  toolSetting(MERLIN_ORG_ID, "merlin", "copilot365", 1440),
-  toolSetting(MERLIN_ORG_ID, "merlin", "chatgpt", 800),
-  toolSetting(MERLIN_ORG_ID, "merlin", "deepl_write", 350),
+  toolSetting(MERLIN_ORG_ID, "merlin", "copilot365", 1440, 48),
+  toolSetting(MERLIN_ORG_ID, "merlin", "chatgpt", 800, 32),
+  toolSetting(MERLIN_ORG_ID, "merlin", "deepl_write", 350, 35),
 
-  toolSetting(SPAR_ORG_ID, "spar", "copilot365", 2400),
-  toolSetting(SPAR_ORG_ID, "spar", "chatgpt", 1500),
-  toolSetting(SPAR_ORG_ID, "spar", "deepl_write", 500),
+  toolSetting(SPAR_ORG_ID, "spar", "copilot365", 2400, 80),
+  toolSetting(SPAR_ORG_ID, "spar", "chatgpt", 1500, 60),
+  toolSetting(SPAR_ORG_ID, "spar", "deepl_write", 500, 50),
 
-  toolSetting(REWE_ORG_ID, "rewe", "copilot365", 2000),
-  toolSetting(REWE_ORG_ID, "rewe", "chatgpt", 1200),
-  toolSetting(REWE_ORG_ID, "rewe", "internal_ai", 900),
+  toolSetting(REWE_ORG_ID, "rewe", "copilot365", 2000, 80),
+  toolSetting(REWE_ORG_ID, "rewe", "chatgpt", 1200, 48),
+  toolSetting(REWE_ORG_ID, "rewe", "internal_ai", 900, null),
 ];

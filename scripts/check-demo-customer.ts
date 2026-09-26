@@ -43,7 +43,12 @@ async function main() {
   console.log(`Mitglieder: ${members.filter((m) => m.status !== "removed").length} · Zyklen: ${cycles.length} (offen: ${cycles.filter((c) => c.status === "open").length})`);
   console.log(`Wochen: ${data.weeks.length} (${data.weeks[0]} – ${data.weeks[data.weeks.length - 1]}) · Antworten gesamt: ${data.totalResponses}`);
   console.log(`Adoption ${pct(data.adoption.current)} · Effizienz ${one(data.efficiencyCombined)} · Vertrauen ${one(latest?.trust_index ?? null)} · Stimmung ${one(latest?.sentiment_index ?? null)} · Teilnahme ${pct(latest?.participation_rate ?? null)}`);
-  console.log(`ROI: ${Math.round(data.roi.net_savings_eur)} € netto/Monat · ${data.roi.roi_multiple?.toFixed(1) ?? "–"}× · ${Math.round(data.roi.saved_hours)} h`);
+  const roi = data.roi;
+  console.log(
+    `ROI: ${roi.net_savings_eur === null ? "–" : Math.round(roi.net_savings_eur)} € netto/Monat · ${roi.roi_multiple?.toFixed(1) ?? "–"}× · ` +
+      `pro Kopf ${roi.hours_per_head_week?.toFixed(2) ?? "–"} h/Woche, ${roi.savings_per_head_eur === null ? "–" : Math.round(roi.savings_per_head_eur)} € vs. ${roi.license_cost_per_head_eur === null ? "–" : Math.round(roi.license_cost_per_head_eur)} € Lizenz · ` +
+      `${roi.population === null ? "–" : Math.round(roi.population)} Personen (${roi.population_source ?? "–"}) · ${Math.round(roi.saved_hours)} h gemeldet`,
+  );
   console.log(`Gap: ${data.gapPairs.map((g) => `${g.pair} ${g.gap === null ? "–" : g.gap.toFixed(1)}`).join(" · ")} · NPS ${data.nps ? data.nps.value : "–"}`);
   const suppressed = data.departments.filter((d) =>
     data.heatmap.filter((c) => c.department_id === d.id).every((c) => c.suppressed || c.value === null),

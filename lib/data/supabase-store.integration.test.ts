@@ -14,7 +14,7 @@ import { getSupabaseEnv } from "@/lib/server/env";
 import { QUESTIONS } from "@/lib/seed/questions";
 import { RECOMMENDATION_RULES } from "@/lib/seed/rules";
 import type { Organization } from "@/lib/types";
-import { SupabaseStore } from "./supabase-store";
+import { MigrationPendingError, SupabaseStore } from "./supabase-store";
 
 const env = getSupabaseEnv();
 
@@ -64,6 +64,8 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
   let admin: SupabaseStore["client"];
   let orgA: Organization;
   let orgB: Organization;
+  /** False until migration 20260926120000_tool_seats.sql is applied. */
+  let seatsColumn = true;
   const userIds: string[] = [];
 
   beforeAll(async () => {
@@ -74,6 +76,13 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
       rules: RECOMMENDATION_RULES,
     });
     admin = store.client;
+    const probe = await admin.from("org_settings_tools").select("seats").limit(0);
+    seatsColumn = !probe.error;
+    if (!seatsColumn) {
+      console.warn(
+        "[integration] org_settings_tools.seats is missing — apply supabase/migrations/20260926120000_tool_seats.sql (docs/SETUP-PHASE4.md §4)",
+      );
+    }
     orgA = await store.createOrganization(orgFixture("a"));
     orgB = await store.createOrganization(orgFixture("b"));
   });
@@ -89,16 +98,29 @@ describe.skipIf(!run)("SupabaseStore (integration)", () => {
     expect(await store.getOrganizationBySlug(orgA.slug)).toEqual(orgA);
     const dept = await store.createDepartment(orgA.id, "Vertrieb");
     expect(await store.createDepartment(orgA.id, "Vertrieb")).toEqual(dept);
-    await store.upsertToolSetting({
+    const tool = {
       org_id: orgA.id,
       tool_value: "chatgpt",
       tool_label: "ChatGPT",
       monthly_license_cost_eur: 20,
       active: true,
-    });
-    expect(await store.listToolSettings(orgA.id)).toMatchObject([
-      { tool_value: "chatgpt", monthly_license_cost_eur: 20 },
-    ]);
+    };
+    if (seatsColumn) {
+      await store.upsertToolSetting({ ...tool, seats: 10 });
+      expect(await store.listToolSettings(orgA.id)).toMatchObject([
+        { tool_value: "chatgpt", monthly_license_cost_eur: 20, seats: 10 },
+      ]);
+    } else {
+      // Pre-migration contract: a seat count is refused with a clear
+      // pointer to the migration; without one the tool still saves.
+      await expect(store.upsertToolSetting({ ...tool, seats: 10 })).rejects.toThrow(
+        MigrationPendingError,
+      );
+      await store.upsertToolSetting({ ...tool, seats: null });
+      expect(await store.listToolSettings(orgA.id)).toMatchObject([
+        { tool_value: "chatgpt", monthly_license_cost_eur: 20, seats: null },
+      ]);
+    }
     await expect(
       store.updateOrganization(orgA.id, { k_anonymity_min: 4 }),
     ).rejects.toThrow();

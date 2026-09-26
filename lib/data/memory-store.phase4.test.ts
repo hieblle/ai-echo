@@ -86,6 +86,7 @@ describe("MemoryStore · org setup (F1)", () => {
       tool_value: "chatgpt",
       tool_label: "ChatGPT",
       monthly_license_cost_eur: 20,
+      seats: null,
       active: true,
     });
     const second = await store.upsertToolSetting({
@@ -93,9 +94,11 @@ describe("MemoryStore · org setup (F1)", () => {
       tool_value: "chatgpt",
       tool_label: "ChatGPT Team",
       monthly_license_cost_eur: 25,
+      seats: 12,
       active: true,
     });
     expect(second.id).toBe(first.id);
+    expect(second.seats).toBe(12);
     expect(await store.listToolSettings(ORG.id)).toHaveLength(1);
     await store.deleteToolSetting(ORG.id, "chatgpt");
     expect(await store.listToolSettings(ORG.id)).toHaveLength(0);
