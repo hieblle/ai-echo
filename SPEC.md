@@ -209,7 +209,7 @@ Glaubwürdige Anonymität entscheidet über die Teilnahmequote. Regeln:
 
 **Fragetypen:** `single_choice`, `multi_choice`, `scale_1_10`, `scale_0_10` (NPS), `scale_minus5_plus5`, `number`, `currency`, `text_optional`, `tool_matrix` (pro genutztem Tool: Nützlichkeit 1–10 + Nutzungen/Woche).
 
-**Rotation (weekly):** Pro Org und Woche werden 3–5 Fragen aus dem Weekly-Pool gezogen mit Constraints: (a) mindestens 1 Frage pro Dimension Adoption/Effizienz/Vertrauen/Stimmung wenn 4+ Fragen, (b) pro Person keine Frage zweimal in Folge → Abgleich gegen `respondent_profiles.question_history` beim Ausliefern; wenn die Org-Ziehung für eine Person kollidiert, wird individuell eine Ersatzfrage derselben Dimension gezogen.
+**Rotation (weekly):** Pro Org und Woche werden 3–5 Fragen aus dem Weekly-Pool gezogen; W1.1 (Adoption) und W2.1 (gesparte Stunden, ROI) sind fest in jeder Woche dabei (D2.10, D4.8), der Rest rotiert mit Constraints: (a) mindestens 1 Frage pro Dimension Adoption/Effizienz/Vertrauen/Stimmung wenn 4+ Fragen, (b) pro Person keine Frage zweimal in Folge → Abgleich gegen `respondent_profiles.question_history` beim Ausliefern; wenn die Org-Ziehung für eine Person kollidiert, wird individuell eine Ersatzfrage derselben Dimension gezogen.
 
 **Conditional Logic:** Fragen mit `condition.requires_tool = true` (z. B. W1.2) zeigen nur Tools aus `respondent_profiles.tools_used`. Wer bei O2 „Aktuell keine" wählt, bekommt eine verkürzte Pulse-Variante (W1.1 + W4.1 + W4.2) — auch Nicht-Nutzer sind ein wichtiges Signal.
 
@@ -223,9 +223,10 @@ Glaubwürdige Anonymität entscheidet über die Teilnahmequote. Regeln:
 |---|---|---|
 | Adoption-Rate | Anteil Antworten mit Nutzung ≥ „1–2 mal" an allen W1.1-Antworten der Woche | W1.1 |
 | Power-User-Anteil | Anteil „Täglich" + „Mehrmals täglich" | W1.1 |
-| Eingesparte Stunden/Monat | Summe der Klassenmitten aus W2.1 (0; 0,5; 2; 4; 7,5; 12) hochgerechnet auf Nichtteilnehmer via Teilnahmequote — konservativ: nur Summe der Antworten, Hochrechnung als Zweitwert ausweisen | W2.1, M1.1 |
-| **Netto-Ersparnis €/Monat** | (Eingesparte Stunden × Stundensatz) − Σ Lizenzkosten | W2.1 × org_settings |
-| **ROI-Multiple** | (Eingesparte Stunden × Stundensatz) ÷ Σ Lizenzkosten | dito |
+| Gesparte Stunden pro Kopf und Woche | Σ Klassenmitten aus W2.1 (0; 0,5; 2; 4; 7,5; 12) ÷ Σ ausgefüllte Pulses, über die Wochen mit W2.1-Antworten; Nicht-Nutzer (Kurz-Pulse ohne W2.1) zählen mit 0 h. W2.1 wird dafür jede Woche gestellt (Anker, D4.8). Die gemeldete Summe bleibt als Untergrenze sichtbar; M1.1 fließt nicht ein (konservativ) | W2.1 |
+| Eingesparte Stunden/Monat (gesamt) | Stunden pro Kopf und Woche × 52/12 × Grundgesamtheit. Grundgesamtheit = größte Lizenzanzahl der aktiven Tools (`seats`), mindestens die eingeladenen Mitglieder; ohne Lizenzangabe die Eingeladenen | W2.1, participations, org_settings_tools |
+| **Netto-Ersparnis €/Monat** | (Eingesparte Stunden/Monat gesamt × Stundensatz) − Σ Lizenzkosten/Monat; zusätzlich pro Kopf: Ersparnis pro Kopf (Stunden pro Kopf und Woche × 52/12 × Stundensatz) vs. Lizenz pro Kopf (Σ Lizenzkosten ÷ Grundgesamtheit) | W2.1 × org_settings |
+| **ROI-Multiple** | Brutto-Ersparnis/Monat ÷ Σ Lizenzkosten/Monat (= Ersparnis pro Kopf ÷ Lizenz pro Kopf) | dito |
 | Effizienzindex (0–10) | Mittel aus W2.3 und normiertem M1.3 ((x+5)/10×10) | W2.3, M1.3 |
 | Vertrauensindex (0–10) | Mittel aus W3.3 und invertiertem W3.1 (Nie=10, Selten=7,5, Manchmal=5, Oft=2,5, Fast immer=0) | W3.1, W3.3 |
 | Stimmungsindex (0–10) | Mittel aus W4.2 und gemapptem W4.1 (10/7,5/5/2,5/0) | W4.1, W4.2 |

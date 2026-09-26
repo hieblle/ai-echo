@@ -38,6 +38,16 @@ weiterarbeiten"). Neueste Einträge oben.
       nachgereicht → Fragebogen dann als v1.2 einfrieren.
 - [ ] **Betriebsrat-/DSB-Zweiseiter** (Phase 5) muss die ehrliche
       Anonymitätszusage aus D3.3 (4) enthalten.
+- [ ] **Belastbarkeit der gesparten Stunden (Merkliste, 2026-09-26):** Die
+      ROI-Basis ist heute die wöchentliche Selbsteinschätzung W2.1 („Wie
+      viele Stunden hat dir KI diese Woche gespart?") — Mitarbeitende können
+      das nur grob schätzen. Für die Endversion braucht die Zahl mehr Belege,
+      z. B.: Abgleich mit der Monatsschätzung M1.1 und dem Produktivitäts-
+      Delta M1.3, Stichproben mit Zeitmessung je Use-Case (vorher/nachher),
+      Tool-Nutzungsdaten der Anbieter (Copilot-/ChatGPT-Reports), Anker-
+      beispiele in der Frage („eine Angebotsübersetzung ≈ 1 h"), Plausi-
+      bilitätsgrenzen pro Kopf. Bis dahin steht am ROI sichtbar
+      „Selbsteinschätzung der Befragten".
 
 ---
 
@@ -135,6 +145,49 @@ Mitgliedschaft — Admins sind keine Respondenten.
 - Org-Admins können Zyklen manuell öffnen/schließen und Erinnerungen
   auslösen (erster Testlauf, Demo beim Kunden).
 
+### D4.8 — ROI pro Kopf, dann hochgerechnet; W2.1 wird jede Woche gestellt (Review-Fund, 2026-09-26)
+Leon fand beim Gegenlesen: Lizenzkosten wurden als Monatssumme der ganzen
+Firma gerechnet, die Ersparnis aber nur aus den gemeldeten Stunden der
+Antwortenden — zwei verschiedene Grundgesamtheiten, der ROI war bei 75 %
+Teilnahme systematisch um ein Viertel zu niedrig. Beim Nachrechnen kam ein
+zweiter, größerer Fehler dazu: W2.1 („gesparte Stunden") war eine
+Rotationsfrage und wurde in einem 4-Wochen-Fenster nur in 1–2 Wochen
+gestellt; Wochen ohne Frage zählten als 0 h. Die Demo-Firma REWE zeigte
+deshalb −3.150 € netto und 0,2× (W2.1 in 1 von 4 Wochen), Merlin 4,9× (2 von
+4) — der ROI hing vom Zufall der Ziehung ab (Faktor 2–4).
+
+Entschieden (ersetzt die ROI-Sätze in D2.1 und präzisiert SPEC §10):
+1. **W2.1 ist zweiter Anker** jeder Wochen-Ziehung
+   (`WEEKLY_ANCHOR_CODES = ["W1.1", "W2.1"]`). Der Pulse bleibt bei 5
+   Fragen (2 fest + 3 wechselnd aus 10; die Dimensions-Abdeckung zählt Anker
+   mit). Nicht-Nutzer bekommen weiter die Kurzvariante ohne W2.1 und zählen
+   im ROI mit 0 h.
+2. **Pro Kopf messen, dann hochrechnen** (`computeRoi`):
+   - Stunden pro Kopf und Woche = Σ W2.1-Klassenmitten ÷ Σ ausgefüllte
+     Pulses, über die Wochen, in denen W2.1 beantwortet wurde (eine Woche
+     ohne Frage verwässert den Schnitt nicht mit falschen Nullen).
+   - Grundgesamtheit = größte Lizenzanzahl unter den aktiven Tools
+     (Lizenzen überschneiden sich in der Regel → Maximum statt Summe,
+     konservativ), mindestens aber die eingeladenen Mitglieder (alle
+     Gemessenen zählen); ohne Lizenzangaben die eingeladenen Mitglieder,
+     ohne Teilnahmedaten die Antwortenden. Die Quelle wird ausgewiesen.
+   - Monat = 52/12 Wochen. Ersparnis pro Kopf/Monat = Stunden pro Kopf und
+     Woche × 4,33 × Stundensatz; Lizenz pro Kopf/Monat = Σ Lizenzkosten ÷
+     Grundgesamtheit; Brutto = Ersparnis pro Kopf × Grundgesamtheit; Netto =
+     Brutto − Σ Lizenzkosten; Multiple = Brutto ÷ Σ Lizenzkosten (identisch
+     mit dem Pro-Kopf-Verhältnis, also unabhängig von der Firmengröße).
+   - Die gemeldete Stundensumme bleibt als Untergrenze sichtbar. M1.1 fließt
+     weiterhin nicht ein (§10 „konservativ").
+   - Der Monatsreport rechnet über alle Wochen seines Monats (4 oder 5),
+     das Dashboard über die letzten 4.
+3. **Neues Feld `seats` (Anzahl Lizenzen) je Tool**, optional (NULL =
+   unbekannt oder Pauschale). Migration `20260926120000_tool_seats.sql`;
+   Admin-Formulare fragen „Kosten €/Monat" (Rechnungsbetrag) und „Anzahl
+   Lizenzen". Der `SupabaseStore` liest die Spalte tolerant (fehlt sie noch,
+   gilt NULL), Schreiben braucht die Migration.
+4. Offen bleibt die Belastbarkeit der Selbsteinschätzung selbst → Merkliste
+   („Belastbarkeit der gesparten Stunden").
+
 ### D4.7 — Bewusst nicht in Phase 4
 Datenexport/Org-Löschung (Phase 5, DSGVO-Basics), PDF-Report und
 Mailversand des Reports (Phase 5), Bounce-Tracking für CSV-Einladungen über
@@ -231,9 +284,10 @@ Respondenten-Proxy für anonyme Zeilen = MAX Antwortzahl eines einzelnen
 Fragecodes im Betrachtungsraum (bester Unterschätzer, da jede Person eine
 Frage höchstens einmal pro Zyklus beantwortet). Indizes als Mittel der
 Frage-Mittelwerte („Mittel aus X und Y", §10), fehlende Seite fällt auf die
-andere zurück. ROI konservativ: nur Σ W2.1-Klassenmitten der letzten 4 Wochen,
-M1.1-Selbstschätzungen fließen bewusst NICHT ein (§10 „konservativ");
-Hochrechnung als Zweitwert über die Ø-Teilnahmequote. M1.3 ist monatlich und
+andere zurück. ROI: ursprünglich nur Σ W2.1-Klassenmitten der letzten 4
+Wochen mit Hochrechnung als Zweitwert — **ersetzt durch D4.8** (pro Kopf
+messen, auf die Grundgesamtheit hochrechnen); M1.1-Selbstschätzungen fließen
+weiterhin bewusst NICHT ein (§10 „konservativ"). M1.3 ist monatlich und
 wird beim kombinierten Effizienzindex nicht wochen-gefiltert. Baseline =
 Mittel der ersten beiden Pulse-Wochen (der Onboarding-Teil der SPEC-Baseline
 hat keine Index-Quellen). Fehlgeformte Antworten werden still ignoriert.
@@ -308,7 +362,8 @@ aufgelöst zugunsten von §10: `WEEKLY_ANCHOR_CODES = ["W1.1"]` ist Teil JEDER
 Ziehung, von Ausschluss und persönlicher Ersetzung ausgenommen (wöchentlich
 dieselbe Kernfrage ist gängige Pulse-Praxis). Die No-Repeat-Regel gilt
 unverändert für alle übrigen Fragen (60-Wochen-Regressionstest). D2.2 bleibt
-als Defense-in-Depth bestehen.
+als Defense-in-Depth bestehen. **Ergänzt durch D4.8:** W2.1 ist seit
+2026-09-26 der zweite Anker (ROI-Basis).
 
 ### D2.11 — F5 fließt in den ROI (Review-Fund)
 §12: „F5 Ø-Stundensatz Team (fließt in ROI)". Der ROI nutzt jetzt den

@@ -89,13 +89,27 @@ Zwei gleichwertige Wege — beide legen alle Tabellen, die Sicherheitsregeln
 (RLS) und die Teilnahme-Statistik an und merken sich, dass die Migration
 gelaufen ist (Details in `supabase/migrations/`).
 
+Der Ordner `supabase/migrations/` enthält eine Datei pro Änderung, in
+Reihenfolge des Dateinamens. Jede Datei wird genau einmal eingespielt.
+Stand heute:
+
+| Datei | Inhalt |
+| --- | --- |
+| `20260925120000_init.sql` | alle Tabellen, RLS, Teilnahme-Statistik |
+| `20260926120000_tool_seats.sql` | Spalte „Anzahl Lizenzen" je Tool (ROI pro Kopf, D4.8) |
+
+Kommt später eine neue Datei dazu, steht das in der Commit-Nachricht und
+hier in der Tabelle — dann nur die neue Datei einspielen.
+
 **Weg A — im Supabase-Dashboard (kein Terminal nötig):**
-1. Die Datei `supabase/migrations/20260925120000_init.sql` auf GitHub öffnen,
-   auf **Raw** klicken, alles markieren und kopieren.
+1. Die Datei auf GitHub öffnen, auf **Raw** klicken, alles markieren und
+   kopieren.
 2. Im Supabase-Projekt links **SQL Editor** → **New query** → einfügen →
-   **Run**. Erwartete Meldung: „Success. No rows returned".
-3. Ein zweiter Lauf schlägt fehl („already exists") — das ist in Ordnung,
-   die Migration ist dann schon drin.
+   **Run**. Erwartete Meldung: „Success. No rows returned". Fragt Supabase
+   „Run without RLS / Run and enable RLS": **Run and enable RLS**.
+3. Das für jede noch fehlende Datei wiederholen, in Reihenfolge der Namen.
+   Ein zweiter Lauf derselben Datei schlägt fehl („already exists") oder
+   ändert nichts — das ist in Ordnung.
 
 **Weg B — im Terminal (lokal), mit `SUPABASE_DB_URL` in `.env.local`:**
 
@@ -103,8 +117,8 @@ gelaufen ist (Details in `supabase/migrations/`).
 pnpm db:migrate
 ```
 
-Erwartete Ausgabe: `applied 20260925120000_init.sql` und
-`1 migration(s) applied.` Ein zweiter Aufruf meldet `Database is up to date.`
+Erwartete Ausgabe: eine Zeile `applied …` je neuer Datei und
+`N migration(s) applied.` Ein zweiter Aufruf meldet `Database is up to date.`
 
 Hinweis: Die Claude-Cloud-Umgebung erlaubt nur HTTPS nach außen, keine
 direkten Datenbank-Verbindungen (Port 5432) — von dort geht nur Weg A bzw.

@@ -57,7 +57,8 @@ Ziel: Der komplette Ablauf „neuer Kunde" aus Sicht von dbrains.
    **Erwartet:** Du landest auf `/app`, oben rechts steht „Plattform-Admin".
 2. `/admin` öffnen → **Neue Organisation anlegen**: Fantasiefirma, z. B.
    „Testwerk GmbH", Anrede Du, Stundensatz 60, drei bis vier Abteilungen
-   (eine pro Zeile), zwei Tools mit Lizenzkosten ankreuzen.
+   (eine pro Zeile), zwei Tools ankreuzen und je Tool Lizenzkosten pro Monat
+   und Anzahl Lizenzen eintragen (z. B. 300 € für 10 Lizenzen).
    **Erwartet:** Meldung „Organisation angelegt", die Firma steht in der Liste.
 3. Bei der neuen Firma die Adresse der Person eintragen, die den Org-Admin
    spielt → **Org-Admin einladen**.

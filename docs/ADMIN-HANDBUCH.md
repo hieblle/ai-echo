@@ -146,8 +146,10 @@ ersten Kundenpiloten im jeweiligen Konto abschließen.
 
 - **Abteilungen**, grob genug geschnitten, dass in jeder mindestens 5
   Personen teilnehmen (sonst erscheint die Abteilung nie einzeln)
-- **KI-Tools** im Einsatz und die **monatlichen Lizenzkosten** je Tool
-  (fließen in den ROI)
+- **KI-Tools** im Einsatz, je Tool die **monatlichen Lizenzkosten**
+  (Rechnungsbetrag für alle Lizenzen) und die **Anzahl der Lizenzen**
+  (fließen in den ROI; die Anzahl darf leer bleiben, dann gelten die
+  eingeladenen Mitglieder als Lizenznutzer)
 - **Standard-Stundensatz** (Personalkosten pro Stunde, z. B. 65 €)
 - **Anrede**: Du oder Sie (Konzerne meist Sie)
 - **Ansprechperson** beim Kunden, die Org-Admin wird (E-Mail-Adresse)
@@ -213,16 +215,24 @@ Verwaltung):
 - **Einstellungen:** Anrede, Stundensatz, k (nur erhöhbar)
 - **Abteilungen** hinzufügen/löschen (Mitglieder einer gelöschten Abteilung
   verlieren nur die Zuordnung)
-- **Tools und Lizenzkosten** pflegen — inaktive Tools zählen nicht im ROI
+- **Tools, Lizenzkosten und Anzahl Lizenzen** pflegen — inaktive Tools
+  zählen nicht im ROI
 
 ### Dashboard lesen (`/app/<kunde>/dashboard`)
 
 - **Kacheln:** Adoption (Anteil aktiver Nutzer, gepoolt über 4 Wochen),
   Effizienz-, Vertrauens-, Stimmungsindex (0–10) und Teilnahmequote, jeweils
   mit Sparkline und Delta zur Baseline (ab 3 Wochen)
-- **ROI-Kachel:** konservativ nur gemeldete Stunden × Stundensatz
-  (Org-Standard oder Ø aus dem Führungsblock F5) minus aktive Lizenzkosten,
-  Basis letzte 4 Wochen; Hochrechnung als Zweitwert
+- **ROI-Kachel (pro Kopf gemessen, dann hochgerechnet):** Aus den Pulsen
+  der letzten 4 Wochen ergibt sich, wie viele Stunden eine Person pro Woche
+  im Schnitt spart (wer keine KI nutzt, zählt mit 0 h). Daraus: Ersparnis
+  pro Kopf und Monat (× 4,33 Wochen × Stundensatz — Org-Standard oder Ø aus
+  dem Führungsblock F5) gegenüber Lizenz pro Kopf und Monat. Die große Zahl
+  ist die Hochrechnung auf alle Lizenznutzer (größte Lizenzanzahl der Tools,
+  mindestens die eingeladenen Mitglieder) minus die gesamten Lizenzkosten;
+  das Multiple ist Brutto ÷ Lizenzkosten. Die gemeldete Stundensumme steht
+  als Untergrenze dabei. Wichtig zu wissen: Die Stunden sind eine
+  Selbsteinschätzung der Befragten (Merkliste in `DECISIONS.md`).
 - **Heatmap** Abteilungen × Dimensionen; „n < 5" = anonymisiert
 - **Perception Gap:** Führung vs. Mitarbeitende auf drei gespiegelten
   Paaren (Strategie, Kompetenz, Nutzen); positiv = Führung optimistischer
