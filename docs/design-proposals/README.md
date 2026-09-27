@@ -9,25 +9,17 @@ differs:
 | `Main.dc.html` | A · Klar & Fokussiert | Light SaaS look close to the current app (system-ui, blue/green viz palette from `globals.css`); Merlin demo org |
 | `DarkCockpit.dc.html` | B · Dark Cockpit | Dark analytics cockpit, large numerals (Space Grotesk + IBM Plex Sans); Merlin demo org |
 | `WarmMenschlich.dc.html` | C · Warm & Menschlich | Warm cream tones, serif accents (Lora + Karla); Merlin demo org |
-| `SoftGlass.dc.html` + `SoftGlassPulse.dc.html` | D · Soft UI (2026-09-27) | From a reference the user provided: warm grey presentation frame, flat light app window, floating left panel (navigation + "current cycle" drawer), hairline bars, dot statuses, one yellow accent (Poppins). Second artboard: the employee home screen on a phone. Canvas: https://claude.ai/artifact/2UPA67HrKysPp9LWY3HjzP |
-| `Editorial.dc.html` + `EditorialPulse.dc.html` | E · Editorial Monochrom (2026-09-27) | From a second reference: cream container on dark, text-only navigation, free-standing hero with the lead KPI in display size, thin dividers instead of cards, black active states; Manrope, almost fully monochrome. Second artboard: the employee home screen on a phone. Same canvas as option D (right of it). |
+| `SoftGlass.dc.html` + `SoftGlassPulse.dc.html` | D · Soft UI (2026-09-27) | Mirrors a reference the user provided slot for slot: square presentation frame on warm grey, flat light app window, floating left panel (navigation + survey drawer with stacked cards and paper previews), three airy top cards, a four-row status table, thin half-donut gauge, one yellow accent (Poppins); tweak `presentationBlur` reproduces the reference's blurred background elements. Second artboard: the pulse on a phone. Canvas: https://claude.ai/artifact/2UPA67HrKysPp9LWY3HjzP |
+| `Editorial.dc.html` + `EditorialPulse.dc.html` | E · Editorial Monochrom (2026-09-27) | Mirrors a second reference: cream container on dark, text-only navigation, free-standing hero headline with the lead KPI in display size, grouped bar chart (hatched vs. solid), recommendation rows like a contact list, date tiles with black active states, thin-divider schedule, one feedback card; Manrope, almost fully monochrome. Second artboard: the pulse on a phone. Same canvas as option D (right of it). |
 
-Options D and E share one information architecture, derived from what
-`DashboardData` actually holds (see `lib/server/dashboard-service.ts`):
-
-1. **Status** (top): current cycle with participation and the reminder
-   action; the four indices with 6-week trend and delta to the baseline,
-   plus participation; the ROI per head and scaled (D4.8) with tool usage
-   next to licence cost.
-2. **Where to act** (middle): open recommendations first with their trigger
-   and actions; departments × dimensions with `n < 5` suppression and an
-   org total row.
-3. **Why** (bottom): perception gap (team vs. leadership) with NPS, free
-   texts (anonymous, week only), tool usage and training wishes, each
-   linked to the rule it feeds (R5, R4).
-
-Org-level numbers are the real Moorbach values; department rows, weekly
-series, dates and the closed recommendations are illustrative.
+Both were checked against the references as rendered PNGs (Playwright,
+`scripts`-free scratch render) before publishing. The style comes first:
+each reference slot carries the closest KI-Barometer fact (lead KPI = net
+savings per month, alerts = recommendations, cost/revenue = licence vs.
+savings per head, pipeline = departments, gauge = participation, events =
+anonymous free texts). Org-level numbers are the real Moorbach values;
+department rows, weekly series, dates and closed recommendations are
+illustrative.
 
 `canvas.json` is the layout manifest for the Claude Design canvas where
 these were first published. The files are plain HTML and open in any
