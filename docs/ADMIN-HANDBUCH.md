@@ -202,21 +202,39 @@ Verwaltung):
 
 ## 7. Laufender Betrieb
 
+### Oberfläche
+
+Links liegt die Seitenleiste: oben die Organisation (Auswahl, wenn du
+mehrere betreust), darunter die Seiten, die deine Rolle öffnen darf
+(Übersicht, Dashboard, Monatsreport, Mitglieder, Verwaltung, für dbrains
+zusätzlich „Plattform"). Der Punkt **Befragungen** klappt ein zweites Panel
+aus, das die anstehenden Befragungen als Karten zeigt (gelber Punkt = offen,
+Haken = erledigt, Schloss = wartet auf das Onboarding) und oben die anonymen
+Gesamtwerte, die alle Mitglieder sehen. Mit dem Pfeil neben dem Logo wird
+die Leiste zu einer Symbolleiste eingeklappt; am Handy steckt alles hinter
+dem Menü-Symbol. Auf `/app` steht unter „Jetzt dran", was als Nächstes zu
+tun ist — für Org-Admins zusätzlich die Einrichtungs-Checkliste mit
+Sprungmarken in die Verwaltung.
+
 ### Verwaltung (`/app/<kunde>/admin`)
 
-- **Befragungszyklen:** offene Zyklen sehen, manuell öffnen/schließen,
-  Erinnerung auslösen
-- **Mitglieder einladen** (siehe oben)
-- **Mitglieder:** Rolle und Abteilung ändern, Link erneut senden,
-  **Entfernen** (die Person bekommt keine Befragungen mehr; ihre
-  anonymen Antworten bleiben in den Aggregaten). Die eigene Mitgliedschaft
-  lässt sich nicht entfernen, und ein Org-Admin kann sich nicht selbst
-  herabstufen.
-- **Einstellungen:** Anrede, Stundensatz, k (nur erhöhbar)
-- **Abteilungen** hinzufügen/löschen (Mitglieder einer gelöschten Abteilung
-  verlieren nur die Zuordnung)
-- **Tools, Lizenzkosten und Anzahl Lizenzen** pflegen — inaktive Tools
-  zählen nicht im ROI
+Oben vier Status-Kacheln (Abteilungen, KI-Tools, Mitglieder, Pulse); ein
+oranger Punkt heißt „hier fehlt noch etwas". Darunter sechs nummerierte
+Abschnitte in Einrichtungsreihenfolge:
+
+1. **Grundeinstellungen:** Anrede, Stundensatz, k (nur erhöhbar)
+2. **Abteilungen** hinzufügen/löschen (Mitglieder einer gelöschten Abteilung
+   verlieren nur die Zuordnung)
+3. **KI-Tools, Lizenzkosten und Anzahl Lizenzen** pflegen — inaktive Tools
+   zählen nicht im ROI
+4. **Mitglieder einladen** (siehe oben)
+5. **Mitglieder:** Rolle und Abteilung ändern, Link erneut senden,
+   **Entfernen** (die Person bekommt keine Befragungen mehr; ihre
+   anonymen Antworten bleiben in den Aggregaten). Die eigene Mitgliedschaft
+   lässt sich nicht entfernen, und ein Org-Admin kann sich nicht selbst
+   herabstufen.
+6. **Befragungszyklen:** offene Zyklen sehen, manuell öffnen/schließen,
+   Erinnerung auslösen
 
 ### Dashboard lesen (`/app/<kunde>/dashboard`)
 

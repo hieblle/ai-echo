@@ -188,6 +188,39 @@ Entschieden (ersetzt die ROI-Sätze in D2.1 und präzisiert SPEC §10):
 4. Offen bleibt die Belastbarkeit der Selbsteinschätzung selbst → Merkliste
    („Belastbarkeit der gesparten Stunden").
 
+### D4.9 — Produkt-UI in Design D „Soft UI" (2026-09-27)
+Aus zwei Designvorschlägen (`docs/design-proposals/`: D „Soft UI" nach einer
+Projektmanagement-Referenz, E „Editorial Monochrom") wurde **D** umgesetzt —
+als Stil auf die bestehende Struktur gelegt, nicht als neue Informations-
+architektur (Rückmeldung: die bisherige Anordnung war verständlicher als die
+Nachbauten der Referenzen).
+
+1. **Tokens statt Einzelfarben:** Grund `#F5F5F7`, Text `#1B1B1D`, ein
+   Akzent (Gelb `#F5D95E`), pastellige Statusfarben, Poppins 300–600,
+   20-px-Karten (`.card-soft` transluzent, `.card-solid` weiß), Pill-Buttons,
+   3-px-Balken, Punkt-Status. Alles in `app/globals.css` / `tailwind.config.ts`;
+   Komponenten verwenden nur Tokens.
+2. **App-Shell** (`components/shell/`): links eine schwebende Seitenleiste
+   mit Navigation (auf eine Icon-Leiste einklappbar) und daneben ein zweites
+   Panel „Befragungen" wie in der Referenz — die anstehenden Befragungen als
+   Karten mit Status (offen / erledigt / gesperrt), oben die anonymen
+   Org-Werte. Beide Zustände merkt sich der Browser lokal (localStorage, nur
+   Komfort). Unter `lg` ein Hamburger-Menü; Survey-Routen laufen „fokussiert"
+   ohne Seitenleiste. Das Navigationsmodell baut der Server pro Viewer
+   (`lib/server/shell.ts`: nur Seiten, die die Rolle öffnen darf).
+3. **Nutzerflow:** `/app` zeigt „Jetzt dran" (Onboarding zuerst, danach die
+   offenen Zyklen mit „Jetzt starten"), Org-Admins zusätzlich eine
+   Einrichtungs-Checkliste mit Sprungmarken in die Verwaltung; die
+   Verwaltung ist in sechs nummerierte Abschnitte in Einrichtungsreihenfolge
+   gegliedert (Einstellungen, Abteilungen, KI-Tools, Einladen, Mitglieder,
+   Zyklen) mit Status-Kacheln oben. `/app/<org>/report` springt zum
+   letzten Monat mit Daten.
+4. **Demo bleibt infrastrukturfrei:** die Demo-Routen bekommen dieselbe Shell
+   aus dem `MemoryStore` (`lib/server/demo-shell.ts`); Musterwerk ist an
+   `/demo` verankert, die Demo-Flows erscheinen im Panel jeder Demo-Org.
+5. Die Mockups bleiben als Referenz im Repo; Option E wird nicht weiter
+   verfolgt.
+
 ### D4.7 — Bewusst nicht in Phase 4
 Datenexport/Org-Löschung (Phase 5, DSGVO-Basics), PDF-Report und
 Mailversand des Reports (Phase 5), Bounce-Tracking für CSV-Einladungen über
