@@ -41,20 +41,22 @@ export function FinishLogin({ url, publishableKey, next }: FinishLoginProps) {
   }, [url, publishableKey, next]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 px-6 py-16 text-center">
-      {failed ? (
-        <>
-          <h1 className="text-xl font-semibold">Login-Link ungültig</h1>
-          <p className="text-sm text-muted-foreground">
-            Der Link ist abgelaufen oder wurde schon verwendet.
-          </p>
-          <Link href="/login" className="text-sm underline-offset-4 hover:underline">
-            Neuen Login-Link anfordern
-          </Link>
-        </>
-      ) : (
-        <p className="text-muted-foreground">Anmeldung wird abgeschlossen …</p>
-      )}
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16">
+      <div className="card-solid space-y-3 p-6 text-center">
+        {failed ? (
+          <>
+            <h1 className="text-xl font-medium">Login-Link ungültig</h1>
+            <p className="text-sm text-muted-foreground">
+              Der Link ist abgelaufen oder wurde schon verwendet.
+            </p>
+            <Link href="/login" className="inline-block text-sm underline-offset-4 hover:underline">
+              Neuen Login-Link anfordern
+            </Link>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Anmeldung wird abgeschlossen …</p>
+        )}
+      </div>
     </main>
   );
 }

@@ -1,5 +1,7 @@
+import { Check, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/field";
 import {
   activateMemberships,
   canAdminOrg,
@@ -13,6 +15,7 @@ import {
 import { getMemberOverview, type DueSurvey } from "@/lib/server/member-service";
 import { SURVEY_ACCESS_MESSAGES } from "@/lib/server/member-survey-service";
 import type { Membership, Organization, TemplateKey } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +28,85 @@ const TEMPLATE_TITLES: Record<TemplateKey, string> = {
 
 const TEMPLATE_HINTS: Record<TemplateKey, string> = {
   onboarding: "Einmalig, ca. 3 Minuten — personalisiert deine Pulse-Fragen.",
-  weekly: "3–5 Fragen, unter 60 Sekunden.",
+  weekly: "5 Fragen, unter 60 Sekunden.",
   monthly: "8–12 Fragen, 5–8 Minuten.",
   leadership: "Monatlicher Leadership-Block inkl. Gap-Fragen.",
 };
+
+const ROLE_LABELS: Record<Membership["role"], string> = {
+  employee: "Mitarbeiter:in",
+  team_lead: "Teamleitung",
+  org_admin: "Org-Admin",
+};
+
+const nf = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat("de-DE", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** What an org admin still has to set up before the first pulse can run. */
+interface SetupItem {
+  key: string;
+  label: string;
+  detail: string;
+  done: boolean;
+  href: string;
+}
+
+function SurveyRow({
+  org,
+  template,
+  week,
+  state,
+}: {
+  org: Organization;
+  template: TemplateKey;
+  week?: string;
+  state: "due" | "done" | "locked";
+}) {
+  return (
+    <li
+      className={cn(
+        "flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4",
+        state === "due" ? "card-solid" : "rounded-[20px] bg-white/60",
+      )}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        {state === "due" && (
+          <span className="status-dot" style={{ background: "var(--accent-yellow)" }} aria-hidden />
+        )}
+        {state === "done" && (
+          <Check className="h-4 w-4 shrink-0" strokeWidth={1.5} style={{ color: "var(--viz-delta-good)" }} aria-hidden />
+        )}
+        {state === "locked" && (
+          <Lock className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className={cn("text-sm font-medium", state !== "due" && "text-muted-foreground")}>
+            {TEMPLATE_TITLES[template]}
+            {week && <span className="ml-2 text-[11px] font-normal text-muted-foreground">{week}</span>}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {state === "done"
+              ? "Erledigt — danke!"
+              : state === "locked"
+                ? "Wird nach dem Onboarding freigeschaltet."
+                : TEMPLATE_HINTS[template]}
+          </p>
+        </div>
+      </div>
+      {state === "due" && (
+        <Button asChild className="w-full sm:w-auto">
+          <Link href={`/app/${org.slug}/survey/${template}`}>
+            Jetzt starten
+            <ChevronRight className="ml-1 h-4 w-4" strokeWidth={1.5} aria-hidden />
+          </Link>
+        </Button>
+      )}
+    </li>
+  );
+}
 
 interface OrgCardProps {
   org: Organization;
@@ -38,45 +116,7 @@ interface OrgCardProps {
   completed: DueSurvey[];
   /** Org-wide transparency numbers for employees (SPEC §7.4). */
   publicKpis: PublicOrgKpis | null;
-}
-
-const nf = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const nf1 = new Intl.NumberFormat("de-DE", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
-
-function SurveyRow({
-  org,
-  template,
-  week,
-  done,
-}: {
-  org: Organization;
-  template: TemplateKey;
-  week?: string;
-  done: boolean;
-}) {
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-      <div>
-        <p className="font-medium">
-          {TEMPLATE_TITLES[template]}
-          {week && (
-            <span className="ml-2 text-xs text-muted-foreground">{week}</span>
-          )}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {done ? "Erledigt — danke!" : TEMPLATE_HINTS[template]}
-        </p>
-      </div>
-      {!done && (
-        <Button asChild>
-          <Link href={`/app/${org.slug}/survey/${template}`}>Jetzt starten</Link>
-        </Button>
-      )}
-    </li>
-  );
+  setup: SetupItem[] | null;
 }
 
 function OrgCard({
@@ -86,72 +126,125 @@ function OrgCard({
   due,
   completed,
   publicKpis,
+  setup,
 }: OrgCardProps) {
+  const dueCount = (onboardingDone ? due.length : 1) + 0;
+  const setupOpen = setup?.filter((s) => !s.done) ?? [];
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-semibold">{org.name}</h2>
-        <div className="flex gap-3 text-sm">
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-medium">{org.name}</h2>
+          <span className="pill bg-white/70 text-muted-foreground">{ROLE_LABELS[membership.role]}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
           {canViewDashboard(membership.role) && (
-            <Link href={`/app/${org.slug}/dashboard`} className="underline-offset-4 hover:underline">
-              Dashboard
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/app/${org.slug}/dashboard`}>Dashboard</Link>
+            </Button>
           )}
           {canAdminOrg(membership.role) && (
-            <Link href={`/app/${org.slug}/admin`} className="underline-offset-4 hover:underline">
-              Verwaltung
-            </Link>
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/app/${org.slug}/report`}>Monatsreport</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/app/${org.slug}/admin`}>Verwaltung</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
 
-      <ul className="space-y-2">
-        {!onboardingDone && (
-          <SurveyRow org={org} template="onboarding" done={false} />
-        )}
-        {onboardingDone && due.length === 0 && completed.length === 0 && (
-          <li className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-            Aktuell ist keine Befragung offen. Du bekommst eine E-Mail, sobald
-            der nächste Pulse startet.
-          </li>
-        )}
-        {onboardingDone &&
-          due.map((d) => (
-            <SurveyRow key={d.cycle.id} org={org} template={d.template} week={d.cycle.week} done={false} />
+      <div className="card-soft p-5">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h3 className="text-sm font-medium">Jetzt dran</h3>
+          <span className="text-[11px] text-muted-foreground">
+            {dueCount === 0 ? "nichts offen" : `${dueCount} offen`}
+          </span>
+        </div>
+        <ul className="space-y-2">
+          {!onboardingDone && <SurveyRow org={org} template="onboarding" state="due" />}
+          {onboardingDone && due.length === 0 && completed.length === 0 && (
+            <li className="rounded-[20px] bg-white/60 px-5 py-4 text-sm text-muted-foreground">
+              Aktuell ist keine Befragung offen. Der nächste Pulse startet
+              montags — du bekommst dann eine E-Mail mit dem Link.
+            </li>
+          )}
+          {due.map((d) => (
+            <SurveyRow
+              key={d.cycle.id}
+              org={org}
+              template={d.template}
+              week={d.cycle.week}
+              state={onboardingDone ? "due" : "locked"}
+            />
           ))}
-        {onboardingDone &&
-          completed.map((d) => (
-            <SurveyRow key={d.cycle.id} org={org} template={d.template} week={d.cycle.week} done />
+          {completed.map((d) => (
+            <SurveyRow key={d.cycle.id} org={org} template={d.template} week={d.cycle.week} state="done" />
           ))}
-        {!onboardingDone && due.length > 0 && (
-          <li className="text-xs text-muted-foreground">
-            Die offenen Pulse-Befragungen erscheinen nach dem Onboarding.
-          </li>
-        )}
-      </ul>
+        </ul>
+      </div>
 
       {publicKpis && publicKpis.weeks > 0 && (
-        <dl className="grid grid-cols-2 gap-3 rounded-lg bg-muted/30 p-4 text-sm">
+        <div className="card-soft grid grid-cols-2 gap-4 p-5">
           <div>
-            <dt className="text-muted-foreground">Teilnahmequote (gesamt)</dt>
-            <dd className="text-lg font-semibold">
+            <p className="text-xs text-muted-foreground">Teilnahmequote</p>
+            <p className="text-2xl font-light tracking-tight">
               {publicKpis.participationRate === null
                 ? "–"
                 : `${nf.format(publicKpis.participationRate * 100)} %`}
-            </dd>
+            </p>
           </div>
           <div>
-            <dt className="text-muted-foreground">Stimmung zu KI (gesamt)</dt>
-            <dd className="text-lg font-semibold">
+            <p className="text-xs text-muted-foreground">Stimmung zu KI</p>
+            <p className="text-2xl font-light tracking-tight">
               {publicKpis.sentimentIndex === null
                 ? "–"
                 : `${nf1.format(publicKpis.sentimentIndex)} / 10`}
-            </dd>
+            </p>
           </div>
-          <p className="col-span-2 text-xs text-muted-foreground">
+          <p className="col-span-2 text-[11px] text-muted-foreground">
             Anonyme Gesamtwerte der Organisation, Stand {publicKpis.latestWeek}.
+            Einzelne Antworten sieht niemand.
           </p>
-        </dl>
+        </div>
+      )}
+
+      {setup && (
+        <div className="card-soft p-5">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-sm font-medium">Einrichtung</h3>
+            <span className="text-[11px] text-muted-foreground">
+              {setupOpen.length === 0
+                ? "vollständig"
+                : `${setup.length - setupOpen.length} von ${setup.length} Schritten`}
+            </span>
+          </div>
+          <ol className="space-y-1">
+            {setup.map((item, i) => (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm transition-colors hover:bg-white/70"
+                >
+                  <span
+                    className={cn(
+                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                      item.done ? "bg-white text-muted-foreground shadow-pill" : "bg-primary text-primary-foreground",
+                    )}
+                    aria-hidden
+                  >
+                    {item.done ? <Check className="h-3.5 w-3.5" strokeWidth={2} /> : i + 1}
+                  </span>
+                  <span className={cn("flex-1", item.done && "text-muted-foreground")}>{item.label}</span>
+                  <span className="text-[11px] text-muted-foreground">{item.detail}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
     </section>
   );
@@ -181,15 +274,62 @@ export default async function AppHome({ searchParams }: AppHomeProps) {
     (denied && NOTICES[`denied:${denied}`]) ||
     (survey && NOTICES[`survey:${survey}`]) ||
     null;
+  const store = viewer.store;
 
   const cards = [];
+  let openTotal = 0;
   for (const membership of viewer.memberships) {
-    const org = await viewer.store.getOrganization(membership.org_id);
+    const org = await store.getOrganization(membership.org_id);
     if (!org) continue;
-    const overview = await getMemberOverview(viewer.store, org, membership);
+    const overview = await getMemberOverview(store, org, membership);
+    openTotal += overview.onboardingDone ? overview.due.length : 1;
     const publicKpis = canViewDashboard(membership.role)
       ? null
-      : await getPublicOrgKpis(viewer.store, org);
+      : await getPublicOrgKpis(store, org);
+
+    let setup: SetupItem[] | null = null;
+    if (canAdminOrg(membership.role)) {
+      const [departments, members, tools, cycles] = await Promise.all([
+        store.listDepartments(org.id),
+        store.listMemberships(org.id),
+        store.listToolSettings(org.id),
+        store.listCycles(org.id, { status: "open" }),
+      ]);
+      const active = members.filter((m) => m.status !== "removed");
+      const activeTools = tools.filter((t) => t.active);
+      const base = `/app/${org.slug}/admin`;
+      setup = [
+        {
+          key: "departments",
+          label: "Abteilungen anlegen",
+          detail: `${departments.length} angelegt`,
+          done: departments.length > 0,
+          href: `${base}#abteilungen`,
+        },
+        {
+          key: "tools",
+          label: "KI-Tools und Lizenzen eintragen",
+          detail: `${activeTools.length} aktiv`,
+          done: activeTools.length > 0,
+          href: `${base}#tools`,
+        },
+        {
+          key: "members",
+          label: "Mitglieder einladen",
+          detail: `${active.length} Mitglieder`,
+          done: active.length >= org.k_anonymity_min,
+          href: `${base}#einladen`,
+        },
+        {
+          key: "cycle",
+          label: "Ersten Pulse öffnen",
+          detail: cycles.length === 0 ? "kein Zyklus offen" : `${cycles.length} offen`,
+          done: cycles.length > 0,
+          href: `${base}#zyklen`,
+        },
+      ];
+    }
+
     cards.push(
       <OrgCard
         key={membership.id}
@@ -199,28 +339,32 @@ export default async function AppHome({ searchParams }: AppHomeProps) {
         due={overview.due}
         completed={overview.completed}
         publicKpis={publicKpis}
+        setup={setup}
       />,
     );
   }
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-8">
-      <header className="space-y-1">
-        <p className="text-sm font-medium text-muted-foreground">
-          Angemeldet als {viewer.user.email}
+    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-5 py-6 sm:px-8 lg:py-8">
+      <header className="space-y-1 px-1">
+        <p className="text-xs text-muted-foreground">KI-Barometer · Übersicht</p>
+        <h1 className="text-2xl font-normal tracking-tight sm:text-3xl">Deine Befragungen</h1>
+        <p className="text-sm text-muted-foreground">
+          {cards.length === 0
+            ? "Angemeldet als " + viewer.user.email
+            : openTotal === 0
+              ? "Nichts offen — alles erledigt."
+              : openTotal === 1
+                ? "Eine Befragung wartet auf dich."
+                : `${openTotal} Befragungen warten auf dich.`}
         </p>
-        <h1 className="text-3xl font-bold tracking-tight">Deine Befragungen</h1>
       </header>
 
-      {notice && (
-        <p role="alert" className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-          {notice}
-        </p>
-      )}
+      {notice && <Notice tone="err">{notice}</Notice>}
 
       {cards.length === 0 ? (
-        <section className="space-y-3 rounded-lg border bg-muted/30 p-6">
-          <h2 className="font-semibold">Noch keine Organisation</h2>
+        <section className="card-soft space-y-3 p-6">
+          <h2 className="text-base font-medium">Noch keine Organisation</h2>
           <p className="text-sm text-muted-foreground">
             Deine Adresse ist in keiner Organisation eingetragen. Bitte die
             Person, die das KI-Barometer in deinem Unternehmen betreut, dich
@@ -234,6 +378,20 @@ export default async function AppHome({ searchParams }: AppHomeProps) {
         </section>
       ) : (
         cards
+      )}
+
+      {viewer.isPlatformAdmin && cards.length > 0 && (
+        <section className="card-soft flex flex-wrap items-center justify-between gap-3 p-5">
+          <div>
+            <h2 className="text-sm font-medium">Plattform-Admin</h2>
+            <p className="text-xs text-muted-foreground">
+              Alle Organisationen anlegen und verwalten — auch die ohne eigene Mitgliedschaft.
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin">Organisationen</Link>
+          </Button>
+        </section>
       )}
     </main>
   );

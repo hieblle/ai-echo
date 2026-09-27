@@ -1,3 +1,4 @@
+import { ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { setDemoFormOfAddress } from "@/app/actions";
@@ -67,22 +68,22 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-6 py-10">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">
+    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-5 py-6 sm:px-8 lg:py-8">
+      <header className="space-y-1 px-1">
+        <p className="text-xs text-muted-foreground">
           KI-Barometer · Demo-Modus · {org.name}
         </p>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl font-normal tracking-tight sm:text-3xl">
           Befragungen ausprobieren
         </h1>
-        <p className="text-muted-foreground">
+        <p className="max-w-2xl text-sm text-muted-foreground">
           Kein Login nötig: Wähle eine Rolle und spiele die Flows durch. Alle
-          Antworten landen im In-Memory-Store (Neustart = leer).
+          Antworten landen im Arbeitsspeicher des Servers (Neustart = leer).
         </p>
       </header>
 
-      <section aria-labelledby="persona-heading" className="space-y-3">
-        <h2 id="persona-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <section aria-labelledby="persona-heading" className="card-soft space-y-3 p-5">
+        <h2 id="persona-heading" className="text-xs text-muted-foreground">
           Ansicht als
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -92,9 +93,9 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
               href={`/demo?persona=${encodeURIComponent(p.id)}`}
               aria-current={p.id === persona.id ? "true" : undefined}
               className={cn(
-                "rounded-full border px-4 py-2 text-sm transition-colors hover:bg-accent",
+                "rounded-full bg-white px-4 py-2 text-sm shadow-pill transition-colors hover:bg-accent",
                 p.id === persona.id &&
-                  "border-primary bg-primary text-primary-foreground hover:bg-primary",
+                  "bg-primary text-primary-foreground hover:bg-primary",
               )}
             >
               {p.label}
@@ -113,7 +114,7 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
       </section>
 
       <section aria-labelledby="flows-heading" className="space-y-3">
-        <h2 id="flows-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 id="flows-heading" className="px-1 text-base font-medium">
           Befragungs-Flows
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -123,26 +124,32 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
               <div
                 key={flow.template}
                 className={cn(
-                  "flex flex-col justify-between rounded-lg border bg-card p-4",
-                  locked && "opacity-50",
+                  "flex flex-col justify-between gap-4 p-5",
+                  locked ? "rounded-[20px] bg-white/50 text-muted-foreground" : "card-solid",
                 )}
               >
-                <div>
-                  <h3 className="font-semibold">{flow.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {flow.description}
-                  </p>
+                <div className="space-y-1">
+                  <h3 className="flex items-center gap-2 text-sm font-medium">
+                    {locked ? (
+                      <Lock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+                    ) : (
+                      <span className="status-dot" style={{ background: "var(--accent-yellow)" }} aria-hidden />
+                    )}
+                    {flow.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{flow.description}</p>
                 </div>
                 {locked ? (
-                  <p className="mt-4 text-xs text-muted-foreground">
-                    Nur für Teamleitung/Geschäftsführung sichtbar.
+                  <p className="text-[11px] text-muted-foreground">
+                    Nur für Teamleitung/Geschäftsführung — oben die Rolle wechseln.
                   </p>
                 ) : (
-                  <Button asChild className="mt-4">
+                  <Button asChild className="self-start">
                     <Link
                       href={`/survey/${flow.template}?persona=${encodeURIComponent(persona.id)}`}
                     >
                       Starten
+                      <ChevronRight className="ml-1 h-4 w-4" strokeWidth={1.5} aria-hidden />
                     </Link>
                   </Button>
                 )}
@@ -152,11 +159,11 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
         </div>
       </section>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+      <section className="card-soft flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="text-sm">
           <p className="font-medium">Org-Einstellung: Anrede</p>
-          <p className="text-muted-foreground">
-            Aktuell: {org.form_of_address === "sie" ? "Sie-Form" : "Du-Form"}
+          <p className="text-xs text-muted-foreground">
+            Aktuell: {org.form_of_address === "sie" ? "Sie-Form" : "Du-Form"} — wirkt sofort auf alle Fragetexte.
           </p>
         </div>
         <form action={switchForm}>
@@ -171,10 +178,10 @@ export default async function DemoPage({ searchParams }: DemoPageProps) {
         </form>
       </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
         <span>Gespeicherte Antworten (anonym, org-weit): {responses.length}</span>
-        <Link href="/dashboard" className="underline-offset-4 hover:underline">
-          Zum Dashboard →
+        <Link href={`/dashboard/${org.slug}`} className="hover:underline">
+          Dashboard dieser Demo-Org →
         </Link>
       </footer>
     </main>

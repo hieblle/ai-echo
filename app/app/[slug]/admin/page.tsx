@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Field, Notice, inputClass } from "@/components/ui/field";
+import { Field, Notice, SectionCard, inputClass } from "@/components/ui/field";
 import { toolCatalogFromPool } from "@/lib/domain/conditional";
 import {
   addDepartmentAction,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/server/admin-actions";
 import { canAdminOrg, getOrgAccess, requireViewer } from "@/lib/server/auth";
 import type { Membership, OrgRole } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,46 @@ function okMessage(params: Record<string, string | undefined>): string | null {
   }
 }
 
+/** The six sections in setup order — the page's table of contents. */
+const STEPS = [
+  { id: "einstellungen", label: "Einstellungen" },
+  { id: "abteilungen", label: "Abteilungen" },
+  { id: "tools", label: "KI-Tools" },
+  { id: "einladen", label: "Einladen" },
+  { id: "mitglieder", label: "Mitglieder" },
+  { id: "zyklen", label: "Zyklen" },
+] as const;
+
+function StatusTile({
+  href,
+  label,
+  value,
+  hint,
+  attention,
+}: {
+  href: string;
+  label: string;
+  value: string;
+  hint: string;
+  /** Marks a step that still needs the admin's attention. */
+  attention: boolean;
+}) {
+  return (
+    <Link href={href} className="card-soft flex flex-col gap-1 p-4 transition-colors hover:bg-white/90">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span
+          className="status-dot"
+          style={{ background: attention ? "var(--status-warn)" : "var(--status-good)" }}
+          aria-hidden
+        />
+        {label}
+      </p>
+      <p className="text-2xl font-light tracking-tight">{value}</p>
+      <p className="text-[11px] text-muted-foreground">{hint}</p>
+    </Link>
+  );
+}
+
 interface OrgAdminPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | undefined>>;
@@ -99,11 +140,14 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
     store.listQuestions("onboarding"),
   ]);
   const activeMembers = members.filter((m) => m.status !== "removed");
+  const invitedCount = activeMembers.filter((m) => m.status === "invited").length;
+  const activeTools = tools.filter((t) => t.active);
   const departmentName = new Map(departments.map((d) => [d.id, d.name]));
   const catalog = toolCatalogFromPool(onboardingPool).filter(
     (c) => !c.exclusive && !c.allows_text,
   );
   const configured = new Set(tools.map((t) => t.tool_value));
+  const base = `/app/${slug}/admin`;
 
   const invite = inviteMembersAction.bind(null, slug);
   const updateMember = updateMemberAction.bind(null, slug);
@@ -118,46 +162,310 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
 
   const ok = okMessage(query);
   const err = query.err ? ERR[query.err] : null;
+  const openWeekly = cycles.find((c) => c.template_key === "weekly");
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-8">
-      <header className="space-y-1">
-        <p className="text-sm font-medium text-muted-foreground">
-          KI-Barometer · Verwaltung
+    <main className="mx-auto flex max-w-4xl flex-col gap-6 px-5 py-6 sm:px-8 lg:py-8">
+      <header className="space-y-1 px-1">
+        <p className="text-xs text-muted-foreground">KI-Barometer · Verwaltung</p>
+        <h1 className="text-2xl font-normal tracking-tight sm:text-3xl">{org.name}</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Alles, was dein Unternehmen für den wöchentlichen Pulse braucht — in
+          der Reihenfolge der Einrichtung. Die Kacheln zeigen, wo noch etwas
+          fehlt.
         </p>
-        <h1 className="text-3xl font-bold tracking-tight">{org.name}</h1>
-        <nav className="flex gap-4 text-sm">
-          <Link href={`/app/${slug}/dashboard`} className="underline-offset-4 hover:underline">
-            Dashboard
-          </Link>
-          <Link href="/app" className="underline-offset-4 hover:underline">
-            Meine Befragungen
-          </Link>
-        </nav>
       </header>
 
       {ok && <Notice tone="ok">{ok}</Notice>}
       {err && <Notice tone="err">{err}</Notice>}
 
-      {/* Zyklen */}
-      <section className="space-y-3 rounded-lg border bg-card p-5">
-        <h2 className="text-lg font-semibold">Befragungszyklen</h2>
-        <p className="text-sm text-muted-foreground">
-          Der Zeitplan öffnet den Pulse montags und erinnert donnerstags
-          automatisch. Hier kannst du Zyklen manuell öffnen — z. B. für den
-          ersten Testlauf.
-        </p>
-        {cycles.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aktuell ist kein Zyklus offen.</p>
+      <section aria-label="Status" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatusTile
+          href={`${base}#abteilungen`}
+          label="Abteilungen"
+          value={String(departments.length)}
+          hint={departments.length === 0 ? "Noch keine angelegt" : "für Heatmap und Teams"}
+          attention={departments.length === 0}
+        />
+        <StatusTile
+          href={`${base}#tools`}
+          label="KI-Tools"
+          value={String(activeTools.length)}
+          hint={activeTools.length === 0 ? "Noch kein Tool aktiv" : "aktiv · fließen in den ROI"}
+          attention={activeTools.length === 0}
+        />
+        <StatusTile
+          href={`${base}#mitglieder`}
+          label="Mitglieder"
+          value={String(activeMembers.length)}
+          hint={
+            activeMembers.length < org.k_anonymity_min
+              ? `mindestens ${org.k_anonymity_min} für eine Auswertung`
+              : `${invitedCount} noch nicht angemeldet`
+          }
+          attention={activeMembers.length < org.k_anonymity_min}
+        />
+        <StatusTile
+          href={`${base}#zyklen`}
+          label="Pulse"
+          value={openWeekly ? openWeekly.week : "–"}
+          hint={
+            cycles.length === 0
+              ? "Kein Zyklus offen"
+              : `${cycles.length} Zyklus/Zyklen offen${openWeekly?.reminder_sent_at ? " · erinnert" : ""}`
+          }
+          attention={cycles.length === 0}
+        />
+      </section>
+
+      <nav aria-label="Abschnitte" className="flex flex-wrap gap-2 px-1">
+        {STEPS.map((s, i) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className="pill bg-white/70 text-muted-foreground transition-colors hover:bg-white hover:text-foreground"
+          >
+            <span className="font-semibold">{i + 1}</span>
+            {s.label}
+          </a>
+        ))}
+      </nav>
+
+      {/* 1 + 2: Einstellungen, Abteilungen */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard
+          id="einstellungen"
+          step="1"
+          title="Grundeinstellungen"
+          lead="Anrede der Befragungen, Stundensatz für den ROI und die Anonymitätsschwelle."
+        >
+          <form action={updateSettings} className="space-y-4">
+            <Field label="Anrede" htmlFor="form_of_address">
+              <select id="form_of_address" name="form_of_address" defaultValue={org.form_of_address} className={inputClass}>
+                <option value="sie">Sie-Form</option>
+                <option value="du">Du-Form</option>
+              </select>
+            </Field>
+            <Field label="Standard-Stundensatz (€)" htmlFor="hourly_rate_default" hint="Für die ROI-Rechnung; Angaben aus dem Führungsblock überschreiben ihn.">
+              <input id="hourly_rate_default" name="hourly_rate_default" type="number" min={0} step="1" defaultValue={org.hourly_rate_default} className={inputClass} />
+            </Field>
+            <Field label="Anonymitätsschwelle k" htmlFor="k_anonymity_min" hint="Nur erhöhbar (z. B. auf Wunsch des Betriebsrats).">
+              <input id="k_anonymity_min" name="k_anonymity_min" type="number" min={org.k_anonymity_min} max={50} defaultValue={org.k_anonymity_min} className={inputClass} />
+            </Field>
+            <Button type="submit" size="sm">Speichern</Button>
+          </form>
+        </SectionCard>
+
+        <SectionCard
+          id="abteilungen"
+          step="2"
+          title="Abteilungen"
+          lead={`Grob schneiden, damit jede Abteilung mindestens ${org.k_anonymity_min} Personen hat — kleinere erscheinen in der Heatmap nicht einzeln.`}
+        >
+          {departments.length === 0 ? (
+            <p className="mb-3 rounded-2xl bg-white/60 px-4 py-3 text-sm text-muted-foreground">
+              Noch keine Abteilung angelegt.
+            </p>
+          ) : (
+            <ul className="mb-3 divide-y divide-border rounded-2xl bg-white/60 px-4 text-sm">
+              {departments.map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-2 py-2">
+                  <span>{d.name}</span>
+                  <form action={deleteDepartment}>
+                    <input type="hidden" name="department_id" value={d.id} />
+                    <Button type="submit" size="sm" variant="ghost">Löschen</Button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form action={addDepartment} className="flex gap-2">
+            <input name="name" required maxLength={120} placeholder="Neue Abteilung" className={inputClass} aria-label="Neue Abteilung" />
+            <Button type="submit" size="sm" variant="outline" className="shrink-0">Hinzufügen</Button>
+          </form>
+        </SectionCard>
+      </div>
+
+      {/* 3: Tools */}
+      <SectionCard
+        id="tools"
+        step="3"
+        title="KI-Tools und Lizenzkosten"
+        lead="Kosten = Rechnungsbetrag pro Monat für alle Lizenzen des Tools. Die Anzahl der Lizenzen rechnet die gemessene Ersparnis pro Kopf auf alle Lizenznutzer hoch; ohne Angabe gelten die eingeladenen Mitglieder. Ungenutzte bezahlte Tools lösen Empfehlung R5 aus."
+      >
+        {tools.length > 0 && (
+          <ul className="mb-4 space-y-2 text-sm">
+            {tools.map((t) => (
+              <li key={t.id} className={cn("flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3", t.active ? "bg-white/70" : "bg-white/40 text-muted-foreground")}>
+                <form action={upsertTool} className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+                  <input type="hidden" name="tool_value" value={t.tool_value} />
+                  <input type="hidden" name="tool_label" value={t.tool_label} />
+                  <span className="flex min-w-40 flex-1 items-center gap-2 font-medium">
+                    <span className="status-dot" style={{ background: t.active ? "var(--status-good)" : "hsl(var(--tertiary-foreground))" }} aria-hidden />
+                    {t.tool_label}
+                  </span>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input name="cost" type="number" min={0} step="1" defaultValue={t.monthly_license_cost_eur} className={cn(inputClass, "h-9 w-24")} aria-label={`Lizenzkosten ${t.tool_label}`} />
+                    €/Monat
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input name="seats" type="number" min={0} step="1" defaultValue={t.seats ?? ""} placeholder="–" className={cn(inputClass, "h-9 w-20")} aria-label={`Anzahl Lizenzen ${t.tool_label}`} />
+                    Lizenzen
+                  </label>
+                  <input type="hidden" name="active" value="off" />
+                  <label className="flex items-center gap-1.5 text-xs">
+                    <input type="checkbox" name="active" value="on" defaultChecked={t.active} className="accent-[#1b1b1d]" />
+                    aktiv
+                  </label>
+                  <Button type="submit" size="sm" variant="outline">Speichern</Button>
+                </form>
+                <form action={deleteTool}>
+                  <input type="hidden" name="tool_value" value={t.tool_value} />
+                  <Button type="submit" size="sm" variant="ghost">Entfernen</Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form action={upsertTool} className="space-y-3 rounded-2xl bg-panel-2 p-4">
+          <input type="hidden" name="active" value="on" />
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Tool hinzufügen" htmlFor="tool_value" className="min-w-48 flex-1">
+              <select id="tool_value" name="tool_value" className={inputClass} defaultValue="">
+                <option value="" disabled>— Tool wählen —</option>
+                {catalog
+                  .filter((c) => !configured.has(c.value))
+                  .map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+              </select>
+            </Field>
+            <Field label="Kosten €/Monat" htmlFor="cost">
+              <input id="cost" name="cost" type="number" min={0} step="1" defaultValue={0} className={cn(inputClass, "w-32")} />
+            </Field>
+            <Field label="Anzahl Lizenzen" htmlFor="seats">
+              <input id="seats" name="seats" type="number" min={0} step="1" className={cn(inputClass, "w-32")} />
+            </Field>
+            <Button type="submit" size="sm" className="h-10">Hinzufügen</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Anzahl Lizenzen leer lassen, wenn unbekannt oder Pauschale.
+          </p>
+        </form>
+      </SectionCard>
+
+      {/* 4: Einladen */}
+      <SectionCard
+        id="einladen"
+        step="4"
+        title="Mitglieder einladen"
+        lead="Jede Person bekommt eine E-Mail mit ihrem persönlichen Login-Link und startet mit der Onboarding-Befragung. Eine Adresse pro Zeile oder durch Komma getrennt — auch eine kopierte CSV-Spalte; Duplikate werden übersprungen."
+      >
+        <form action={invite} className="space-y-4">
+          <Field label="E-Mail-Adressen" htmlFor="emails">
+            <textarea id="emails" name="emails" rows={5} required className={cn(inputClass, "h-auto py-2")} placeholder={"anna@firma.at\nbert@firma.at"} />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Rolle" htmlFor="role" hint="Teamleitungen sehen das Dashboard ihres Teams, Org-Admins verwalten alles.">
+              <select id="role" name="role" className={inputClass} defaultValue="employee">
+                {(Object.keys(ROLE_LABELS) as OrgRole[]).map((r) => (
+                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Abteilung" htmlFor="department_id" hint="Für Teamleitungen Pflicht (Team-Dashboard).">
+              <select id="department_id" name="department_id" className={inputClass} defaultValue="">
+                <option value="">— keine —</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <Button type="submit">Einladungen verschicken</Button>
+        </form>
+      </SectionCard>
+
+      {/* 5: Mitglieder */}
+      <SectionCard
+        id="mitglieder"
+        step="5"
+        title="Mitglieder"
+        lead="Rolle und Abteilung ändern, Login-Link erneut senden oder entfernen. Entfernte Personen bekommen keine Befragungen mehr; ihre anonymen Antworten bleiben in den Aggregaten."
+        aside={
+          <span className="pill bg-white/70 text-muted-foreground">
+            {activeMembers.length} Mitglieder · {invitedCount} eingeladen
+          </span>
+        }
+      >
+        {activeMembers.length === 0 ? (
+          <p className="rounded-2xl bg-white/60 px-4 py-3 text-sm text-muted-foreground">
+            Noch keine Mitglieder — lade in Schritt 4 die ersten Personen ein.
+          </p>
         ) : (
-          <ul className="divide-y rounded-md border">
+          <ul className="space-y-2">
+            {activeMembers.map((m) => (
+              <li key={m.id} className="rounded-2xl bg-white/70 px-4 py-3">
+                <form action={updateMember} className="flex flex-wrap items-center gap-2 text-sm">
+                  <input type="hidden" name="membership_id" value={m.id} />
+                  <span className="min-w-56 flex-1">
+                    <span className="status-dot mr-2" style={{ background: m.status === "active" ? "var(--status-good)" : "var(--status-mid)" }} aria-hidden />
+                    <span className="font-medium">{m.email}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {STATUS_LABELS[m.status]}
+                      {m.department_id ? ` · ${departmentName.get(m.department_id) ?? "?"}` : ""}
+                    </span>
+                  </span>
+                  <select name="role" defaultValue={m.role} className={cn(inputClass, "h-9 w-36")} aria-label="Rolle">
+                    {(Object.keys(ROLE_LABELS) as OrgRole[]).map((r) => (
+                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                    ))}
+                  </select>
+                  <select name="department_id" defaultValue={m.department_id ?? ""} className={cn(inputClass, "h-9 w-44")} aria-label="Abteilung">
+                    <option value="">— keine —</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  <Button type="submit" size="sm" variant="outline" name="intent" value="update">
+                    Speichern
+                  </Button>
+                  <Button type="submit" size="sm" variant="ghost" name="intent" value="resend">
+                    Link erneut senden
+                  </Button>
+                  <Button type="submit" size="sm" variant="ghost" name="intent" value="remove">
+                    Entfernen
+                  </Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+
+      {/* 6: Zyklen */}
+      <SectionCard
+        id="zyklen"
+        step="6"
+        title="Befragungszyklen"
+        lead="Der Zeitplan öffnet den Pulse montags und erinnert donnerstags automatisch. Hier kannst du Zyklen manuell öffnen, erinnern und schließen — z. B. für den ersten Testlauf."
+      >
+        {cycles.length === 0 ? (
+          <p className="mb-4 rounded-2xl bg-white/60 px-4 py-3 text-sm text-muted-foreground">
+            Aktuell ist kein Zyklus offen.
+          </p>
+        ) : (
+          <ul className="mb-4 space-y-2 text-sm">
             {cycles.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
-                <span>
-                  <span className="font-medium">{TEMPLATE_LABELS[c.template_key]}</span>{" "}
-                  <span className="text-muted-foreground">
-                    {c.week} · {c.period_start} bis {c.period_end}
-                    {c.reminder_sent_at ? " · erinnert" : ""}
+              <li key={c.id} className="card-solid flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                <span className="flex items-center gap-3">
+                  <span className="status-dot" style={{ background: "var(--accent-yellow)" }} aria-hidden />
+                  <span>
+                    <span className="font-medium">{TEMPLATE_LABELS[c.template_key]}</span>{" "}
+                    <span className="text-muted-foreground">
+                      {c.week} · {c.period_start} bis {c.period_end}
+                      {c.reminder_sent_at ? " · erinnert" : ""}
+                    </span>
                   </span>
                 </span>
                 <form action={close}>
@@ -185,188 +493,17 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
             </Button>
           </form>
         </div>
-      </section>
+      </SectionCard>
 
-      {/* Einladen */}
-      <section className="space-y-3 rounded-lg border bg-card p-5">
-        <h2 className="text-lg font-semibold">Mitglieder einladen (Flow F2)</h2>
-        <form action={invite} className="space-y-3">
-          <Field
-            label="E-Mail-Adressen"
-            htmlFor="emails"
-            hint="Eine pro Zeile oder durch Komma/Semikolon getrennt — auch eine kopierte CSV-Spalte. Duplikate werden übersprungen."
-          >
-            <textarea id="emails" name="emails" rows={5} required className={`${inputClass} h-auto py-2`} placeholder={"anna@firma.at\nbert@firma.at"} />
-          </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Rolle" htmlFor="role">
-              <select id="role" name="role" className={inputClass} defaultValue="employee">
-                {(Object.keys(ROLE_LABELS) as OrgRole[]).map((r) => (
-                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Abteilung" htmlFor="department_id" hint="Für Teamleitungen Pflicht (Team-Dashboard).">
-              <select id="department_id" name="department_id" className={inputClass} defaultValue="">
-                <option value="">— keine —</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Button type="submit">Einladungen verschicken</Button>
-        </form>
-      </section>
-
-      {/* Mitglieder */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          Mitglieder{" "}
-          <span className="text-sm font-normal text-muted-foreground">
-            {activeMembers.length} aktiv/eingeladen
-          </span>
-        </h2>
-        {activeMembers.length === 0 ? (
-          <p className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-            Noch keine Mitglieder — lade oben die ersten Personen ein.
-          </p>
-        ) : (
-          <ul className="divide-y rounded-lg border">
-            {activeMembers.map((m) => (
-              <li key={m.id} className="p-3">
-                <form action={updateMember} className="flex flex-wrap items-center gap-2 text-sm">
-                  <input type="hidden" name="membership_id" value={m.id} />
-                  <span className="min-w-56 flex-1">
-                    <span className="font-medium">{m.email}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {STATUS_LABELS[m.status]}
-                      {m.department_id ? ` · ${departmentName.get(m.department_id) ?? "?"}` : ""}
-                    </span>
-                  </span>
-                  <select name="role" defaultValue={m.role} className={`${inputClass} h-8 w-36`} aria-label="Rolle">
-                    {(Object.keys(ROLE_LABELS) as OrgRole[]).map((r) => (
-                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                    ))}
-                  </select>
-                  <select name="department_id" defaultValue={m.department_id ?? ""} className={`${inputClass} h-8 w-44`} aria-label="Abteilung">
-                    <option value="">— keine —</option>
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                  <Button type="submit" size="sm" variant="outline" name="intent" value="update">
-                    Speichern
-                  </Button>
-                  <Button type="submit" size="sm" variant="ghost" name="intent" value="resend">
-                    Link erneut senden
-                  </Button>
-                  <Button type="submit" size="sm" variant="ghost" name="intent" value="remove">
-                    Entfernen
-                  </Button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Einstellungen */}
-      <section className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-3 rounded-lg border bg-card p-5">
-          <h2 className="text-lg font-semibold">Einstellungen</h2>
-          <form action={updateSettings} className="space-y-3">
-            <Field label="Anrede" htmlFor="form_of_address">
-              <select id="form_of_address" name="form_of_address" defaultValue={org.form_of_address} className={inputClass}>
-                <option value="sie">Sie-Form</option>
-                <option value="du">Du-Form</option>
-              </select>
-            </Field>
-            <Field label="Standard-Stundensatz (€)" htmlFor="hourly_rate_default">
-              <input id="hourly_rate_default" name="hourly_rate_default" type="number" min={0} step="1" defaultValue={org.hourly_rate_default} className={inputClass} />
-            </Field>
-            <Field label="Anonymitätsschwelle k" htmlFor="k_anonymity_min" hint="Nur erhöhbar (z. B. auf Wunsch des Betriebsrats).">
-              <input id="k_anonymity_min" name="k_anonymity_min" type="number" min={org.k_anonymity_min} max={50} defaultValue={org.k_anonymity_min} className={inputClass} />
-            </Field>
-            <Button type="submit" size="sm">Speichern</Button>
-          </form>
-        </div>
-
-        <div className="space-y-3 rounded-lg border bg-card p-5">
-          <h2 className="text-lg font-semibold">Abteilungen</h2>
-          <ul className="space-y-1 text-sm">
-            {departments.map((d) => (
-              <li key={d.id} className="flex items-center justify-between gap-2">
-                <span>{d.name}</span>
-                <form action={deleteDepartment}>
-                  <input type="hidden" name="department_id" value={d.id} />
-                  <Button type="submit" size="sm" variant="ghost">Löschen</Button>
-                </form>
-              </li>
-            ))}
-          </ul>
-          <form action={addDepartment} className="flex gap-2">
-            <input name="name" required maxLength={120} placeholder="Neue Abteilung" className={inputClass} aria-label="Neue Abteilung" />
-            <Button type="submit" size="sm" variant="outline">Hinzufügen</Button>
-          </form>
-        </div>
-      </section>
-
-      {/* Tools */}
-      <section className="space-y-3 rounded-lg border bg-card p-5">
-        <h2 className="text-lg font-semibold">KI-Tools und Lizenzkosten</h2>
-        <p className="text-sm text-muted-foreground">
-          Kosten = Rechnungsbetrag pro Monat für alle Lizenzen des Tools. Die
-          Anzahl der Lizenzen rechnet die gemessene Ersparnis pro Kopf auf alle
-          Lizenznutzer hoch; ohne Angabe gelten die eingeladenen Mitglieder.
-          Ungenutzte bezahlte Tools lösen Empfehlung R5 aus.
-        </p>
-        <ul className="divide-y rounded-md border text-sm">
-          {tools.map((t) => (
-            <li key={t.id} className="flex flex-wrap items-center gap-2 p-3">
-              <form action={upsertTool} className="flex flex-1 flex-wrap items-center gap-2">
-                <input type="hidden" name="tool_value" value={t.tool_value} />
-                <input type="hidden" name="tool_label" value={t.tool_label} />
-                <span className="min-w-40 flex-1 font-medium">{t.tool_label}</span>
-                <input name="cost" type="number" min={0} step="1" defaultValue={t.monthly_license_cost_eur} className={`${inputClass} h-8 w-24`} aria-label={`Lizenzkosten ${t.tool_label}`} />
-                <span className="text-muted-foreground">€/Monat</span>
-                <input name="seats" type="number" min={0} step="1" defaultValue={t.seats ?? ""} placeholder="–" className={`${inputClass} h-8 w-20`} aria-label={`Anzahl Lizenzen ${t.tool_label}`} />
-                <span className="text-muted-foreground">Lizenzen</span>
-                <input type="hidden" name="active" value="off" />
-                <label className="flex items-center gap-1 text-xs">
-                  <input type="checkbox" name="active" value="on" defaultChecked={t.active} />
-                  aktiv
-                </label>
-                <Button type="submit" size="sm" variant="outline">Speichern</Button>
-              </form>
-              <form action={deleteTool}>
-                <input type="hidden" name="tool_value" value={t.tool_value} />
-                <Button type="submit" size="sm" variant="ghost">Entfernen</Button>
-              </form>
-            </li>
-          ))}
-        </ul>
-        <form action={upsertTool} className="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="active" value="on" />
-          <Field label="Tool hinzufügen" htmlFor="tool_value" className="min-w-48 flex-1">
-            <select id="tool_value" name="tool_value" className={inputClass} defaultValue="">
-              <option value="" disabled>— Tool wählen —</option>
-              {catalog
-                .filter((c) => !configured.has(c.value))
-                .map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-            </select>
-          </Field>
-          <Field label="Kosten €/Monat" htmlFor="cost">
-            <input id="cost" name="cost" type="number" min={0} step="1" defaultValue={0} className={`${inputClass} w-32`} />
-          </Field>
-          <Field label="Anzahl Lizenzen" htmlFor="seats" hint="Leer lassen, wenn unbekannt oder Pauschale.">
-            <input id="seats" name="seats" type="number" min={0} step="1" className={`${inputClass} w-32`} />
-          </Field>
-          <Button type="submit" size="sm">Hinzufügen</Button>
-        </form>
-      </section>
+      <footer className="flex flex-wrap gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
+        <Link href={`/app/${slug}/dashboard`} className="hover:underline">
+          Dashboard
+        </Link>
+        <Link href="/app" className="hover:underline">
+          Meine Befragungen
+        </Link>
+        <span>Auswertungen nur ab n ≥ {org.k_anonymity_min} pro Abteilung.</span>
+      </footer>
     </main>
   );
 }
