@@ -110,12 +110,12 @@ export function ReportView({ data, dashboardHref }: ReportViewProps) {
   const openRecs = recommendations.filter((r) => r.status === "open");
 
   return (
-    <main className="mx-auto max-w-3xl px-8 py-10 print:max-w-none print:px-0 print:py-0">
+    <main className="mx-auto max-w-3xl px-6 py-8 sm:px-8 print:max-w-none print:px-0 print:py-0">
       {/* Screen-only toolbar */}
-      <div className="print-hidden mb-8 flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4">
-        <p className="text-sm text-muted-foreground">
-          Druckansicht — über den Browser-Druckdialog als PDF speichern
-          (PDF-Generator und Mailversand folgen in Phase 5).
+      <div className="print-hidden card-soft mb-8 flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-xs text-muted-foreground">
+          Druckansicht: über den Browser-Druckdialog (Strg/Cmd + P) als PDF
+          speichern. Der automatische Versand folgt in Phase 5.
         </p>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">
@@ -124,8 +124,18 @@ export function ReportView({ data, dashboardHref }: ReportViewProps) {
         </div>
       </div>
 
-      {/* Report header */}
-      <header className="mb-8 border-b pb-6">
+      {/* Report header: the printed page stays black on white */}
+      <header className="print-hidden mb-8 rounded-[20px] bg-white p-6 shadow-soft">
+        <p className="text-xs text-muted-foreground">
+          KI-Barometer · Monatsreport · dbrains academy
+        </p>
+        <h1 className="mt-1 text-2xl font-normal tracking-tight sm:text-3xl">{org.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {monthLabel(month)} · Datenbasis: {data.weeks.length} Pulse-Wochen (
+          {data.weeks.join(", ")})
+        </p>
+      </header>
+      <header className="mb-8 hidden border-b pb-6 print:block">
         <p className="text-sm text-muted-foreground">
           KI-Barometer · Monatsreport · dbrains academy
         </p>

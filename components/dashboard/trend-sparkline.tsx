@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * Stat-tile sparkline: the series in the de-emphasis hue, the current period
- * as an accent end-dot, hover tooltip (dataviz skill: stat-tile contract,
- * 2px line, >= 8px marker with surface ring).
+ * Stat-tile sparkline (design D): a thin grey line, the current period as a
+ * yellow end-dot with a dark ring, hover tooltip.
  */
 
 import {
@@ -32,8 +31,8 @@ function EndDot(props: {
   }
   return (
     <g>
-      <circle cx={cx} cy={cy} r={6} fill="var(--background, #fff)" />
-      <circle cx={cx} cy={cy} r={4} fill="var(--viz-series-1)" />
+      <circle cx={cx} cy={cy} r={6} fill="#ffffff" />
+      <circle cx={cx} cy={cy} r={4} fill="var(--accent-yellow)" stroke="var(--viz-series-1)" strokeWidth={1} />
     </g>
   );
 }
@@ -50,11 +49,11 @@ export function TrendSparkline({
 }) {
   if (data.every((d) => d.value === null)) {
     return (
-      <p className="text-xs text-muted-foreground">Noch keine Trenddaten.</p>
+      <p className="text-[11px] text-muted-foreground">Noch keine Trenddaten.</p>
     );
   }
   return (
-    <div className="h-12 w-full" aria-hidden>
+    <div className="h-10 w-full" aria-hidden>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
@@ -69,7 +68,7 @@ export function TrendSparkline({
               const p = payload[0];
               const v = p?.value;
               return (
-                <div className="rounded-md border bg-background px-2 py-1 text-xs shadow-sm">
+                <div className="rounded-xl bg-white px-2 py-1 text-xs shadow-pill">
                   <span className="text-muted-foreground">
                     {String(p?.payload?.week ?? "")}:{" "}
                   </span>
@@ -85,12 +84,12 @@ export function TrendSparkline({
             type="monotone"
             dataKey="value"
             stroke="var(--viz-deemphasis)"
-            strokeWidth={2}
+            strokeWidth={1.5}
             strokeLinecap="round"
             connectNulls
             isAnimationActive={false}
             dot={<EndDot dataLength={data.length} />}
-            activeDot={{ r: 4, fill: "var(--viz-series-1)" }}
+            activeDot={{ r: 4, fill: "var(--accent-yellow)", stroke: "var(--viz-series-1)" }}
           />
         </LineChart>
       </ResponsiveContainer>

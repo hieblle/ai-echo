@@ -1,14 +1,13 @@
 /**
- * Stat tile (dataviz skill contract): label · value · optional delta vs a
- * named period · optional sparkline. Values wear text tokens, never series
- * colors; the delta color = direction × whether up is good.
+ * Stat tile (design D): label · light display value · delta as a status dot
+ * with text · optional hint · sparkline. Values wear text tokens, never
+ * series colors; the delta color = direction × whether up is good.
  */
 
 import {
   TrendSparkline,
   type SparkPoint,
 } from "@/components/dashboard/trend-sparkline";
-import { cn } from "@/lib/utils";
 
 export function StatTile({
   label,
@@ -38,33 +37,36 @@ export function StatTile({
     (delta.direction === "flat"
       ? null
       : (delta.direction === "up") === (delta.upIsGood ?? true));
+  const dot =
+    deltaGood === null || deltaGood === undefined
+      ? "hsl(var(--tertiary-foreground))"
+      : deltaGood
+        ? "var(--status-good)"
+        : "var(--status-bad)";
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-semibold">{value}</p>
+    <div className="card-soft flex flex-col gap-1.5 p-5">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-3xl font-light tracking-tight">{value}</p>
       {delta && (
         <p
-          className={cn(
-            "mt-0.5 text-xs",
-            deltaGood === null && "text-muted-foreground",
-          )}
-          style={
-            deltaGood === null
-              ? undefined
-              : {
-                  color: deltaGood
-                    ? "var(--viz-delta-good)"
-                    : "var(--viz-delta-bad)",
-                }
-          }
+          className="flex items-center gap-1.5 text-[11px]"
+          style={{
+            color:
+              deltaGood === null
+                ? "hsl(var(--muted-foreground))"
+                : deltaGood
+                  ? "var(--viz-delta-good)"
+                  : "var(--viz-delta-bad)",
+          }}
         >
+          <span className="status-dot" style={{ background: dot }} aria-hidden />
           {delta.direction === "up" ? "▲" : delta.direction === "down" ? "▼" : "＝"}{" "}
           {delta.text}
         </p>
       )}
-      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="caption-3 text-[11px]">{hint}</p>}
       {spark && (
-        <div className="mt-2">
+        <div className="mt-auto pt-1">
           <TrendSparkline data={spark} unit={sparkUnit} domain={sparkDomain} />
         </div>
       )}

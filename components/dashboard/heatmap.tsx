@@ -1,14 +1,14 @@
 /**
- * Departments × dimensions heatmap (SPEC §13 Phase 2).
- *
- * Sequential single-hue ramp (validated reference palette, light→dark =
- * low→high). Suppressed cells (k-anonymity, SPEC §7) show "n < k" instead of
- * a value — a department below the threshold never appears individually.
- * Values are direct-labeled inside the cells (relief rule for light steps).
+ * Departments × dimensions (SPEC §13 Phase 2) in design D: a soft table with
+ * one status dot per value (good / beobachten / handeln) instead of a colour
+ * ramp. Suppressed cells (k-anonymity, SPEC §7) show "n < k" with a lock — a
+ * department below the threshold never appears individually.
  */
 
+import { Lock } from "lucide-react";
 import type { Department, HeatmapCell, WeeklyDimension } from "@/lib/types";
 import { WEEKLY_DIMENSIONS } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const DIMENSION_LABELS: Record<WeeklyDimension, string> = {
   adoption: "Adoption",
@@ -17,29 +17,20 @@ const DIMENSION_LABELS: Record<WeeklyDimension, string> = {
   sentiment: "Stimmung",
 };
 
-/** Sequential blue ramp 100→700 (see dataviz reference palette). */
-const RAMP = [
-  "#cde2fb",
-  "#b7d3f6",
-  "#9ec5f4",
-  "#86b6ef",
-  "#6da7ec",
-  "#5598e7",
-  "#3987e5",
-  "#2a78d6",
-  "#256abf",
-  "#1c5cab",
-  "#184f95",
-];
+/** Status thresholds on the shared 0–10 scale (Adoption = share × 10). */
+export const HEATMAP_GOOD_FROM = 7;
+export const HEATMAP_WARN_FROM = 6.5;
 
-function rampColor(value: number): string {
-  const t = Math.min(Math.max(value / 10, 0), 1);
-  return RAMP[Math.round(t * (RAMP.length - 1))] ?? RAMP[0]!;
+function statusColor(value: number): string {
+  if (value >= HEATMAP_GOOD_FROM) return "var(--status-good)";
+  if (value >= HEATMAP_WARN_FROM) return "var(--status-warn)";
+  return "var(--status-bad)";
 }
 
-/** Ink for a label inside a colored fill, picked by fill luminance. */
-function inkFor(value: number): string {
-  return value / 10 > 0.55 ? "#ffffff" : "#0b0b0b";
+function statusLabel(value: number): string {
+  if (value >= HEATMAP_GOOD_FROM) return "gut";
+  if (value >= HEATMAP_WARN_FROM) return "beobachten";
+  return "handeln";
 }
 
 export function Heatmap({
@@ -61,77 +52,94 @@ export function Heatmap({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-separate border-spacing-0.5 text-sm">
+      <table className="w-full border-separate border-spacing-y-0.5 text-sm">
         <thead>
-          <tr>
-            <th className="p-2 text-left font-medium text-muted-foreground">
-              Abteilung
-            </th>
+          <tr className="text-[11px] text-muted-foreground">
+            <th className="px-4 pb-1 text-left font-normal">Abteilung</th>
             {WEEKLY_DIMENSIONS.map((dim) => (
-              <th
-                key={dim}
-                className="p-2 text-center font-medium text-muted-foreground"
-              >
+              <th key={dim} className="px-3 pb-1 text-left font-normal">
                 {DIMENSION_LABELS[dim]}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.id ?? "__org__"}>
-              <td
-                className={
-                  row.id === null
-                    ? "p-2 font-semibold"
-                    : "p-2 text-muted-foreground"
-                }
+          {rows.map((row) => {
+            const total = row.id === null;
+            return (
+              <tr
+                key={row.id ?? "__org__"}
+                className={cn(
+                  "h-11",
+                  total && "font-medium [&>td:first-child]:rounded-l-2xl [&>td:last-child]:rounded-r-2xl [&>td]:bg-white",
+                )}
               >
-                {row.name}
-              </td>
-              {WEEKLY_DIMENSIONS.map((dim) => {
-                const cell = byKey.get(`${row.id ?? "__org__"}|${dim}`);
-                if (!cell || cell.value === null) {
-                  // "n < k" ONLY for genuinely suppressed cells — a qualified
-                  // department can still lack data for one dimension.
-                  const isSuppressed = (cell?.suppressed ?? false) && (cell?.n ?? 0) > 0;
+                <td className={cn("px-4", total ? "" : "text-foreground")}>{row.name}</td>
+                {WEEKLY_DIMENSIONS.map((dim) => {
+                  const cell = byKey.get(`${row.id ?? "__org__"}|${dim}`);
+                  if (!cell || cell.value === null) {
+                    // "n < k" ONLY for genuinely suppressed cells — a qualified
+                    // department can still lack data for one dimension.
+                    const isSuppressed = (cell?.suppressed ?? false) && (cell?.n ?? 0) > 0;
+                    return (
+                      <td
+                        key={dim}
+                        title={
+                          isSuppressed
+                            ? `Zu wenige Antworten (n < ${k}) — wird nur in der Gesamtauswertung berücksichtigt.`
+                            : "Keine Daten."
+                        }
+                        className="px-3 text-xs text-muted-foreground"
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          {isSuppressed && <Lock className="h-3 w-3" strokeWidth={1.5} aria-hidden />}
+                          {isSuppressed ? `n < ${k}` : "–"}
+                        </span>
+                      </td>
+                    );
+                  }
+                  const label = cell.value.toFixed(1).replace(".", ",");
                   return (
                     <td
                       key={dim}
-                      title={
-                        isSuppressed
-                          ? `Zu wenige Antworten (n < ${k}) — wird nur in der Gesamtauswertung berücksichtigt.`
-                          : "Keine Daten."
-                      }
-                      className="rounded bg-muted/60 p-2 text-center text-xs text-muted-foreground"
+                      title={`${row.name} · ${DIMENSION_LABELS[dim]}: ${label} (${statusLabel(cell.value)}, n = ${cell.n})`}
+                      className="px-3"
                     >
-                      {isSuppressed ? `n < ${k}` : "–"}
+                      <span className="inline-flex items-center gap-2">
+                        {!total && (
+                          <span
+                            className="status-dot"
+                            style={{ background: statusColor(cell.value) }}
+                            aria-hidden
+                          />
+                        )}
+                        {label}
+                      </span>
                     </td>
                   );
-                }
-                const label = cell.value.toFixed(1).replace(".", ",");
-                return (
-                  <td
-                    key={dim}
-                    title={`${row.name} · ${DIMENSION_LABELS[dim]}: ${label} (n = ${cell.n})`}
-                    className="rounded p-2 text-center font-medium"
-                    style={{
-                      backgroundColor: rampColor(cell.value),
-                      color: inkFor(cell.value),
-                    }}
-                  >
-                    {label}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Skala 0–10 (Adoption als Anteil × 10). Abteilungen unter der
-        Anonymitätsschwelle (n &lt; {k}) fließen nur in „Gesamt“ ein.
-      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="status-dot" style={{ background: "var(--status-good)" }} aria-hidden />
+          gut (ab {HEATMAP_GOOD_FROM.toFixed(1).replace(".", ",")})
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="status-dot" style={{ background: "var(--status-warn)" }} aria-hidden />
+          beobachten ({HEATMAP_WARN_FROM.toFixed(1).replace(".", ",")} bis {HEATMAP_GOOD_FROM.toFixed(1).replace(".", ",")})
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="status-dot" style={{ background: "var(--status-bad)" }} aria-hidden />
+          handeln (darunter)
+        </span>
+        <span className="basis-full sm:basis-auto sm:ml-auto">
+          Skala 0–10 (Adoption als Anteil × 10) · Abteilungen unter der Anonymitätsschwelle (n &lt; {k}) fließen nur in „Gesamt“ ein.
+        </span>
+      </div>
     </div>
   );
 }

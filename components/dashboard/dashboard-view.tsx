@@ -1,9 +1,9 @@
 /**
- * Dashboard body (SPEC §8 F5), shared by the demo route and the product
- * route. Server component: receives the aggregated `DashboardData` and the
- * actions/links of its host. Team views (data.scope) hide the org-level
- * sections (ROI, recommendations, free texts) and show nothing at all while
- * the team is below the anonymity threshold.
+ * Dashboard body (SPEC §8 F5) in design D, shared by the demo route and the
+ * product route. Server component: receives the aggregated `DashboardData`
+ * and the actions/links of its host. Team views (data.scope) hide the
+ * org-level sections (ROI, recommendations, free texts) and show nothing at
+ * all while the team is below the anonymity threshold.
  */
 
 import Link from "next/link";
@@ -119,6 +119,21 @@ export interface DashboardViewProps {
   footer: React.ReactNode;
 }
 
+function SectionTitle({
+  children,
+  aside,
+}: {
+  children: React.ReactNode;
+  aside?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+      <h2 className="text-base font-medium">{children}</h2>
+      {aside && <div className="text-[11px] text-muted-foreground">{aside}</div>}
+    </div>
+  );
+}
+
 function RecommendationCard({
   rec,
   action,
@@ -136,28 +151,33 @@ function RecommendationCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between rounded-lg border bg-card p-4",
-        done && "opacity-60",
+        "flex flex-col justify-between gap-3 p-5",
+        done ? "card-soft text-muted-foreground" : "card-solid",
       )}
     >
-      <div>
-        <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="pill bg-secondary text-foreground">
+            <span
+              className="status-dot"
+              style={{ background: done ? "var(--status-good)" : "var(--status-alert)" }}
+              aria-hidden
+            />
             {rec.rule.key} · {ACTION_TYPE_LABELS[rec.rule.action_type]}
           </span>
           {rec.status === "done" && (
-            <span className="text-xs font-medium" style={{ color: "var(--viz-delta-good)" }}>
+            <span className="text-[11px] font-medium" style={{ color: "var(--viz-delta-good)" }}>
               Erledigt ✓
             </span>
           )}
           {rec.status === "dismissed" && (
-            <span className="text-xs text-muted-foreground">Verworfen</span>
+            <span className="text-[11px]">Verworfen</span>
           )}
         </div>
-        <h3 className="font-semibold">{rec.rule.title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{rec.detail}</p>
+        <h3 className={cn("text-sm font-medium", !done && "text-foreground")}>{rec.rule.title}</h3>
+        <p className="text-xs leading-relaxed text-muted-foreground">{rec.detail}</p>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {rec.rule.course_url && (
           <Button asChild size="sm" variant="outline">
             <a href={rec.rule.course_url} target="_blank" rel="noreferrer">
@@ -235,22 +255,27 @@ export function DashboardView({
   ) =>
     history.length >= 3 ? deltaVsBaseline(current, base, asPercent) : undefined;
 
+  const perHeadShare =
+    roi.savings_per_head_eur && roi.license_cost_per_head_eur !== null
+      ? Math.min(1, roi.license_cost_per_head_eur / Math.max(roi.savings_per_head_eur, 1))
+      : null;
+
   return (
-    <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-8 px-6 py-8">
+    <main className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-6 px-5 py-6 sm:px-8 lg:py-8">
       <header className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
               KI-Barometer · {scope ? "Team-Dashboard" : "Dashboard"}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl font-normal tracking-tight sm:text-3xl">
               {org.name}
               {scope && (
                 <span className="text-muted-foreground"> · {scope.departmentName}</span>
               )}
             </h1>
             {latestWeek && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Datenstand: {weeks.length} Wochen bis {latestWeek}
               </p>
             )}
@@ -278,9 +303,8 @@ export function DashboardView({
                 href={o.href}
                 aria-current={o.active ? "true" : undefined}
                 className={cn(
-                  "rounded-full border px-4 py-1.5 text-sm transition-colors hover:bg-accent",
-                  o.active &&
-                    "border-primary bg-primary text-primary-foreground hover:bg-primary",
+                  "rounded-full bg-white/70 px-4 py-1.5 text-xs transition-colors hover:bg-white",
+                  o.active && "bg-primary text-primary-foreground shadow-pill hover:bg-primary",
                 )}
               >
                 {o.name}
@@ -291,11 +315,11 @@ export function DashboardView({
       </header>
 
       {weeks.length === 0 ? (
-        <section className="rounded-lg border bg-muted/30 p-8 text-center text-muted-foreground">
+        <section className="card-soft p-8 text-center text-sm text-muted-foreground">
           {emptyHint}
         </section>
       ) : scope?.suppressed ? (
-        <section className="rounded-lg border bg-muted/30 p-8 text-center text-muted-foreground">
+        <section className="card-soft p-8 text-center text-sm text-muted-foreground">
           <p>
             Für {scope.departmentName} liegen im Betrachtungszeitraum weniger
             als {org.k_anonymity_min} Antworten vor. Zum Schutz der Anonymität
@@ -361,51 +385,75 @@ export function DashboardView({
           {!scope && (
             <section
               aria-label="ROI"
-              className="grid gap-3 rounded-lg border bg-card p-6 sm:grid-cols-[auto_1fr]"
+              className="card-soft grid gap-6 p-6 lg:grid-cols-[300px_1fr]"
             >
-              <div className="pr-6 sm:border-r">
-                <p className="text-sm text-muted-foreground">
-                  Netto-Ersparnis pro Monat
-                </p>
-                <p className="text-5xl font-semibold tracking-tight">
+              <div className="flex flex-col gap-2 lg:border-r lg:border-border lg:pr-6">
+                <p className="text-xs text-muted-foreground">Netto-Ersparnis pro Monat</p>
+                <p className="text-5xl font-light tracking-tight">
                   {eur(roi.net_savings_eur)}{" "}
                   <span className="text-2xl text-muted-foreground">€</span>
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {roi.roi_multiple !== null && (
-                    <>ROI-Multiple: {nf1.format(roi.roi_multiple)}× · </>
+                    <>ROI-Multiple: <span className="font-medium text-foreground">{nf1.format(roi.roi_multiple)}×</span> · </>
                   )}
                   {roi.population === null
                     ? "noch keine Stundenangaben"
                     : `für ${nf.format(roi.population)} Personen (${populationLabel(roi.population_source)})`}
                 </p>
+                {roi.savings_per_head_eur !== null && (
+                  <div className="mt-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px]">
+                        <span>Ersparnis pro Kopf</span>
+                        <span className="text-muted-foreground">{eur(roi.savings_per_head_eur)} €</span>
+                      </div>
+                      <div className="bar-track"><div className="bar-fill" style={{ width: "100%" }} /></div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[11px]">
+                        <span>Lizenz pro Kopf</span>
+                        <span className="text-muted-foreground">{eur(roi.license_cost_per_head_eur)} €</span>
+                      </div>
+                      <div className="bar-track">
+                        <div
+                          className="bar-fill"
+                          style={{
+                            width: `${Math.round((perHeadShare ?? 0) * 100)}%`,
+                            background: "var(--status-bad)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
                 <div>
-                  <dt className="text-muted-foreground">Gespart pro Kopf und Woche</dt>
-                  <dd className="font-medium">{hours(roi.hours_per_head_week, 1)}</dd>
+                  <dt className="text-[11px] text-muted-foreground">Gespart pro Kopf und Woche</dt>
+                  <dd className="mt-0.5 font-medium">{hours(roi.hours_per_head_week, 1)}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Ersparnis pro Kopf und Monat</dt>
-                  <dd className="font-medium">{eur(roi.savings_per_head_eur)} €</dd>
+                  <dt className="text-[11px] text-muted-foreground">Ersparnis pro Kopf und Monat</dt>
+                  <dd className="mt-0.5 font-medium">{eur(roi.savings_per_head_eur)} €</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Lizenz pro Kopf und Monat</dt>
-                  <dd className="font-medium">{eur(roi.license_cost_per_head_eur)} €</dd>
+                  <dt className="text-[11px] text-muted-foreground">Lizenz pro Kopf und Monat</dt>
+                  <dd className="mt-0.5 font-medium">{eur(roi.license_cost_per_head_eur)} €</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Gespart gesamt pro Monat</dt>
-                  <dd className="font-medium">{hours(roi.saved_hours_extrapolated)}</dd>
+                  <dt className="text-[11px] text-muted-foreground">Gespart gesamt pro Monat</dt>
+                  <dd className="mt-0.5 font-medium">{hours(roi.saved_hours_extrapolated)}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Brutto-Ersparnis</dt>
-                  <dd className="font-medium">{eur(roi.gross_savings_eur)} €</dd>
+                  <dt className="text-[11px] text-muted-foreground">Brutto-Ersparnis</dt>
+                  <dd className="mt-0.5 font-medium">{eur(roi.gross_savings_eur)} €</dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">Lizenzkosten gesamt</dt>
-                  <dd className="font-medium">{nf.format(roi.license_costs_eur)} €</dd>
+                  <dt className="text-[11px] text-muted-foreground">Lizenzkosten gesamt</dt>
+                  <dd className="mt-0.5 font-medium">{nf.format(roi.license_costs_eur)} €</dd>
                 </div>
-                <p className="col-span-2 text-xs text-muted-foreground sm:col-span-3">
+                <p className="col-span-2 text-[11px] leading-relaxed text-muted-foreground sm:col-span-3">
                   Basis: letzte {data.roiWindowWeeks} Wochen, {nf.format(roi.saved_hours)} h
                   gemeldet in {nf.format(roi.heads)} ausgefüllten Pulsen (wer keine KI
                   nutzt, zählt mit 0 h) · {nf.format(data.roiHourlyRate)} €/h{" "}
@@ -417,10 +465,10 @@ export function DashboardView({
           )}
 
           {/* Heatmap (k-Anonymität sichtbar) */}
-          <section aria-label="Abteilungs-Heatmap" className="rounded-lg border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold">
+          <section aria-label="Abteilungs-Heatmap" className="card-soft p-6">
+            <SectionTitle aside="Letzte 4 Wochen · Werte nur ab k Antworten je Abteilung">
               {scope ? "Team im Vergleich zur Organisation" : "Abteilungen × Dimensionen"}
-            </h2>
+            </SectionTitle>
             <Heatmap
               cells={heatmap}
               departments={departments}
@@ -429,30 +477,30 @@ export function DashboardView({
           </section>
 
           {/* Perception Gap */}
-          <section aria-label="Perception Gap" className="rounded-lg border bg-card p-6">
-            <div className="mb-4 flex items-baseline justify-between gap-3">
-              <h2 className="text-lg font-semibold">Perception Gap</h2>
-              {nps && (
-                <p className="text-sm text-muted-foreground">
-                  Tool-NPS: <span className="font-semibold text-foreground">{nps.value > 0 ? "+" : ""}{nps.value}</span>{" "}
-                  (n = {nps.n})
-                </p>
-              )}
-            </div>
+          <section aria-label="Perception Gap" className="card-soft p-6">
+            <SectionTitle
+              aside={
+                nps ? (
+                  <>
+                    Tool-NPS: <span className="font-medium text-foreground">{nps.value > 0 ? "+" : ""}{nps.value}</span>{" "}
+                    (n = {nps.n})
+                  </>
+                ) : undefined
+              }
+            >
+              Perception Gap
+            </SectionTitle>
             <GapDumbbells pairs={gapPairs} />
           </section>
 
           {/* Empfehlungs-Cards (Trigger R1–R7) — org level only */}
           {!scope && (
             <section aria-label="Empfehlungen">
-              <h2 className="mb-3 text-lg font-semibold">
-                Empfehlungen{" "}
-                <span className="text-sm font-normal text-muted-foreground">
-                  {openRecs.length} offen · regelbasiert (R1–R7)
-                </span>
-              </h2>
+              <SectionTitle aside={`${openRecs.length} offen · regelbasiert (R1–R7)`}>
+                Empfehlungen
+              </SectionTitle>
               {recommendations.length === 0 ? (
-                <p className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p className="card-soft p-5 text-sm text-muted-foreground">
                   Aktuell löst keine Regel aus — alle Kennzahlen liegen über den
                   Schwellwerten.
                 </p>
@@ -473,22 +521,19 @@ export function DashboardView({
           {/* Freitext-Highlights (nur Org-Ebene, zufällige Reihenfolge, §7.3) */}
           {!scope && (
             <section aria-label="Stimmen aus dem Team">
-              <h2 className="mb-3 text-lg font-semibold">
-                Stimmen aus dem Team{" "}
-                <span className="text-sm font-normal text-muted-foreground">
-                  anonym · ohne Abteilung/Datum
-                </span>
-              </h2>
+              <SectionTitle aside="anonym · ohne Abteilung und Datum">
+                Stimmen aus dem Team
+              </SectionTitle>
               {freeTexts.length === 0 ? (
-                <p className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p className="card-soft p-5 text-sm text-muted-foreground">
                   Noch keine Freitext-Antworten.
                 </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {freeTexts.map((t, i) => (
-                    <figure key={i} className="rounded-lg border bg-card p-4">
-                      <blockquote className="text-sm">„{t.text}“</blockquote>
-                      <figcaption className="mt-2 text-xs text-muted-foreground">
+                    <figure key={i} className="card-soft p-5">
+                      <blockquote className="text-sm leading-relaxed">„{t.text}“</blockquote>
+                      <figcaption className="mt-2 text-[11px] text-muted-foreground">
                         {t.question}
                       </figcaption>
                     </figure>
@@ -500,7 +545,7 @@ export function DashboardView({
         </>
       )}
 
-      <footer className="flex flex-wrap gap-4 border-t pt-4 text-sm text-muted-foreground">
+      <footer className="mt-auto flex flex-wrap gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
         {footer}
       </footer>
     </main>

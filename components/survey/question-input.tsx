@@ -4,8 +4,10 @@
  * Renders the input control for one survey question (mobile-first: large
  * touch targets, one question per screen — SPEC.md §9 UX rules).
  * Controlled component: value/onChange with the typed AnswerValue.
+ * Design D: white option cards on the grey ground, the selected one dark.
  */
 
+import { Check } from "lucide-react";
 import { choiceLabel, scaleAnchors } from "@/lib/domain/text";
 import { cn } from "@/lib/utils";
 import type {
@@ -25,13 +27,13 @@ interface QuestionInputProps {
 }
 
 const optionButton =
-  "w-full rounded-lg border px-4 py-3 text-left text-base transition-colors " +
-  "active:scale-[0.99] hover:bg-accent";
+  "w-full rounded-2xl bg-white px-4 py-3.5 text-left text-base shadow-soft transition-colors " +
+  "hover:bg-accent active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const optionButtonSelected =
-  "border-primary bg-primary text-primary-foreground hover:bg-primary";
+  "bg-primary text-primary-foreground shadow-pill hover:bg-primary";
 
 const textFieldClasses =
-  "w-full rounded-lg border bg-background px-4 py-3 text-base " +
+  "w-full rounded-xl border border-input bg-white px-4 py-3 text-base placeholder:text-muted-foreground/70 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function ScaleButtons({
@@ -61,7 +63,7 @@ function ScaleButtons({
             aria-pressed={value === v}
             onClick={() => onSelect(v)}
             className={cn(
-              "h-12 rounded-lg border text-base font-medium transition-colors hover:bg-accent",
+              "h-12 rounded-xl bg-white text-base font-medium shadow-soft transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               value === v && optionButtonSelected,
             )}
           >
@@ -140,8 +142,8 @@ export function QuestionInput({
             );
           })}
           {followup && current?.value === followup.on_value && (
-            <div className="rounded-lg border bg-muted/40 p-3">
-              <p className="mb-2 text-sm font-medium">
+            <div className="rounded-2xl bg-panel-2 p-4">
+              <p className="mb-3 text-sm font-medium">
                 {form === "sie" && followup.text_sie
                   ? followup.text_sie
                   : followup.text}
@@ -198,7 +200,7 @@ export function QuestionInput({
       const showText = selectedValues.some((v) => byValue.get(v)?.allows_text);
       return (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Mehrfachauswahl möglich</p>
+          <p className="text-xs text-muted-foreground">Mehrfachauswahl möglich</p>
           {q.options.choices.map((c) => {
             const selected = selectedValues.includes(c.value);
             return (
@@ -216,13 +218,13 @@ export function QuestionInput({
                 <span
                   aria-hidden
                   className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs",
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
                     selected
-                      ? "border-primary-foreground"
-                      : "border-muted-foreground",
+                      ? "border-primary-foreground/70 bg-white/15"
+                      : "border-input",
                   )}
                 >
-                  {selected ? "✓" : ""}
+                  {selected && <Check className="h-3 w-3" strokeWidth={2.5} />}
                 </span>
                 {choiceLabel(c, form)}
               </button>
@@ -343,13 +345,13 @@ export function QuestionInput({
         onChange({ kind: "tool_matrix", tools: [...others, nextRow] });
       };
       return (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {toolChoices.map((c) => {
             const row = rowFor(c.value);
             return (
-              <div key={c.value} className="rounded-lg border p-4">
+              <div key={c.value} className="card-soft p-4">
                 <p className="mb-3 font-medium">{choiceLabel(c, form)}</p>
-                <p className="mb-1 text-xs text-muted-foreground">
+                <p className="mb-2 text-xs text-muted-foreground">
                   Nützlichkeit (1–10)
                 </p>
                 <ScaleButtons

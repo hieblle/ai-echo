@@ -6,9 +6,11 @@
  * The weekly pulse must be playable in under 60 seconds.
  */
 
+import { Check, Lightbulb, Lock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/field";
 import {
   QuestionInput,
   isAnswerComplete,
@@ -133,24 +135,34 @@ export function SurveyRunner({
 
   if (done) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-6 py-10">
+      <main className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col justify-center gap-6 px-5 py-10 sm:px-6">
         <div
           aria-hidden
-          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground"
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-pill"
         >
-          ✓
+          <Check className="h-7 w-7" strokeWidth={2} />
         </div>
-        <h1 className="text-center text-2xl font-bold">
-          {form === "sie"
-            ? "Danke für Ihre Teilnahme!"
-            : "Danke für deine Teilnahme!"}
-        </h1>
-        <section className="rounded-lg border bg-card p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            💡 Wissens-Tipp der Woche
-          </h2>
-          <p className="mt-2 text-base">{tip}</p>
-        </section>
+        <div className="space-y-1 text-center">
+          <h1 className="text-2xl font-normal tracking-tight">
+            {form === "sie"
+              ? "Danke für Ihre Teilnahme!"
+              : "Danke für deine Teilnahme!"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {form === "sie"
+              ? "Ihre Antworten sind anonym gespeichert."
+              : "Deine Antworten sind anonym gespeichert."}
+          </p>
+        </div>
+        {tip && (
+          <section className="card-solid p-5">
+            <h2 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Lightbulb className="h-4 w-4" strokeWidth={1.5} style={{ color: "var(--accent-yellow)" }} aria-hidden />
+              Wissens-Tipp der Woche
+            </h2>
+            <p className="mt-2 text-base leading-relaxed">{tip}</p>
+          </section>
+        )}
         <Button asChild size="lg">
           <Link href={backHref}>Zurück zur Übersicht</Link>
         </Button>
@@ -161,14 +173,17 @@ export function SurveyRunner({
   if (!privacyAccepted) {
     const points = privacyPoints(form, kAnonymityMin);
     return (
-      <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-6 py-10">
-        <h1 className="text-2xl font-bold">
-          {form === "sie" ? "Bevor Sie starten" : "Bevor du startest"}
-        </h1>
-        <ul className="space-y-3">
+      <main className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col justify-center gap-6 px-5 py-10 sm:px-6">
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">{TEMPLATE_TITLES[template]}</p>
+          <h1 className="text-2xl font-normal tracking-tight">
+            {form === "sie" ? "Bevor Sie starten" : "Bevor du startest"}
+          </h1>
+        </div>
+        <ul className="card-solid divide-y divide-border">
           {points.map((p) => (
-            <li key={p} className="flex gap-3 rounded-lg border p-4 text-base">
-              <span aria-hidden>🔒</span>
+            <li key={p} className="flex items-center gap-4 px-5 py-4 text-base">
+              <Lock className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden />
               {p}
             </li>
           ))}
@@ -188,8 +203,8 @@ export function SurveyRunner({
 
   if (!question) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 px-6 py-10">
-        <p className="text-center text-muted-foreground">
+      <main className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col justify-center gap-4 px-5 py-10 sm:px-6">
+        <p className="card-soft p-6 text-center text-sm text-muted-foreground">
           Für diese Befragung stehen aktuell keine Fragen an.
         </p>
         <Button asChild variant="outline">
@@ -200,12 +215,12 @@ export function SurveyRunner({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col px-6 py-6">
+    <main className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-xl flex-col px-5 py-4 sm:px-6">
       <header className="mb-6">
-        <div className="mb-3 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
           <span>{TEMPLATE_TITLES[template]}</span>
           <span>
-            Frage {index + 1} / {total}
+            Frage {index + 1} von {total}
           </span>
         </div>
         <div
@@ -213,21 +228,21 @@ export function SurveyRunner({
           aria-valuemin={0}
           aria-valuemax={total}
           aria-valuenow={index + 1}
-          className="h-2 overflow-hidden rounded-full bg-muted"
+          className="bar-track"
         >
           <div
-            className="h-full rounded-full bg-primary transition-all"
+            className="bar-fill transition-all"
             style={{ width: `${Math.round(((index + 1) / total) * 100)}%` }}
           />
         </div>
       </header>
 
       <section className="flex-1">
-        <h1 className="mb-5 text-xl font-semibold leading-snug">
+        <h1 className="mb-5 text-xl font-medium leading-snug">
           {questionText(question, form)}
         </h1>
         {question.type === "text_optional" && (
-          <p className="mb-3 text-sm text-muted-foreground">
+          <p className="mb-3 text-xs text-muted-foreground">
             {form === "sie"
               ? "Bitte keine Angaben, die Sie identifizieren."
               : "Bitte keine Angaben, die dich identifizieren."}
@@ -246,12 +261,12 @@ export function SurveyRunner({
       </section>
 
       {error && (
-        <p role="alert" className="mt-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </p>
+        <div className="mt-4">
+          <Notice tone="err">{error}</Notice>
+        </div>
       )}
 
-      <footer className="sticky bottom-0 mt-6 flex gap-3 bg-background pb-4 pt-2">
+      <footer className="sticky bottom-0 mt-6 flex gap-2 bg-background pb-4 pt-3">
         <Button
           variant="outline"
           size="lg"
