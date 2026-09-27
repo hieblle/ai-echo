@@ -2,46 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design D "Soft UI" (docs/design-proposals/SoftGlass.dc.html, DECISIONS D4.9):
+ * light grey ground, white floating panels and translucent cards with 20 px
+ * radius, thin grey captions, one yellow accent, pastel status colours.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 11% 96%; /* #F5F5F7 */
+    --foreground: 240 4% 11%; /* #1B1B1D */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
+    --card-foreground: 240 4% 11%;
+    --primary: 240 4% 11%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 8% 96%; /* #F4F4F6 soft pill */
+    --secondary-foreground: 240 4% 11%;
+    --muted: 240 8% 94%;
+    --muted-foreground: 225 3% 45%; /* #6F7076 */
+    --accent: 240 8% 95%;
+    --accent-foreground: 240 4% 11%;
+    --destructive: 0 69% 72%; /* #E98989 */
+    --destructive-foreground: 240 4% 11%;
+    --border: 240 7% 91%; /* #E7E7EA */
+    --input: 240 7% 88%;
+    --ring: 49 88% 66%; /* #F5D95E */
+    --radius: 1rem;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Product tokens beyond shadcn's set */
+    --panel: 240 7% 97%; /* #F7F7F8 sidebar panel */
+    --panel-2: 240 7% 95%; /* #F0F0F2 drawer */
+    --tertiary-foreground: 240 3% 61%; /* #9A9AA0 captions */
+    --accent-yellow: #f5d95e;
+    --status-good: #c8d7a8;
+    --status-mid: #e2d667;
+    --status-warn: #e2b36a;
+    --status-bad: #e5a18d;
+    --status-alert: #e98989;
+
+    /* Data-viz tokens */
+    --viz-series-1: #1b1b1d; /* Mitarbeitende */
+    --viz-series-2: #f5d95e; /* Führungskräfte (yellow, drawn with a dark ring) */
+    --viz-deemphasis: #d3d6db;
+    --viz-grid: #e8e8eb;
+    --viz-muted: #9a9aa0;
+    --viz-delta-good: #4f8f5e;
+    --viz-delta-bad: #c9714a;
   }
 }
 
@@ -52,18 +57,36 @@
   body {
     @apply bg-background text-foreground;
   }
+}
 
-  /* Data-viz tokens (validated reference palette, see dataviz skill).
-     The prototype renders light mode only; dark steps come with the theme
-     toggle in a later phase. */
-  :root {
-    --viz-series-1: #2a78d6; /* Mitarbeitende */
-    --viz-series-2: #008300; /* Führungskräfte */
-    --viz-deemphasis: #c3c2b7;
-    --viz-grid: #e1e0d9;
-    --viz-muted: #898781;
-    --viz-delta-good: #006300;
-    --viz-delta-bad: #d03b3b;
+@layer components {
+  /* Translucent white card on the grey ground (dashboard sections). */
+  .card-soft {
+    @apply rounded-[20px] border border-white/60 bg-white/70 shadow-soft;
+  }
+  /* Solid white card that stands out (highlighted rows, open items). */
+  .card-solid {
+    @apply rounded-[20px] bg-white shadow-float;
+  }
+  .caption {
+    @apply text-xs text-muted-foreground;
+  }
+  .caption-3 {
+    color: hsl(var(--tertiary-foreground));
+  }
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium;
+  }
+  .status-dot {
+    @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
+  }
+  /* Hairline progress track, 2.5 px like the reference. */
+  .bar-track {
+    @apply h-[3px] w-full overflow-hidden rounded-full bg-muted;
+  }
+  .bar-fill {
+    @apply h-full rounded-full;
+    background: var(--accent-yellow);
   }
 }
 
@@ -74,6 +97,10 @@
   }
   .print-break-before {
     break-before: page;
+  }
+  /* The app shell's sidebar and mobile bar never print (report route). */
+  .shell-chrome {
+    display: none !important;
   }
   body {
     background: #fff;
