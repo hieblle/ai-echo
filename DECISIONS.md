@@ -223,6 +223,40 @@ Nachbauten der Referenzen).
 5. Die Mockups bleiben als Referenz im Repo; Option E wird nicht weiter
    verfolgt.
 
+### D4.10 — Microsoft 365 Copilot: Nutzungsdaten als zweite Quelle (2026-09-28)
+Recherche und Stufenplan: `docs/COPILOT-INTEGRATION.md`. Umgesetzt sind
+**Stufe 1 (CSV-Import)** und **Stufe 2 (Graph-Anbindung)**; Stufe 3
+(Copilot-Dashboard-Export, Stundenbeleg) folgt, sobald ein Kunde ≥ 50
+Lizenzen hat. Entscheidungen aus den Rückfragen:
+
+1. **Aggregation beim Import, nie Personenzeilen.** Microsofts Bericht ist
+   pro Nutzer (UPN, meist verschleiert). `lib/domain/copilot.ts` liest ihn im
+   Speicher und liefert einen Wochen-Snapshot mit Zählwerten
+   (`copilot_usage_snapshots`); die Datei bzw. API-Antwort wird verworfen.
+   Der Schema-Test verbietet Namens-/Hash-/E-Mail-Spalten. Keine
+   Abteilungswerte (bräuchten Klarnamen; nur mit BV, später).
+2. **k gilt auch hier — mit einer begründeten Ausnahme.** Unter k = 5
+   Lizenzen sehen Teamleitungen keine Werte; Org-Admins sehen sie mit
+   Hinweis, weil dieselben Zahlen im Microsoft Admin Center stehen. So bleibt
+   der interne Test bei dbrains (3 Lizenzen) möglich.
+3. **Sichtbarkeit:** Org-Admin und Teamleitung (nur Org-Werte, Hinweis auf
+   der Seite). Mitarbeitende sehen weiterhin nur Teilnahmequote und
+   Stimmung.
+4. **R5 (Lizenz prüfen):** beide Quellen werden genannt, die strengere löst
+   aus — Befragungsquote (W1.2, ab 10 Antworten) und Microsoft-Aktivquote
+   (aktiv ÷ lizenziert).
+5. **Zugriff auf Microsoft ausschließlich in `lib/server/m365-graph.ts`:**
+   eine mandantenfähige Entra-App von dbrains (`M365_CLIENT_ID`/`_SECRET`
+   nur in Umgebungsvariablen), Kunden erteilen Admin-Consent
+   (`/api/integrations/m365/consent` → `…/callback`, signierter State
+   15 Minuten gültig, Tenant-ID ist das Einzige, was pro Org gespeichert
+   wird). Berichte kommen als CSV über den 302 auf die Download-URL — der
+   Redirect wird manuell verfolgt, damit das Token nie an den zweiten Host
+   geht. Cron `/api/cron/copilot-sync` mittwochs 06:00 UTC (nach der
+   48–72-h-Latenz), Fenster 28 Tage (Nutzertabelle) und 7 Tage (Summen).
+6. **Erster Testkunde ist dbrains selbst** (eigener Tenant, 3 Lizenzen);
+   Anleitung für die App-Registrierung in `docs/SETUP-PHASE4.md` §8.
+
 ### D4.7 — Bewusst nicht in Phase 4
 Datenexport/Org-Löschung (Phase 5, DSGVO-Basics), PDF-Report und
 Mailversand des Reports (Phase 5), Bounce-Tracking für CSV-Einladungen über

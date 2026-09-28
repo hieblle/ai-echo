@@ -175,6 +175,18 @@ recommendations      id, org_id, cycle_id, rule_key, status ('open'|'done'|'dism
                      created_at
 
 reports              id, org_id, period (YYYY-MM), pdf_path, sent_at
+
+org_integrations     org_id, provider ('m365'), tenant_id, status
+                     ('pending'|'connected'|'error'), names_concealed, consented_at,
+                     last_sync_at, last_error        -- kein Secret (D4.10)
+
+copilot_usage_snapshots
+                     org_id, week (ISO), source ('csv'|'graph'|'viva'), period_days,
+                     report_refresh_date, enabled_users, active_users,
+                     active_by_app (jsonb), prompts_total, prompts_per_active_user,
+                     active_days_avg, active_days_buckets (jsonb), assisted_hours,
+                     imported_at
+                     -- NUR Org-Summen. KEIN UPN, KEIN Hash, KEIN Name (D4.10)
 ```
 
 **Hinweis zur Umsetzung von `respondent_profiles` (korrigiert in Phase 4, DECISIONS D4.2):** Der Schlüssel `respondent_key` ist ein serverseitig berechneter HMAC-SHA256 über die Membership-ID mit einem App-Secret (`PSEUDONYM_SECRET`); er wird nirgends gespeichert und nie an den Client gegeben. Der Server nutzt das Profil NUR für `tools_used` (Conditional Logic), `question_history` (Rotation) und den Onboarding-Status — und schreibt die Antworten OHNE jeden Schlüssel in `responses`. Eine Verknüpfung Profil ↔ Person ist nur mit Datenbank UND App-Secret möglich, also für den Betreiber (dbrains) technisch nicht ausgeschlossen, sondern organisatorisch (AVV, Vier-Augen-Prinzip) abgesichert. Die frühere Formulierung „Token liegt nur clientseitig" war technisch nicht haltbar (`user_metadata` liegt in `auth.users`). Trade-off bleibt: bei Abteilungen < k werden Antworten gar nicht abteilungsscharf ausgewertet (siehe Abschnitt 7).
@@ -202,6 +214,7 @@ Glaubwürdige Anonymität entscheidet über die Teilnahmequote. Regeln:
 - **F5 Dashboard:** org_admin/team_lead sehen: 4 Index-Kacheln mit Trend (12 Wochen), ROI-Kachel, Heatmap Abteilungen × Dimensionen, Perception-Gap-Sektion, Teilnahmequote, Empfehlungs-Cards, Use-Case-Highlights.
 - **F6 Monatsreport:** Cron am 1. des Folgemonats → PDF generieren → an org_admin mailen → im Dashboard-Archiv ablegen. Enthält: Kennzahlen + Trend, Gap-Analyse, Top-Use-Cases, Empfehlungen, AI-Act-Nachweis-Abschnitt.
 - **F7 Empfehlung → Aktion:** org_admin öffnet Empfehlungs-Card → Deep-Link auf Kurs der Lernplattform → markiert als „erledigt"/„verworfen".
+- **F8 Copilot-Telemetrie (D4.10, `docs/COPILOT-INTEGRATION.md`):** org_admin lädt Microsofts Copilot-Nutzungsbericht als CSV hoch oder verbindet Microsoft 365 per Admin-Consent (mandantenfähige Entra-App, `Reports.Read.All`) → Server aggregiert beim Import zu einem Wochen-Snapshot der Org (lizenziert/aktiv, je App, Prompts, aktive Tage) und verwirft die Personenzeilen → Cron holt die Berichte wöchentlich → Seite „Copilot-Nutzung" (org_admin, team_lead) zeigt Kacheln, Nutzung je App, Verlauf, Befragung vs. Telemetrie, Lizenzcheck; R5 wertet beide Quellen aus; Monatsreport bekommt Abschnitt 6.
 
 ---
 

@@ -14,6 +14,7 @@ Webapp „KI-Barometer": macht den Erfolg von KI-Einführungen in Unternehmen me
 - **Mandantentrennung sitzt in `lib/server/auth.ts`:** jede Produktroute löst den verifizierten Viewer und seine Mitgliedschaft auf; der Store bekommt nur die `org_id` einer verifizierten Mitgliedschaft. RLS ist die zweite Linie — `responses`, `respondent_profiles`, `recommendation_states` haben bewusst KEINE Client-Policies. Rohantworten verlassen den Server nie.
 - **Secrets nur in Umgebungsvariablen** (`.env.example` listet alle), nie im Repo. Ohne Konfiguration zeigen die Produktrouten `/app/setup` statt zu crashen.
 - **Kein Vercel-exklusiver Code** (DECISIONS D3.1): Cron = abgesicherte Route Handler, Mail hinter `Mailer`, Build `standalone`.
+- **Microsoft-Zugriff nur in `lib/server/m365-graph.ts`** (D4.10): Copilot-Nutzungsberichte werden in `lib/domain/copilot.ts` im Speicher zu Org-Wochenwerten aggregiert; Personenzeilen (UPN, Hash, Name) werden nie gespeichert — der Schema-Test erzwingt das. Unter k sehen nur Org-Admins die Werte.
 
 ## Stack
 Next.js 15 (App Router) · TypeScript strict · Tailwind + shadcn/ui · Recharts · Vitest + Playwright · Supabase (EU, Frankfurt): Postgres, Auth (Magic Links), RLS.

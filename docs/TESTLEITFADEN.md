@@ -147,6 +147,26 @@ Nach dem ersten Pulse (alle haben geantwortet):
 - Org-Admin versucht, sich selbst zu entfernen → wird abgelehnt.
 - Einstellungen: k von 5 auf 6 erhöhen (geht), wieder auf 5 (geht nicht).
 
+## Szenario 7 — Copilot-Daten (Leon, optional, 10 Minuten)
+
+1. Microsoft 365 Admin Center → Berichte → Nutzung → Microsoft 365 Copilot →
+   Zeitraum 28 Tage → Exportieren (CSV, Englisch).
+2. Verwaltung → **7 Integrationen** → Datei wählen → **Importieren**.
+   Erwartung: grüne Meldung „Copilot-Bericht übernommen: Woche …, N
+   Lizenzen, M aktiv", die Kachel „Copilot-Daten" zeigt die Woche.
+3. Seitenleiste → **Copilot-Nutzung**: Kacheln, Nutzung je App, „Befragung
+   vs. Telemetrie" und Lizenzcheck gefüllt. Mit weniger als 5 Lizenzen
+   erscheint der Hinweis zur Anonymitätsschwelle (nur Org-Admins sehen die
+   Werte).
+4. Dashboard: unter den Kacheln erscheint die Zeile „Microsoft 365 Copilot ·
+   x % von N Lizenzen aktiv" mit Link.
+5. Wenn `M365_CLIENT_ID`/`_SECRET` gesetzt sind (SETUP-PHASE4 §8):
+   **Microsoft 365 verbinden** → als Global Admin zustimmen → **Jetzt
+   synchronisieren** → gleiche Prüfung wie in Schritt 3.
+
+Feedback-Fragen: Passen die Microsoft-Zahlen zu dem, was ihr im Admin
+Center seht? Ist verständlich, warum Befragung und Telemetrie abweichen?
+
 ## Zweite Woche
 
 Am nächsten Montag öffnet der Zeitplan den Pulse automatisch (wenn in Vercel

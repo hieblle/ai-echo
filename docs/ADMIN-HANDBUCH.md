@@ -235,6 +235,39 @@ Abschnitte in Einrichtungsreihenfolge:
    herabstufen.
 6. **Befragungszyklen:** offene Zyklen sehen, manuell öffnen/schließen,
    Erinnerung auslösen
+7. **Integrationen (optional):** Microsofts Copilot-Nutzungsbericht als
+   CSV hochladen oder Microsoft 365 verbinden (automatischer Abgleich jeden
+   Mittwoch). Gespeichert werden nur Wochen-Summen der Organisation.
+
+### Copilot-Nutzung lesen (`/app/<kunde>/copilot`)
+
+Für Org-Admins und Teamleitungen, nur Org-Werte. Quelle ist Microsofts
+Bericht (Admin Center → Berichte → Nutzung → Microsoft 365 Copilot), Fenster
+28 Tage, Daten hinken 48–72 Stunden hinterher.
+
+- **Kacheln:** Copilot-Lizenzen, aktive Nutzer (Anteil der Lizenzen mit
+  mindestens einer bewussten Copilot-Aktion), Prompts je aktivem Nutzer,
+  Ø aktive Tage
+- **Nutzung je App** und **Verlauf** (Aktivquote je gespeicherter Woche)
+- **Befragung vs. Telemetrie:** Pulse-Frage „nutzt KI mindestens
+  wöchentlich" (alle Tools, Selbstauskunft) neben „aktiv laut Microsoft"
+  (nur Copilot, gemessen). Abweichungen sind normal — die Seite erklärt sie.
+- **Lizenzcheck:** ungenutzte Lizenzen × Lizenzpreis pro Kopf (aus den
+  Tool-Einstellungen). Unter 20 % Aktivquote löst R5 aus; die Karte nennt
+  dann beide Quellen.
+- **Gesparte Stunden:** Microsofts Schätzung gibt es erst ab 50 Lizenzen
+  (Copilot Dashboard); bis der Export angebunden ist, gilt im ROI die
+  Selbsteinschätzung.
+- **Unter 5 Lizenzen** sehen Teamleitungen keine Werte; Org-Admins sehen
+  sie mit Hinweis (dieselben Zahlen stehen im Admin Center).
+
+Was du dem Kunden und dem Betriebsrat sagen kannst: Der Bericht enthält pro
+Person nur „hat Copilot in App X zuletzt am … genutzt" und Prompt-Zahlen —
+keine Inhalte. Das KI-Barometer übernimmt keine Personenzeile, sondern
+zählt beim Import und wirft die Datei weg; Namen bleiben in Microsofts
+Standardeinstellung ohnehin verschleiert. Ob eine Betriebsvereinbarung
+nötig ist (§ 96a ArbVG), klärt der Kunde — `docs/COPILOT-INTEGRATION.md`
+Abschnitt 2 liefert die Beschreibung von Zweck, Daten und Löschung.
 
 ### Dashboard lesen (`/app/<kunde>/dashboard`)
 

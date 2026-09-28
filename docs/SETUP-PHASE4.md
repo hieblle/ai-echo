@@ -68,6 +68,7 @@ Vollständige Liste mit Erklärungen: `.env.example`.
 | `PLATFORM_ADMIN_EMAILS` | `leon@dbrains.academy` (mehrere mit Komma) |
 | `PSEUDONYM_SECRET` | erzeugt in Schritt 2 |
 | `CRON_SECRET` | erzeugt in Schritt 2 |
+| `M365_CLIENT_ID`, `M365_CLIENT_SECRET` | optional, aus Abschnitt 8 (Microsoft 365 Copilot anbinden) |
 
 **a) Vercel** (damit die App im Web läuft): Projekt → Settings → Environment
 Variables → jede Variable anlegen, Environments „Production", „Preview" und
@@ -97,6 +98,7 @@ Stand heute:
 | --- | --- |
 | `20260925120000_init.sql` | alle Tabellen, RLS, Teilnahme-Statistik |
 | `20260926120000_tool_seats.sql` | Spalte „Anzahl Lizenzen" je Tool (ROI pro Kopf, D4.8) |
+| `20260928120000_copilot_usage.sql` | Tabellen für Microsoft-365-Anbindung und Copilot-Wochenwerte (D4.10) |
 
 Kommt später eine neue Datei dazu, steht das in der Commit-Nachricht und
 hier in der Tabelle — dann nur die neue Datei einspielen.
@@ -195,6 +197,56 @@ Sie legen kurzzeitig zwei Test-Organisationen und einen Test-User an
 den Duplikat-Schutz und räumen wieder auf. **Nur gegen das Dev-Projekt
 laufen lassen**, nie gegen Produktion.
 
+## 8. Microsoft 365 Copilot anbinden (optional, D4.10)
+
+Hintergrund und Datenschutz: `docs/COPILOT-INTEGRATION.md`. Der
+**CSV-Import** in der Verwaltung (Abschnitt „7 Integrationen") funktioniert
+ohne diesen Abschnitt. Für die **automatische Anbindung** braucht dbrains
+einmalig eine App im eigenen Microsoft-Tenant; jeder Kunde bestätigt sie
+danach mit einem Klick.
+
+**a) App registrieren (dbrains, einmalig, 10 Minuten)**
+
+1. https://entra.microsoft.com → Identität → Anwendungen →
+   **App-Registrierungen** → **Neue Registrierung**.
+2. Name `KI-Barometer Connector`. Kontotypen: **„Konten in einem beliebigen
+   Organisationsverzeichnis (mandantenfähig)"**. Umleitungs-URI (Web):
+   `https://<app-domain>/api/integrations/m365/callback` — für lokale Tests
+   zusätzlich `http://localhost:3000/api/integrations/m365/callback`.
+3. **API-Berechtigungen** → Berechtigung hinzufügen → Microsoft Graph →
+   **Anwendungsberechtigungen** → `Reports.Read.All` → hinzufügen.
+   Optional `ReportSettings.Read.All` (zeigt an, ob der Kunde Namen
+   verschleiert). Die delegierte Standardberechtigung `User.Read` kann
+   bleiben.
+4. **Zertifikate & Geheimnisse** → Neuer geheimer Clientschlüssel (Laufzeit
+   z. B. 24 Monate) → den **Wert** sofort kopieren (später nicht mehr
+   sichtbar) → `M365_CLIENT_SECRET`. Die **Anwendungs-ID (Client)** von der
+   Übersichtsseite → `M365_CLIENT_ID`.
+5. Beide Variablen an den drei Stellen aus Abschnitt 3 eintragen
+   (Vercel, Claude-Umgebung, lokal), einmal neu deployen.
+6. Optional, empfohlen für Kunden: **Branding & Eigenschaften →
+   Herausgeberüberprüfung** (braucht eine Partner-Center-ID), sonst zeigt
+   Microsoft beim Consent einen Hinweis „nicht verifiziert".
+
+**b) Kunde verbinden (der Kunde, 1 Minute)**
+
+1. Migration `20260928120000_copilot_usage.sql` muss eingespielt sein
+   (Abschnitt 4).
+2. Als Org-Admin im KI-Barometer: Verwaltung → **7 Integrationen** →
+   **Microsoft 365 verbinden**. Es öffnet sich Microsofts Zustimmungsseite;
+   dort muss sich ein **Global Admin des Kunden-Tenants** anmelden und die
+   Berechtigung bestätigen. Danach zurück in der Verwaltung: Status
+   „Verbunden".
+3. **Jetzt synchronisieren** klicken. Ab dann läuft der Abgleich jeden
+   Mittwoch 06:00 UTC automatisch (`/api/cron/copilot-sync`, braucht
+   `CRON_SECRET`).
+
+**c) Test bei dbrains (Org 0):** dbrains ist selbst der erste Kunde. Mit
+3 Copilot-Lizenzen liegt der Bericht unter der Anonymitätsschwelle — die
+Seite „Copilot-Nutzung" zeigt die Werte dann nur Org-Admins, mit Hinweis.
+Erwartung nach der ersten Synchronisierung: eine Wochenzeile mit 3 Lizenzen
+und der Zahl aktiver Nutzer; Microsofts Daten hinken 48–72 Stunden hinterher.
+
 ## Wenn etwas hakt
 
 | Symptom | Ursache / Lösung |
@@ -206,3 +258,7 @@ laufen lassen**, nie gegen Produktion.
 | Claude meldet „Host not in allowlist" | Die Projekt-Domain in der Cloud-Umgebung unter Network access freigeben (Schritt 4). |
 | Teamleitung sieht „Kein Team zugeordnet" | In der Verwaltung dem Mitglied eine Abteilung geben. |
 | Cron läuft nicht | `CRON_SECRET` in Vercel fehlt, oder das Deployment ist kein Production-Deployment (Vercel führt Crons nur dort aus). |
+| „Microsoft 365 verbinden" fehlt in der Verwaltung | `M365_CLIENT_ID`/`M365_CLIENT_SECRET` sind auf dem Server nicht gesetzt (Abschnitt 8a). Der CSV-Import geht trotzdem. |
+| Consent endet mit „AADSTS…" | Umleitungs-URI in der App-Registrierung stimmt nicht mit `NEXT_PUBLIC_APP_URL` + `/api/integrations/m365/callback` überein, oder die Person ist kein Global Admin des Kunden-Tenants. |
+| Synchronisierung: „Microsoft Graph 403" | Berechtigung `Reports.Read.All` fehlt oder wurde nicht als **Anwendungs**berechtigung erteilt; im Kunden-Tenant erneut verbinden. |
+| CSV-Import: „Spalten nicht erkannt" | Den Bericht im Admin Center auf Englisch exportieren (Nutzertabelle des Berichts „Microsoft 365 Copilot"), nicht den Bericht „Copilot Chat" ohne Lizenz. |

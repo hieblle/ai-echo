@@ -1,7 +1,8 @@
 # Microsoft 365 Copilot — Nutzungsdaten in das KI-Barometer holen
 
-Status: **Recherche und Vorschlag, Stand 2026-09-28, noch nicht entschieden.**
-Zielgruppe: dbrains (Leon). Entscheidungen daraus kommen nach `DECISIONS.md`.
+Status: **Recherche vom 2026-09-28; Stufe 1 und 2 umgesetzt (DECISIONS
+D4.10), Stufe 3 offen.** Zielgruppe: dbrains (Leon). Einrichtung der
+Entra-App: `docs/SETUP-PHASE4.md` §8; Bedienung: `docs/ADMIN-HANDBUCH.md`.
 
 ## Kurzfassung
 
@@ -312,17 +313,27 @@ App-Registrierung.
   Nutzen. Die Seite formuliert das ausdrücklich; Nutzen und Stimmung
   bleiben Sache der Befragung.
 
-## 7. Offene Fragen (vor Stufe 1 klären)
+## 7. Entscheidungen (2026-09-28, D4.10)
 
-1. Beim ersten Kunden: Wie viele Copilot-Lizenzen (≥ 50 → Dashboard)?
-   Ist die Namensverschleierung aktiv? Gibt es eine BV zu Microsoft 365,
-   und deckt sie Nutzungsberichte ab?
-2. Hat dbrains einen Entra-Tenant, in dem wir eine mandantenfähige App
-   registrieren dürfen (Stufe 2)? Publisher-Verifizierung (MPN-ID) vorhanden?
-3. Sollen Teamleitungen die Org-Werte der Copilot-Seite sehen oder nur
-   Org-Admins?
-4. Soll R5 bei vorhandener Telemetrie die Befragungsquote ersetzen oder
-   beide Werte zeigen und den strengeren nehmen?
+1. **Lizenzen:** der erste Kunde startet unter 50, bald darüber → Stufe 1
+   und 2 fest, Stufe 3 (Dashboard-Export) sobald ≥ 50.
+2. **Entra-App:** dbrains hat einen Tenant mit Admin-Rechten; dbrains ist
+   selbst der erste Testkunde (3 Lizenzen → unter k, Werte nur für
+   Org-Admins mit Hinweis).
+3. **Sichtbarkeit:** Org-Admin und Teamleitung, nur Org-Werte.
+4. **R5:** beide Quellen zeigen, die strengere löst aus.
+
+## 8. Umsetzungsstand
+
+- Umgesetzt: Domäne (`lib/domain/copilot.ts`, Parser für Nutzertabelle
+  v1/v2 und Summenblatt, Aggregation, Lizenzcheck, R5-Telemetrie), Store
+  und Migration `20260928120000_copilot_usage.sql`, CSV-Import und
+  Microsoft-Anbindung in der Verwaltung („7 Integrationen"), Consent-Flow,
+  Cron `/api/cron/copilot-sync`, Seite „Copilot-Nutzung" (Produkt und Demo),
+  Dashboard-Zeile, Report-Abschnitt 6, Demo-Daten für Merlin.
+- Offen: Stufe 3 (Viva-Export, `assisted_hours`), Copilot-Chat-Bericht ohne
+  Lizenz, Fehlermail an dbrains bei wiederholtem Sync-Fehler (Status steht
+  in der Verwaltung), Abteilungswerte (nur mit BV und Klarnamen).
 
 ## Quellen
 
