@@ -1,0 +1,198 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&amp;family=Karla:wght@400;500;600;700&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: "Karla", system-ui, sans-serif; }
+    a { color: #2f6e4f; text-decoration: none; }
+    a:hover { color: #24543c; }
+  </style>
+</helmet>
+<div style="width: 1280px; min-height: 1100px; background: #faf6ee; color: #2f2a22; display: flex; flex-direction: column; gap: 22px; padding: 32px 36px; box-sizing: border-box;">
+
+  <!-- Header -->
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 13px; font-weight: 700; color: #2f6e4f; letter-spacing: 0.04em;">KI-Barometer · Dashboard</div>
+        <div style="font-family: 'Lora', Georgia, serif; font-size: 32px; font-weight: 600; letter-spacing: -0.01em;">Merlin Technology GmbH</div>
+        <div style="font-size: 13px; color: #857b6a;">Datenstand: 6 Wochen bis 2026-W33</div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 18px; border: 1px solid #ddd2bd; border-radius: 999px; background: #fffdf8; font-size: 14px; font-weight: 600; color: #2f2a22;">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3.5v9M3.5 8h9" stroke="#2f2a22" stroke-width="1.6" stroke-linecap="round"></path></svg>
+          Woche simulieren
+        </div>
+        <div style="display: flex; align-items: center; height: 40px; padding: 0 20px; border-radius: 999px; background: #2f6e4f; font-size: 14px; font-weight: 700; color: #fdfaf3;">Monatsreport</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <div style="height: 34px; display: flex; align-items: center; padding: 0 17px; border-radius: 999px; background: #2f2a22; color: #fdfaf3; font-size: 13px; font-weight: 600;">Merlin Technology GmbH</div>
+      <div style="height: 34px; display: flex; align-items: center; padding: 0 17px; border-radius: 999px; border: 1px solid #ddd2bd; background: #fffdf8; color: #857b6a; font-size: 13px;">SPAR Österreich (Zentrale)</div>
+      <div style="height: 34px; display: flex; align-items: center; padding: 0 17px; border-radius: 999px; border: 1px solid #ddd2bd; background: #fffdf8; color: #857b6a; font-size: 13px;">REWE (Zentralbereich)</div>
+    </div>
+  </div>
+
+  <!-- KPI tiles -->
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px;">
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="font-size: 12px; font-weight: 700; color: #857b6a;">Adoption-Rate</div>
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 30px; font-weight: 600;">68 %</div>
+      <div style="font-size: 11px; font-weight: 700; color: #2f6e4f;">▲ +6 Pp. vs. Baseline</div>
+      <svg width="100%" height="26" viewBox="0 0 180 26" preserveAspectRatio="none"><polyline points="4,20 39,18 74,16 109,14 144,10 172,7" fill="none" stroke="#d8cdb8" stroke-width="1.5"></polyline><circle cx="172" cy="7" r="3" fill="#2f6e4f"></circle></svg>
+    </div>
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="font-size: 12px; font-weight: 700; color: #857b6a;">Effizienzindex</div>
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 30px; font-weight: 600;">6,8</div>
+      <div style="font-size: 11px; font-weight: 700; color: #2f6e4f;">▲ +0,4 vs. Baseline</div>
+      <svg width="100%" height="26" viewBox="0 0 180 26" preserveAspectRatio="none"><polyline points="4,18 39,17 74,18 109,13 144,12 172,9" fill="none" stroke="#d8cdb8" stroke-width="1.5"></polyline><circle cx="172" cy="9" r="3" fill="#2f6e4f"></circle></svg>
+    </div>
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="font-size: 12px; font-weight: 700; color: #857b6a;">Vertrauensindex</div>
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 30px; font-weight: 600;">7,1</div>
+      <div style="font-size: 11px; font-weight: 700; color: #2f6e4f;">▲ +0,3 vs. Baseline</div>
+      <svg width="100%" height="26" viewBox="0 0 180 26" preserveAspectRatio="none"><polyline points="4,16 39,15 74,14 109,14 144,11 172,9" fill="none" stroke="#d8cdb8" stroke-width="1.5"></polyline><circle cx="172" cy="9" r="3" fill="#2f6e4f"></circle></svg>
+    </div>
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="font-size: 12px; font-weight: 700; color: #857b6a;">Stimmungsindex</div>
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 30px; font-weight: 600;">7,4</div>
+      <div style="font-size: 11px; font-weight: 700; color: #2f6e4f;">▲ +0,5 vs. Baseline</div>
+      <svg width="100%" height="26" viewBox="0 0 180 26" preserveAspectRatio="none"><polyline points="4,17 39,14 74,15 109,12 144,9 172,7" fill="none" stroke="#d8cdb8" stroke-width="1.5"></polyline><circle cx="172" cy="7" r="3" fill="#2f6e4f"></circle></svg>
+    </div>
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="font-size: 12px; font-weight: 700; color: #857b6a;">Teilnahmequote</div>
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 30px; font-weight: 600;">74 %</div>
+      <div style="font-size: 11px; font-weight: 700; color: #c2502f;">▼ −3 Pp. vs. Baseline</div>
+      <svg width="100%" height="26" viewBox="0 0 180 26" preserveAspectRatio="none"><polyline points="4,10 39,9 74,11 109,12 144,13 172,14" fill="none" stroke="#d8cdb8" stroke-width="1.5"></polyline><circle cx="172" cy="14" r="3" fill="#c2502f"></circle></svg>
+    </div>
+  </div>
+
+  <!-- ROI band -->
+  <div style="background: #2f6e4f; border-radius: 20px; padding: 24px 28px; display: flex; gap: 28px; align-items: center; color: #fdfaf3;">
+    <div style="display: flex; flex-direction: column; gap: 2px; padding-right: 28px; border-right: 1px solid rgba(253, 250, 243, 0.25); min-width: 300px;">
+      <div style="font-size: 13px; color: #cfe3d3;">Netto-Ersparnis pro Monat</div>
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 46px; font-weight: 600; letter-spacing: -0.01em;">12.400 <span style="font-size: 24px; color: #cfe3d3;">€</span></div>
+      <div style="font-size: 13px; color: #cfe3d3;">ROI-Multiple: <span style="font-weight: 700; color: #fdfaf3;">4,3×</span></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 28px; flex-grow: 1;">
+      <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 12px; color: #cfe3d3;">Gesparte Stunden</div><div style="font-size: 17px; font-weight: 700;">310 h</div></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 12px; color: #cfe3d3;">Hochgerechnet*</div><div style="font-size: 17px; font-weight: 700;">480 h</div></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 12px; color: #cfe3d3;">Brutto-Ersparnis</div><div style="font-size: 17px; font-weight: 700;">15.500 €</div></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 12px; color: #cfe3d3;">Lizenzkosten</div><div style="font-size: 17px; font-weight: 700;">3.100 €</div></div>
+      <div style="grid-column: span 4; font-size: 11px; color: #a9c9b2;">Basis: letzte 4 Wochen, 50 €/h (Org-Standard) · *auf Nichtteilnehmende hochgerechnet — konservativer Erstwert</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;">
+        <div style="font-family: 'Lora', Georgia, serif; font-size: 18px; font-weight: 600;">Perception Gap</div>
+        <div style="font-size: 12px; color: #857b6a;">Tool-NPS: <span style="font-weight: 700; color: #2f2a22;">+18</span> (n = 34)</div>
+      </div>
+      <div style="display: flex; gap: 14px; font-size: 11px; color: #857b6a; align-items: center;">
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #b8862f; display: inline-block;"></span>Mitarbeitende</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #2f6e4f; display: inline-block;"></span>Führungskräfte</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 160px; font-size: 12px; color: #2f2a22;">Nutzen für die Arbeit</div>
+          <svg width="100%" height="30" viewBox="0 0 380 30" preserveAspectRatio="none"><line x1="12" y1="15" x2="368" y2="15" stroke="#ece2cf" stroke-width="2"></line><line x1="233" y1="15" x2="300" y2="15" stroke="#b3a78f" stroke-width="2"></line><circle cx="233" cy="15" r="6" fill="#b8862f"></circle><circle cx="300" cy="15" r="6" fill="#2f6e4f"></circle><text x="222" y="8" font-size="11" fill="#96701f" font-weight="700" text-anchor="end">6,2</text><text x="311" y="8" font-size="11" fill="#2f6e4f" font-weight="700">8,1</text></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 160px; font-size: 12px; color: #2f2a22;">Effizienzgewinn</div>
+          <svg width="100%" height="30" viewBox="0 0 380 30" preserveAspectRatio="none"><line x1="12" y1="15" x2="368" y2="15" stroke="#ece2cf" stroke-width="2"></line><line x1="219" y1="15" x2="276" y2="15" stroke="#b3a78f" stroke-width="2"></line><circle cx="219" cy="15" r="6" fill="#b8862f"></circle><circle cx="276" cy="15" r="6" fill="#2f6e4f"></circle><text x="208" y="8" font-size="11" fill="#96701f" font-weight="700" text-anchor="end">5,8</text><text x="287" y="8" font-size="11" fill="#2f6e4f" font-weight="700">7,4</text></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 160px; font-size: 12px; color: #2f2a22;">Unterstützung &amp; Befähigung</div>
+          <svg width="100%" height="30" viewBox="0 0 380 30" preserveAspectRatio="none"><line x1="12" y1="15" x2="368" y2="15" stroke="#ece2cf" stroke-width="2"></line><line x1="258" y1="15" x2="268" y2="15" stroke="#b3a78f" stroke-width="2"></line><circle cx="258" cy="15" r="6" fill="#b8862f"></circle><circle cx="268" cy="15" r="6" fill="#2f6e4f"></circle><text x="247" y="8" font-size="11" fill="#96701f" font-weight="700" text-anchor="end">6,9</text><text x="279" y="8" font-size="11" fill="#2f6e4f" font-weight="700">7,2</text></svg>
+        </div>
+      </div>
+      <div style="font-size: 11px; color: #a89d8a; border-top: 1px solid #f0e8d8; padding-top: 12px;">Größter Gap: Nutzen für die Arbeit (1,9 Punkte) — Führung schätzt den Nutzen höher ein als das Team.</div>
+    </div>
+    <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 18px; font-weight: 600;">Abteilungen × Dimensionen</div>
+      <div style="display: grid; grid-template-columns: 172px repeat(4, minmax(0, 1fr)); gap: 5px; font-size: 12px;">
+        <div></div>
+        <div style="text-align: center; color: #857b6a; font-size: 11px; font-weight: 700;">Adoption</div>
+        <div style="text-align: center; color: #857b6a; font-size: 11px; font-weight: 700;">Effizienz</div>
+        <div style="text-align: center; color: #857b6a; font-size: 11px; font-weight: 700;">Vertrauen</div>
+        <div style="text-align: center; color: #857b6a; font-size: 11px; font-weight: 700;">Stimmung</div>
+        <div style="display: flex; align-items: center; color: #2f2a22;">Vertrieb &amp; Export</div>
+        <div style="height: 34px; border-radius: 10px; background: #9ec4a9; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">72 %</div>
+        <div style="height: 34px; border-radius: 10px; background: #b3d0ba; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">7,1</div>
+        <div style="height: 34px; border-radius: 10px; background: #9ec4a9; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">7,4</div>
+        <div style="height: 34px; border-radius: 10px; background: #7fb391; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fdfaf3;">7,8</div>
+        <div style="display: flex; align-items: center; color: #2f2a22;">Technik &amp; Entwicklung</div>
+        <div style="height: 34px; border-radius: 10px; background: #eae4d3; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #4b5a46;">48 %</div>
+        <div style="height: 34px; border-radius: 10px; background: #f1ecdd; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #4b5a46;">5,9</div>
+        <div style="height: 34px; border-radius: 10px; background: #eae4d3; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #4b5a46;">6,3</div>
+        <div style="height: 34px; border-radius: 10px; background: #eae4d3; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #4b5a46;">6,1</div>
+        <div style="display: flex; align-items: center; color: #2f2a22;">Verwaltung &amp; Finanzen</div>
+        <div style="height: 34px; border-radius: 10px; background: #c8dccd; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">66 %</div>
+        <div style="height: 34px; border-radius: 10px; background: #d8e6db; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">6,4</div>
+        <div style="height: 34px; border-radius: 10px; background: #b3d0ba; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">7,0</div>
+        <div style="height: 34px; border-radius: 10px; background: #b3d0ba; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">7,2</div>
+        <div style="display: flex; align-items: center; color: #2f2a22;">Marketing</div>
+        <div style="height: 34px; border-radius: 10px; background: #f4f0e4; border: 1px dashed #d8cdb8; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #a89d8a;">n &lt; 5</div>
+        <div style="height: 34px; border-radius: 10px; background: #f4f0e4; border: 1px dashed #d8cdb8; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #a89d8a;">n &lt; 5</div>
+        <div style="height: 34px; border-radius: 10px; background: #f4f0e4; border: 1px dashed #d8cdb8; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #a89d8a;">n &lt; 5</div>
+        <div style="height: 34px; border-radius: 10px; background: #f4f0e4; border: 1px dashed #d8cdb8; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #a89d8a;">n &lt; 5</div>
+        <div style="display: flex; align-items: center; color: #2f2a22;">Service-Innendienst</div>
+        <div style="height: 34px; border-radius: 10px; background: #7fb391; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fdfaf3;">75 %</div>
+        <div style="height: 34px; border-radius: 10px; background: #9ec4a9; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">7,3</div>
+        <div style="height: 34px; border-radius: 10px; background: #9ec4a9; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1c3f2c;">7,2</div>
+        <div style="height: 34px; border-radius: 10px; background: #7fb391; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fdfaf3;">7,6</div>
+      </div>
+      <div style="font-size: 11px; color: #a89d8a;">Abteilungen unter der k-Anonymitätsschwelle (n &lt; 5) werden nicht einzeln ausgewiesen.</div>
+    </div>
+  </div>
+
+  <!-- Recommendations -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; align-items: baseline; gap: 10px;">
+      <div style="font-family: 'Lora', Georgia, serif; font-size: 19px; font-weight: 600;">Empfehlungen</div>
+      <div style="font-size: 13px; color: #857b6a;">2 offen · regelbasiert (R1–R7)</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+      <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+        <div style="display: flex; gap: 8px;">
+          <span style="font-size: 11px; font-weight: 700; background: #eef3e6; color: #2f6e4f; border-radius: 999px; padding: 4px 12px;">R1 · Kurs-Empfehlung</span>
+        </div>
+        <div style="font-family: 'Lora', Georgia, serif; font-size: 16px; font-weight: 600;">Kurs „KI-Grundlagen“ + Awareness-Kampagne</div>
+        <div style="font-size: 13px; color: #857b6a; line-height: 1.5;">Adoption 48 % in Technik &amp; Entwicklung — unter dem 50-%-Schwellwert der letzten 4 Wochen.</div>
+        <div style="display: flex; gap: 8px; margin-top: 2px;">
+          <div style="height: 34px; display: flex; align-items: center; padding: 0 15px; border: 1px solid #ddd2bd; border-radius: 999px; font-size: 12px; font-weight: 700; color: #2f2a22;">Zum Kurs ↗</div>
+          <div style="height: 34px; display: flex; align-items: center; padding: 0 15px; border-radius: 999px; background: #f1ecdd; font-size: 12px; font-weight: 700; color: #2f2a22;">Erledigt</div>
+          <div style="height: 34px; display: flex; align-items: center; padding: 0 15px; font-size: 12px; color: #857b6a;">Verwerfen</div>
+        </div>
+      </div>
+      <div style="background: #fffdf8; border: 1px solid #ece2cf; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 3px rgba(90, 74, 48, 0.06);">
+        <div style="display: flex; gap: 8px;">
+          <span style="font-size: 11px; font-weight: 700; background: #f7e9db; color: #c2502f; border-radius: 999px; padding: 4px 12px;">R6 · Kommunikation</span>
+        </div>
+        <div style="font-family: 'Lora', Georgia, serif; font-size: 16px; font-weight: 600;">Kommunikationsmaßnahme: Strategie-Townhall / FAQ</div>
+        <div style="font-size: 13px; color: #857b6a; line-height: 1.5;">Perception Gap 1,9 Punkte beim Nutzen — Erwartungsabgleich zwischen Führung und Team empfohlen.</div>
+        <div style="display: flex; gap: 8px; margin-top: 2px;">
+          <div style="height: 34px; display: flex; align-items: center; padding: 0 15px; border-radius: 999px; background: #f1ecdd; font-size: 12px; font-weight: 700; color: #2f2a22;">Erledigt</div>
+          <div style="height: 34px; display: flex; align-items: center; padding: 0 15px; font-size: 12px; color: #857b6a;">Verwerfen</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design D "Soft UI" (docs/design-proposals/SoftGlass.dc.html, DECISIONS D4.9):
+ * light grey ground, white floating panels and translucent cards with 20 px
+ * radius, thin grey captions, one yellow accent, pastel status colours.
+ */
+@layer base {
+  :root {
+    --background: 240 11% 96%; /* #F5F5F7 */
+    --foreground: 240 4% 11%; /* #1B1B1D */
+    --card: 0 0% 100%;
+    --card-foreground: 240 4% 11%;
+    --primary: 240 4% 11%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 8% 96%; /* #F4F4F6 soft pill */
+    --secondary-foreground: 240 4% 11%;
+    --muted: 240 8% 94%;
+    --muted-foreground: 225 3% 45%; /* #6F7076 */
+    --accent: 240 8% 95%;
+    --accent-foreground: 240 4% 11%;
+    --destructive: 0 69% 72%; /* #E98989 */
+    --destructive-foreground: 240 4% 11%;
+    --border: 240 7% 91%; /* #E7E7EA */
+    --input: 240 7% 88%;
+    --ring: 49 88% 66%; /* #F5D95E */
+    --radius: 1rem;
+
+    /* Product tokens beyond shadcn's set */
+    --panel: 240 7% 97%; /* #F7F7F8 sidebar panel */
+    --panel-2: 240 7% 95%; /* #F0F0F2 drawer */
+    --tertiary-foreground: 240 3% 61%; /* #9A9AA0 captions */
+    --accent-yellow: #f5d95e;
+    --status-good: #c8d7a8;
+    --status-mid: #e2d667;
+    --status-warn: #e2b36a;
+    --status-bad: #e5a18d;
+    --status-alert: #e98989;
+
+    /* Data-viz tokens */
+    --viz-series-1: #1b1b1d; /* Mitarbeitende */
+    --viz-series-2: #f5d95e; /* Führungskräfte (yellow, drawn with a dark ring) */
+    --viz-deemphasis: #d3d6db;
+    --viz-grid: #e8e8eb;
+    --viz-muted: #9a9aa0;
+    --viz-delta-good: #4f8f5e;
+    --viz-delta-bad: #c9714a;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Translucent white card on the grey ground (dashboard sections). */
+  .card-soft {
+    @apply rounded-[20px] border border-white/60 bg-white/70 shadow-soft;
+  }
+  /* Solid white card that stands out (highlighted rows, open items). */
+  .card-solid {
+    @apply rounded-[20px] bg-white shadow-float;
+  }
+  .caption {
+    @apply text-xs text-muted-foreground;
+  }
+  .caption-3 {
+    color: hsl(var(--tertiary-foreground));
+  }
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium;
+  }
+  .status-dot {
+    @apply inline-block h-1.5 w-1.5 shrink-0 rounded-full;
+  }
+  /* Hairline progress track, 2.5 px like the reference. */
+  .bar-track {
+    @apply h-[3px] w-full overflow-hidden rounded-full bg-muted;
+  }
+  .bar-fill {
+    @apply h-full rounded-full;
+    background: var(--accent-yellow);
+  }
+}
+
+/* Print styles for the monthly report route (SPEC §13 Phase 2). */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+  .print-break-before {
+    break-before: page;
+  }
+  /* The app shell's sidebar and mobile bar never print (report route). */
+  .shell-chrome {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
