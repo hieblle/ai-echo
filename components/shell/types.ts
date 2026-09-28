@@ -7,6 +7,7 @@
 export type ShellIcon =
   | "home"
   | "dashboard"
+  | "copilot"
   | "surveys"
   | "report"
   | "members"

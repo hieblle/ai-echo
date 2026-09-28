@@ -26,11 +26,13 @@ import {
   DEMO_ORG,
   DEMO_PERSONAS,
 } from "@/lib/seed/demo-org";
+import { generateDemoCopilotSnapshots } from "@/lib/seed/copilot-demo";
 import { generateAllDemoData } from "@/lib/seed/demo-data";
 import {
   DEMO_ORG_DEPARTMENTS,
   DEMO_ORG_TOOL_SETTINGS,
   DEMO_ORGS,
+  MERLIN_ORG_ID,
 } from "@/lib/seed/orgs-demo";
 import { QUESTIONS } from "@/lib/seed/questions";
 import { RECOMMENDATION_RULES } from "@/lib/seed/rules";
@@ -63,6 +65,10 @@ async function buildSeededStore(): Promise<Store> {
   const { responses, participation } = generateAllDemoData({ weeks });
   await store.submitResponses(responses);
   await store.addParticipationStats(participation);
+  // Copilot telemetry for the flagship demo org only (D4.10).
+  for (const snapshot of generateDemoCopilotSnapshots(MERLIN_ORG_ID, weeks)) {
+    await store.upsertCopilotSnapshot(snapshot);
+  }
   return store;
 }
 

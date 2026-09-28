@@ -58,6 +58,7 @@ function orgNav(slug: string, role: Role): ShellNavItem[] {
   const items: ShellNavItem[] = [];
   if (canViewDashboard(role)) {
     items.push({ key: "dashboard", label: "Dashboard", icon: "dashboard", href: `${base}/dashboard` });
+    items.push({ key: "copilot", label: "Copilot-Nutzung", icon: "copilot", href: `${base}/copilot` });
   }
   if (canAdminOrg(role)) {
     items.push({ key: "report", label: "Monatsreport", icon: "report", href: `${base}/report` });
@@ -211,7 +212,8 @@ export function buildDemoShell(
     orgs: orgs.map(({ org, reportMonth, insight }) => {
       const interactive = org.id === interactiveOrgId;
       const nav: ShellNavItem[] = [
-        { key: "dashboard", label: "Dashboard", icon: "dashboard", href: `/dashboard/${org.slug}` },
+        { key: "dashboard", label: "Dashboard", icon: "dashboard", href: `/dashboard/${org.slug}`, exact: true },
+        { key: "copilot", label: "Copilot-Nutzung", icon: "copilot", href: `/dashboard/${org.slug}/copilot` },
       ];
       if (reportMonth) {
         nav.push({ key: "report", label: "Monatsreport", icon: "report", href: `/report/${org.slug}/${reportMonth}` });

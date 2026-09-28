@@ -16,6 +16,14 @@ import {
   upsertToolAction,
 } from "@/lib/server/admin-actions";
 import { canAdminOrg, getOrgAccess, requireViewer } from "@/lib/server/auth";
+import {
+  disconnectM365Action,
+  importCopilotCsvAction,
+  syncCopilotNowAction,
+} from "@/lib/server/copilot-actions";
+import { formatReportDate } from "@/lib/domain/copilot";
+import { getM365Env } from "@/lib/server/env";
+import { REQUIRED_PERMISSION } from "@/lib/server/m365-graph";
 import type { Membership, OrgRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +56,17 @@ const ERR: Record<string, string> = {
   member: "Mitglied nicht gefunden.",
   self: "Die eigene Rolle kann nicht herabgestuft und die eigene Mitgliedschaft nicht entfernt werden.",
   k: "Die Anonymitätsschwelle kann nur erhöht werden.",
+  copilot_file: "Bitte eine CSV-Datei auswählen.",
+  copilot_size: "Die Datei ist zu groß (maximal 8 MB).",
+  copilot_date: "Das Berichtsdatum ist nicht lesbar (Format JJJJ-MM-TT).",
+  copilot_parse: "Die Datei konnte nicht als Copilot-Bericht gelesen werden.",
+  migration_copilot:
+    "Datenbank-Update fehlt: Copilot-Daten können erst gespeichert werden, wenn die Migration 20260928120000_copilot_usage.sql eingespielt ist (docs/SETUP-PHASE4.md, Abschnitt 4).",
+  m365config:
+    "Die Microsoft-Anbindung ist auf dem Server nicht konfiguriert (M365_CLIENT_ID / M365_CLIENT_SECRET). Der CSV-Import funktioniert trotzdem.",
+  m365notconnected: "Microsoft 365 ist noch nicht verbunden.",
+  m365: "Microsoft hat die Verbindung nicht bestätigt.",
+  sync: "Die Synchronisierung mit Microsoft ist fehlgeschlagen.",
 };
 
 function okMessage(params: Record<string, string | undefined>): string | null {
@@ -73,6 +92,14 @@ function okMessage(params: Record<string, string | undefined>): string | null {
       return `${n} Erinnerung(en) verschickt.`;
     case "closed":
       return "Zyklus geschlossen.";
+    case "copilot":
+      return `Copilot-Bericht übernommen: Woche ${params.w ?? "?"}, ${params.e ?? 0} Lizenzen, ${params.a ?? 0} aktiv (${params.p ?? 28} Tage). Die Datei wurde verworfen.${n > 0 ? ` Hinweise: ${params.d ?? ""}` : ""}`;
+    case "synced":
+      return `Microsoft 365 synchronisiert (Wochen ${params.w ?? "?"}).`;
+    case "m365":
+      return "Microsoft 365 verbunden. Jetzt synchronisieren — danach jede Woche automatisch.";
+    case "disconnected":
+      return "Verbindung zu Microsoft 365 getrennt. Gespeicherte Wochenwerte bleiben erhalten.";
     default:
       return null;
   }
@@ -86,6 +113,7 @@ const STEPS = [
   { id: "einladen", label: "Einladen" },
   { id: "mitglieder", label: "Mitglieder" },
   { id: "zyklen", label: "Zyklen" },
+  { id: "integrationen", label: "Integrationen" },
 ] as const;
 
 function StatusTile({
@@ -132,13 +160,18 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
   if (!canAdminOrg(access.role)) redirect("/app?denied=admin");
 
   const { org, store } = access;
-  const [departments, members, tools, cycles, onboardingPool] = await Promise.all([
-    store.listDepartments(org.id),
-    store.listMemberships(org.id),
-    store.listToolSettings(org.id),
-    store.listCycles(org.id, { status: "open" }),
-    store.listQuestions("onboarding"),
-  ]);
+  const [departments, members, tools, cycles, onboardingPool, integration, copilotSnapshots] =
+    await Promise.all([
+      store.listDepartments(org.id),
+      store.listMemberships(org.id),
+      store.listToolSettings(org.id),
+      store.listCycles(org.id, { status: "open" }),
+      store.listQuestions("onboarding"),
+      store.getIntegration(org.id, "m365"),
+      store.listCopilotSnapshots(org.id),
+    ]);
+  const copilotLatest = copilotSnapshots[copilotSnapshots.length - 1] ?? null;
+  const m365Configured = getM365Env() !== null;
   const activeMembers = members.filter((m) => m.status !== "removed");
   const invitedCount = activeMembers.filter((m) => m.status === "invited").length;
   const activeTools = tools.filter((t) => t.active);
@@ -159,9 +192,13 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
   const open = openCycleAction.bind(null, slug);
   const remind = sendRemindersAction.bind(null, slug);
   const close = closeCycleAction.bind(null, slug);
+  const importCsv = importCopilotCsvAction.bind(null, slug);
+  const syncNow = syncCopilotNowAction.bind(null, slug);
+  const disconnect = disconnectM365Action.bind(null, slug);
 
   const ok = okMessage(query);
   const err = query.err ? ERR[query.err] : null;
+  const errDetail = query.err && query.d ? query.d : null;
   const openWeekly = cycles.find((c) => c.template_key === "weekly");
 
   return (
@@ -177,9 +214,14 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
       </header>
 
       {ok && <Notice tone="ok">{ok}</Notice>}
-      {err && <Notice tone="err">{err}</Notice>}
+      {err && (
+        <Notice tone="err">
+          {err}
+          {errDetail && <span className="mt-1 block text-xs">{errDetail}</span>}
+        </Notice>
+      )}
 
-      <section aria-label="Status" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Status" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatusTile
           href={`${base}#abteilungen`}
           label="Abteilungen"
@@ -215,6 +257,19 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
               : `${cycles.length} Zyklus/Zyklen offen${openWeekly?.reminder_sent_at ? " · erinnert" : ""}`
           }
           attention={cycles.length === 0}
+        />
+        <StatusTile
+          href={`${base}#integrationen`}
+          label="Copilot-Daten"
+          value={copilotLatest ? copilotLatest.week : "–"}
+          hint={
+            copilotLatest
+              ? `${copilotLatest.active_users} von ${copilotLatest.enabled_users} Lizenzen aktiv`
+              : integration?.status === "connected"
+                ? "verbunden, noch nicht synchronisiert"
+                : "Noch keine Microsoft-Daten (optional)"
+          }
+          attention={!copilotLatest && integration?.status === "connected"}
         />
       </section>
 
@@ -492,6 +547,118 @@ export default async function OrgAdminPage({ params, searchParams }: OrgAdminPag
               Erinnerung jetzt senden
             </Button>
           </form>
+        </div>
+      </SectionCard>
+
+      {/* 7: Integrationen */}
+      <SectionCard
+        id="integrationen"
+        step="7"
+        title="Integrationen: Microsoft 365 Copilot"
+        lead="Optional. Microsofts Nutzungsbericht ergänzt die Befragung um gemessene Zahlen: lizenzierte und aktive Nutzer, Nutzung je App, Prompts. Gespeichert werden nur Wochen-Summen der Organisation — nie einzelne Personen; die Datei bzw. Antwort wird nach dem Import verworfen."
+        aside={
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/app/${slug}/copilot`}>Zur Seite Copilot-Nutzung</Link>
+          </Button>
+        }
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3 rounded-2xl bg-white/70 p-4">
+            <h3 className="text-sm font-medium">CSV-Export hochladen</h3>
+            <p className="text-xs text-muted-foreground">
+              Microsoft 365 Admin Center → Berichte → Nutzung → Microsoft 365
+              Copilot → Zeitraum 28 Tage → Exportieren. Die Namen im Bericht
+              dürfen verschleiert sein (Standard); sie werden nicht übernommen.
+              Bei unbekannten Spalten den Bericht auf Englisch exportieren.
+            </p>
+            <form action={importCsv} className="space-y-3">
+              <input
+                type="file"
+                name="file"
+                accept=".csv,text/csv"
+                required
+                aria-label="Copilot-Bericht (CSV)"
+                className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-xs file:font-medium file:text-primary-foreground"
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Zeitraum des Berichts" htmlFor="period_days">
+                  <select id="period_days" name="period_days" defaultValue="28" className={inputClass}>
+                    {[7, 28, 30, 90, 180].map((d) => (
+                      <option key={d} value={d}>{d} Tage</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Berichtsdatum" htmlFor="refresh_date" hint="Nur nötig, wenn die Datei kein „Report Refresh Date“ enthält.">
+                  <input id="refresh_date" name="refresh_date" type="date" className={inputClass} />
+                </Field>
+              </div>
+              <Button type="submit" size="sm">Importieren</Button>
+            </form>
+          </div>
+
+          <div className="space-y-3 rounded-2xl bg-white/70 p-4">
+            <h3 className="text-sm font-medium">Automatisch per Microsoft Graph</h3>
+            <p className="flex items-center gap-2 text-sm">
+              <span
+                className="status-dot"
+                style={{
+                  background:
+                    integration?.status === "connected"
+                      ? "var(--status-good)"
+                      : integration?.status === "error"
+                        ? "var(--status-alert)"
+                        : "hsl(var(--tertiary-foreground))",
+                }}
+                aria-hidden
+              />
+              {integration?.status === "connected"
+                ? `Verbunden${integration.consented_at ? ` seit ${formatReportDate(integration.consented_at.slice(0, 10))}` : ""}${integration.last_sync_at ? ` · zuletzt synchronisiert ${formatReportDate(integration.last_sync_at.slice(0, 10))}` : " · noch nicht synchronisiert"}`
+                : integration?.status === "error"
+                  ? "Verbunden, letzte Synchronisierung fehlgeschlagen"
+                  : "Nicht verbunden"}
+            </p>
+            {integration?.status === "error" && integration.last_error && (
+              <p className="text-xs text-muted-foreground">{integration.last_error}</p>
+            )}
+            {integration?.names_concealed !== null && integration?.names_concealed !== undefined && (
+              <p className="text-xs text-muted-foreground">
+                Namensverschleierung im Tenant:{" "}
+                {integration.names_concealed ? "aktiv (empfohlen)" : "aus — Microsoft liefert Klarnamen, die wir nicht speichern"}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Ein Global Admin des Microsoft-Tenants erteilt der App
+              „KI-Barometer Connector“ die Berechtigung {REQUIRED_PERMISSION}
+              (nur lesen). Danach holt das KI-Barometer die Berichte jeden
+              Mittwoch automatisch.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {integration?.status === "connected" || integration?.status === "error" ? (
+                <>
+                  <form action={syncNow}>
+                    <Button type="submit" size="sm" variant="secondary" disabled={!m365Configured}>
+                      Jetzt synchronisieren
+                    </Button>
+                  </form>
+                  <form action={disconnect}>
+                    <Button type="submit" size="sm" variant="ghost">Verbindung trennen</Button>
+                  </form>
+                </>
+              ) : m365Configured ? (
+                <Button asChild size="sm">
+                  <a href={`/api/integrations/m365/consent?org=${encodeURIComponent(slug)}`}>
+                    Microsoft 365 verbinden
+                  </a>
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Die Anbindung ist auf diesem Server noch nicht eingerichtet
+                  (dbrains: M365_CLIENT_ID / M365_CLIENT_SECRET). Der CSV-Import
+                  funktioniert unabhängig davon.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </SectionCard>
 

@@ -43,6 +43,7 @@ export default async function DashboardPage({
         active: o.id === data.org.id,
       }))}
       reportHref={reportMonth ? `/report/${data.org.slug}/${reportMonth}` : null}
+      copilotHref={`/dashboard/${data.org.slug}/copilot`}
       simulateAction={simulateWeek}
       recommendationAction={setStatus}
       emptyHint={

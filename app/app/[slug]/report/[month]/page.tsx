@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { ReportView } from "@/components/dashboard/report-view";
 import { canAdminOrg, getOrgAccess, requireViewer } from "@/lib/server/auth";
+import { getCopilotPageData } from "@/lib/server/copilot-service";
 import { getReportData } from "@/lib/server/dashboard-service";
 
 export const dynamic = "force-dynamic";
@@ -18,5 +19,12 @@ export default async function MemberReportPage({
 
   const data = await getReportData(access.store, slug, month);
   if (!data) notFound();
-  return <ReportView data={data} dashboardHref={`/app/${data.org.slug}/dashboard`} />;
+  const copilot = await getCopilotPageData(access.store, data.org, access.role);
+  return (
+    <ReportView
+      data={data}
+      dashboardHref={`/app/${data.org.slug}/dashboard`}
+      copilot={copilot}
+    />
+  );
 }

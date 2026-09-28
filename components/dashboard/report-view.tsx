@@ -6,8 +6,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GapDumbbells } from "@/components/dashboard/gap-dumbbell";
+import { activeRate, formatReportDate } from "@/lib/domain/copilot";
+import type { CopilotPageData } from "@/lib/server/copilot-service";
 import type { ReportData } from "@/lib/server/dashboard-service";
-import type { WeeklyKpis } from "@/lib/types";
+import { COPILOT_APP_KEYS, COPILOT_APP_LABELS, type WeeklyKpis } from "@/lib/types";
 
 const nf = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat("de-DE", {
@@ -55,9 +57,11 @@ function latest(
 export interface ReportViewProps {
   data: ReportData;
   dashboardHref: string;
+  /** Copilot telemetry section (D4.10); omitted or null = no section. */
+  copilot?: CopilotPageData | null;
 }
 
-export function ReportView({ data, dashboardHref }: ReportViewProps) {
+export function ReportView({ data, dashboardHref, copilot = null }: ReportViewProps) {
   const {
     org,
     history,
@@ -308,6 +312,64 @@ export function ReportView({ data, dashboardHref }: ReportViewProps) {
           </div>
         </dl>
       </section>
+
+      {/* 6. Copilot-Telemetrie (D4.10) — only with data and above k */}
+      {copilot?.latest && !copilot.suppressed && (
+        <section className="mb-8">
+          <h2 className="mb-1 text-xl font-semibold">6. Microsoft 365 Copilot — Nutzung laut Microsoft</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Microsoft-Bericht vom {formatReportDate(copilot.latest.report_refresh_date)},
+            Fenster {copilot.latest.period_days} Tage, Org-Summen ohne Personenbezug.
+          </p>
+          <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-muted-foreground">Lizenzen</dt>
+              <dd className="text-lg font-semibold">{nf.format(copilot.latest.enabled_users)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Aktive Nutzer</dt>
+              <dd className="text-lg font-semibold">
+                {pct(activeRate(copilot.latest))}{" "}
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({nf.format(copilot.latest.active_users)})
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Prompts je aktivem Nutzer</dt>
+              <dd className="text-lg font-semibold">
+                {copilot.latest.prompts_per_active_user === null
+                  ? "–"
+                  : nf1.format(copilot.latest.prompts_per_active_user)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Ungenutzte Lizenzkosten</dt>
+              <dd className="text-lg font-semibold">
+                {copilot.license?.unusedCostEur == null
+                  ? "–"
+                  : `${nf.format(copilot.license.unusedCostEur)} €`}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Meistgenutzte Apps:{" "}
+            {COPILOT_APP_KEYS.flatMap((key) => {
+              const count = copilot.latest?.active_by_app[key];
+              return count ? [{ key, count }] : [];
+            })
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 4)
+              .map(({ key, count }) => `${COPILOT_APP_LABELS[key]} (${nf.format(count)})`)
+              .join(" · ") || "–"}
+            {copilot.survey && (
+              <>
+                {" "}· Befragung: {pct(copilot.survey.rate)} nutzen KI mindestens wöchentlich (W1.1).
+              </>
+            )}
+          </p>
+        </section>
+      )}
 
       <footer className="border-t pt-4 text-xs text-muted-foreground">
         Erstellt mit KI-Barometer (dbrains academy). Anonymität: Auswertungen

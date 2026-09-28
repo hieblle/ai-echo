@@ -19,7 +19,8 @@ import {
   computeTrainingWishes,
   pooledAdoption,
 } from "@/lib/domain/kpi";
-import { parseIsoWeek } from "@/lib/domain/isoWeek";
+import { copilotTelemetryUsage } from "@/lib/domain/copilot";
+import { mondayOfIsoWeek } from "@/lib/domain/isoWeek";
 import { evaluateTriggers } from "@/lib/domain/triggers";
 import type { Store } from "@/lib/data/store";
 import type {
@@ -90,16 +91,11 @@ export interface DashboardData {
   recommendations: DashboardRecommendation[];
   freeTexts: FreeTextHighlight[];
   totalResponses: number;
+  /** Latest Microsoft Copilot telemetry (org level, D4.10), or null without data. */
+  copilot: { week: string; periodDays: number; activeRate: number | null; enabled: number } | null;
 }
 
-/** Monday of an ISO week (UTC). */
-export function mondayOfIsoWeek(week: string): Date {
-  const { year, week: wk } = parseIsoWeek(week);
-  const jan4 = new Date(Date.UTC(year, 0, 4));
-  const isoDay = jan4.getUTCDay() === 0 ? 7 : jan4.getUTCDay();
-  const week1Monday = new Date(jan4.getTime() - (isoDay - 1) * 86_400_000);
-  return new Date(week1Monday.getTime() + (wk - 1) * 7 * 86_400_000);
-}
+export { mondayOfIsoWeek };
 
 /** Calendar month ("2026-07") an ISO week belongs to (by its Thursday). */
 export function monthOfIsoWeek(week: string): string {
@@ -272,6 +268,12 @@ async function assemble(
   const toolUsage = computeToolUsage({ responses, weeks });
   const trainingWishes = computeTrainingWishes(responses);
 
+  // Copilot telemetry is org-level only (D4.10): it feeds R5 as a second
+  // source and the dashboard's Copilot link, never a team view.
+  const copilotSnapshots = scope ? [] : await store.listCopilotSnapshots(org.id);
+  const copilotLatest = copilotSnapshots[copilotSnapshots.length - 1] ?? null;
+  const telemetry = copilotLatest ? [copilotTelemetryUsage(copilotLatest)] : [];
+
   const triggered = evaluateTriggers(
     {
       weekly: history,
@@ -279,6 +281,7 @@ async function assemble(
       toolUsage,
       toolSettings,
       trainingWishes,
+      telemetry,
     },
     rules,
   );
@@ -334,6 +337,17 @@ async function assemble(
       ? []
       : await collectFreeTexts(store, responses, org, latestWeek, 6),
     totalResponses: allResponses.length,
+    copilot: copilotLatest
+      ? {
+          week: copilotLatest.week,
+          periodDays: copilotLatest.period_days,
+          activeRate:
+            copilotLatest.enabled_users > 0
+              ? copilotLatest.active_users / copilotLatest.enabled_users
+              : null,
+          enabled: copilotLatest.enabled_users,
+        }
+      : null,
   };
 }
 

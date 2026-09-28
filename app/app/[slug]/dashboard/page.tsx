@@ -76,6 +76,7 @@ export default async function MemberDashboardPage({
           ? `/app/${data.org.slug}/report/${reportMonth}`
           : null
       }
+      copilotHref={`/app/${data.org.slug}/copilot`}
       recommendationAction={setStatus}
       emptyHint={
         <p>

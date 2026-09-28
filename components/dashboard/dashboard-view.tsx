@@ -110,6 +110,8 @@ export interface DashboardViewProps {
   orgSwitcher: OrgSwitcherEntry[];
   /** Link to the monthly report; null hides the button. */
   reportHref: string | null;
+  /** Link to the Copilot telemetry page (shown when telemetry exists). */
+  copilotHref?: string | null;
   /** Demo only: "+ Woche simulieren". */
   simulateAction?: () => Promise<void>;
   /** Handles the done/dismissed forms (hidden fields: ruleKey, context, status). */
@@ -220,6 +222,7 @@ export function DashboardView({
   data,
   orgSwitcher,
   reportHref,
+  copilotHref = null,
   simulateAction,
   recommendationAction,
   emptyHint,
@@ -380,6 +383,29 @@ export function DashboardView({
               sparkDomain={[0, 100]}
             />
           </section>
+
+          {/* Copilot-Telemetrie (D4.10) — org level only, links to its page */}
+          {!scope && data.copilot && (
+            <section
+              aria-label="Copilot-Nutzung"
+              className="card-soft flex flex-wrap items-center justify-between gap-3 px-6 py-4"
+            >
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span className="status-dot" style={{ background: "var(--accent-yellow)" }} aria-hidden />
+                <span className="font-medium">Microsoft 365 Copilot</span>
+                <span className="text-muted-foreground">
+                  {pct(data.copilot.activeRate)} von {nf.format(data.copilot.enabled)} Lizenzen aktiv
+                  {" · "}
+                  {data.copilot.periodDays} Tage · Stand {data.copilot.week} · laut Microsoft-Bericht
+                </span>
+              </p>
+              {copilotHref && (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={copilotHref}>Copilot-Nutzung</Link>
+                </Button>
+              )}
+            </section>
+          )}
 
           {/* ROI-Kachel (Leitkennzahl, SPEC §3, D4.8) — org level only */}
           {!scope && (

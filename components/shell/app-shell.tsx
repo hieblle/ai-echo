@@ -14,6 +14,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
+  Bot,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,7 @@ import type {
 const ICONS: Record<ShellIcon, LucideIcon> = {
   home: Home,
   dashboard: LayoutDashboard,
+  copilot: Bot,
   surveys: ClipboardCheck,
   report: FileText,
   members: Users,
