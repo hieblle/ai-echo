@@ -9,7 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { MigrationPendingError } from "@/lib/data/supabase-store";
+import { isMigrationPendingError } from "@/lib/data/supabase-store";
 import {
   canAdminOrg,
   getOrgAccess,
@@ -103,7 +103,7 @@ export async function createOrgAction(formData: FormData): Promise<void> {
     revalidatePath("/admin");
     back("/admin", { ok: "created", org: org.slug });
   } catch (err) {
-    if (err instanceof MigrationPendingError) {
+    if (isMigrationPendingError(err)) {
       revalidatePath("/admin");
       back("/admin", { err: "migration" });
     }
@@ -257,7 +257,7 @@ export async function upsertToolAction(
       active: formData.getAll("active").includes("on"),
     });
   } catch (err) {
-    if (err instanceof MigrationPendingError) back(path, { err: "migration" });
+    if (isMigrationPendingError(err)) back(path, { err: "migration" });
     throw err;
   }
   revalidatePath(path);

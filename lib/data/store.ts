@@ -17,10 +17,12 @@
  */
 
 import type {
+  CopilotUsageSnapshot,
   CyclePatch,
   DemoPersona,
   Department,
   FormOfAddress,
+  IntegrationProvider,
   Membership,
   MembershipPatch,
   NewMembership,
@@ -30,6 +32,7 @@ import type {
   OrgId,
   Organization,
   OrganizationPatch,
+  OrgIntegration,
   OrgToolSetting,
   Participation,
   ParticipationStat,
@@ -52,6 +55,11 @@ export interface ListResponsesOptions {
 export interface ListCyclesOptions {
   status?: SurveyCycle["status"];
   template_key?: TemplateKey;
+}
+
+export interface ListSnapshotsOptions {
+  /** Restrict to these ISO weeks. */
+  weeks?: readonly string[];
 }
 
 export interface Store {
@@ -151,4 +159,20 @@ export interface Store {
   listRecommendationStates(orgId: OrgId): Promise<RecommendationState[]>;
   /** Upsert one decision, keyed by (org_id, rule_key, context). */
   setRecommendationState(state: RecommendationState): Promise<void>;
+
+  // --- Integrations & vendor telemetry (D4.10, docs/COPILOT-INTEGRATION.md) --
+
+  getIntegration(
+    orgId: OrgId,
+    provider: IntegrationProvider,
+  ): Promise<OrgIntegration | null>;
+  /** Upsert by (org_id, provider). */
+  upsertIntegration(integration: OrgIntegration): Promise<void>;
+  /** Org-level Copilot aggregates, oldest week first (never person rows). */
+  listCopilotSnapshots(
+    orgId: OrgId,
+    options?: ListSnapshotsOptions,
+  ): Promise<CopilotUsageSnapshot[]>;
+  /** Upsert by (org_id, week, source, period_days). */
+  upsertCopilotSnapshot(snapshot: CopilotUsageSnapshot): Promise<void>;
 }

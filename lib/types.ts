@@ -502,3 +502,106 @@ export interface DemoPersona {
   /** Pre-seeded O2 tool values so weekly/monthly are playable immediately. */
   default_tools: string[];
 }
+
+// --- Microsoft 365 Copilot telemetry (docs/COPILOT-INTEGRATION.md, D4.10) ---
+
+/** Apps Microsoft reports Copilot activity for (usage report v2). */
+export type CopilotAppKey =
+  | "teams"
+  | "word"
+  | "excel"
+  | "powerpoint"
+  | "outlook"
+  | "onenote"
+  | "loop"
+  | "chat_work"
+  | "chat_web"
+  | "m365_app"
+  | "edge"
+  | "agents";
+
+export const COPILOT_APP_KEYS = [
+  "teams",
+  "word",
+  "excel",
+  "powerpoint",
+  "outlook",
+  "onenote",
+  "loop",
+  "chat_work",
+  "chat_web",
+  "m365_app",
+  "edge",
+  "agents",
+] as const satisfies readonly CopilotAppKey[];
+
+export const COPILOT_APP_LABELS: Readonly<Record<CopilotAppKey, string>> = {
+  teams: "Teams",
+  word: "Word",
+  excel: "Excel",
+  powerpoint: "PowerPoint",
+  outlook: "Outlook",
+  onenote: "OneNote",
+  loop: "Loop",
+  chat_work: "Copilot Chat (Arbeit)",
+  chat_web: "Copilot Chat (Web)",
+  m365_app: "Microsoft 365 Copilot-App",
+  edge: "Edge",
+  agents: "Agents",
+};
+
+/** Where a snapshot came from: admin-center CSV, Graph API sync, Copilot Dashboard export. */
+export type CopilotSource = "csv" | "graph" | "viva";
+
+/** How many of the period's days a user was active — distribution, not persons. */
+export type ActiveDaysBucket = "1-2" | "3-5" | "6-10" | "11+";
+
+/**
+ * One org-level weekly aggregate of Microsoft's Copilot usage report. Holds
+ * counts only — NEVER a user principal name, hash or display name; the
+ * per-user rows are consumed in memory at import time and discarded.
+ */
+export interface CopilotUsageSnapshot {
+  org_id: OrgId;
+  /** ISO week of the report refresh date, e.g. "2026-W39". */
+  week: string;
+  source: CopilotSource;
+  /** Length of the rolling window the counts refer to (7, 28, 30, 90, 180). */
+  period_days: number;
+  /** YYYY-MM-DD, Microsoft's "Report Refresh Date". */
+  report_refresh_date: string;
+  /** Users holding a Copilot licence in the period. */
+  enabled_users: number;
+  /** Users with at least one intentional Copilot action in the period. */
+  active_users: number;
+  /** Active users per app; apps missing from the report are absent. */
+  active_by_app: Partial<Record<CopilotAppKey, number>>;
+  /** Prompts submitted across all apps in the period (report v2), else null. */
+  prompts_total: number | null;
+  prompts_per_active_user: number | null;
+  /** Ø active days of the active users (report v2), else null. */
+  active_days_avg: number | null;
+  active_days_buckets: Record<ActiveDaysBucket, number> | null;
+  /** Microsoft's "Copilot assisted hours" estimate (Copilot Dashboard), else null. */
+  assisted_hours: number | null;
+  /** ISO timestamp of the import/sync. */
+  imported_at: string;
+}
+
+export type IntegrationProvider = "m365";
+
+export type IntegrationStatus = "pending" | "connected" | "error";
+
+/** Connection of an org to an external data source (only tenant id — secrets live in env). */
+export interface OrgIntegration {
+  org_id: OrgId;
+  provider: IntegrationProvider;
+  /** Microsoft Entra tenant id after admin consent; null while pending. */
+  tenant_id: string | null;
+  status: IntegrationStatus;
+  /** Whether the tenant conceals user names in reports (null = unknown). */
+  names_concealed: boolean | null;
+  consented_at: string | null;
+  last_sync_at: string | null;
+  last_error: string | null;
+}

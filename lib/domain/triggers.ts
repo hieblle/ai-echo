@@ -53,6 +53,18 @@ const GAP_PAIR_LABELS: Record<GapPairKey, string> = {
 
 // --- Input contract ----------------------------------------------------------
 
+/**
+ * Measured usage of a tool from the vendor's telemetry (D4.10: Microsoft
+ * Copilot usage report) — a second, independent source for R5.
+ */
+export interface TelemetryUsage {
+  tool_value: string;
+  /** Active users ÷ licensed users (0..1). */
+  share: number;
+  /** German source label for the card, e.g. "Microsoft-Nutzungsdaten (28 Tage bis 25.09.2026)". */
+  label: string;
+}
+
 export interface TriggerEvaluationInput {
   /** Weekly KPI snapshots, chronological, oldest first. */
   weekly: WeeklyKpis[];
@@ -60,6 +72,8 @@ export interface TriggerEvaluationInput {
   toolUsage: ToolUsageStat[];
   toolSettings: OrgToolSetting[];
   trainingWishes: TrainingWishStat[];
+  /** Optional vendor telemetry per tool (R5 fires on the stricter source). */
+  telemetry?: TelemetryUsage[];
 }
 
 // --- German-ish number formatting ---------------------------------------------
@@ -221,35 +235,53 @@ function evaluateR4(input: TriggerEvaluationInput): RuleHit[] {
  * R5 — Tool mit Lizenzkosten > 0 und Nutzung < 20 %.
  * For each ACTIVE tool setting with monthly_license_cost_eur > 0 the W1.2
  * most-used share must be strictly below 0.2; a tool without a usage entry
- * counts as share 0. Data guard: only evaluated at all when the total number
- * of W1.2 answers is >= 10 — no firing on thin data. Context = tool_value.
- * The W1.2 total is derived as the maximum `total` across the usage stats
- * (every stat carries the same denominator).
+ * counts as share 0. Data guard: the survey share is only evaluated when the
+ * total number of W1.2 answers is >= 10 — no firing on thin data. Context =
+ * tool_value. The W1.2 total is derived as the maximum `total` across the
+ * usage stats (every stat carries the same denominator).
+ *
+ * D4.10: when vendor telemetry exists for the tool (active ÷ licensed), it is
+ * evaluated as a second source against the same threshold — the rule fires
+ * on the stricter of the two and the card names both figures.
  */
 function evaluateR5(input: TriggerEvaluationInput): RuleHit[] {
   const totalAnswers = input.toolUsage.reduce(
     (max, stat) => Math.max(max, stat.total),
     0,
   );
-  if (totalAnswers < R5_MIN_TOTAL_ANSWERS) {
-    return [];
-  }
+  const surveyEvaluable = totalAnswers >= R5_MIN_TOTAL_ANSWERS;
   const hits: RuleHit[] = [];
   for (const setting of input.toolSettings) {
     if (!setting.active || setting.monthly_license_cost_eur <= 0) {
       continue;
     }
+    const telemetry =
+      input.telemetry?.find((t) => t.tool_value === setting.tool_value) ?? null;
     const usage = input.toolUsage.find(
       (stat) => stat.tool_value === setting.tool_value,
     );
-    const share = usage?.share ?? 0;
-    if (share >= R5_USAGE_THRESHOLD) {
+    const surveyShare = surveyEvaluable ? (usage?.share ?? 0) : null;
+    const surveyLow = surveyShare !== null && surveyShare < R5_USAGE_THRESHOLD;
+    const telemetryLow = telemetry !== null && telemetry.share < R5_USAGE_THRESHOLD;
+    if (!surveyLow && !telemetryLow) {
       continue;
     }
-    hits.push({
-      context: setting.tool_value,
-      detail: `Bezahltes Tool „${setting.tool_label}“ (${formatEuro(setting.monthly_license_cost_eur)} pro Monat) wird nur von ${formatPercent(share)} als meistgenutztes Tool genannt (Schwelle: 20 %).`,
-    });
+    const parts: string[] = [];
+    if (surveyShare !== null) {
+      parts.push(
+        `Bezahltes Tool „${setting.tool_label}“ (${formatEuro(setting.monthly_license_cost_eur)} pro Monat) wird ${surveyLow ? "nur " : ""}von ${formatPercent(surveyShare)} als meistgenutztes Tool genannt (Schwelle: 20 %).`,
+      );
+    } else {
+      parts.push(
+        `Bezahltes Tool „${setting.tool_label}“ (${formatEuro(setting.monthly_license_cost_eur)} pro Monat).`,
+      );
+    }
+    if (telemetry) {
+      parts.push(
+        `Laut ${telemetry.label} sind ${telemetryLow ? "nur " : ""}${formatPercent(telemetry.share)} der Lizenzen aktiv (Schwelle: 20 %).`,
+      );
+    }
+    hits.push({ context: setting.tool_value, detail: parts.join(" ") });
   }
   return hits;
 }

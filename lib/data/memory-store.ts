@@ -10,14 +10,17 @@
 import type {
   ListCyclesOptions,
   ListResponsesOptions,
+  ListSnapshotsOptions,
   Store,
   StoreMode,
 } from "@/lib/data/store";
 import type {
+  CopilotUsageSnapshot,
   CyclePatch,
   DemoPersona,
   Department,
   FormOfAddress,
+  IntegrationProvider,
   Membership,
   MembershipPatch,
   NewMembership,
@@ -27,6 +30,7 @@ import type {
   OrgId,
   Organization,
   OrganizationPatch,
+  OrgIntegration,
   OrgToolSetting,
   Participation,
   ParticipationStat,
@@ -78,6 +82,10 @@ export class MemoryStore implements Store {
   private readonly participationStats: ParticipationStat[] = [];
   /** Keyed by (org_id, rule_key, context) — one decision per derived card. */
   private readonly recommendationStates = new Map<string, RecommendationState>();
+  /** Keyed by (org_id, provider). */
+  private readonly integrations = new Map<string, OrgIntegration>();
+  /** Org-level Copilot aggregates (D4.10) — never person rows. */
+  private readonly copilotSnapshots: CopilotUsageSnapshot[] = [];
 
   constructor(seed: MemoryStoreSeed) {
     // Deep-copy the seed so later mutations by the caller cannot leak in.
@@ -517,6 +525,61 @@ export class MemoryStore implements Store {
       recommendationStateKey(state.org_id, state.rule_key, state.context),
       structuredClone(state),
     );
+  }
+
+  // --- Integrations & vendor telemetry (D4.10) ---------------------------------
+
+  async getIntegration(
+    orgId: OrgId,
+    provider: IntegrationProvider,
+  ): Promise<OrgIntegration | null> {
+    const row = this.integrations.get(`${orgId}\u0000${provider}`);
+    return row ? structuredClone(row) : null;
+  }
+
+  async upsertIntegration(integration: OrgIntegration): Promise<void> {
+    if (!this.findOrganization(integration.org_id)) {
+      throw new Error(`upsertIntegration: unknown org_id "${integration.org_id}"`);
+    }
+    this.integrations.set(
+      `${integration.org_id}\u0000${integration.provider}`,
+      structuredClone(integration),
+    );
+  }
+
+  async listCopilotSnapshots(
+    orgId: OrgId,
+    options: ListSnapshotsOptions = {},
+  ): Promise<CopilotUsageSnapshot[]> {
+    const weeks = options.weeks ? new Set(options.weeks) : null;
+    const rows = this.copilotSnapshots.filter(
+      (s) => s.org_id === orgId && (!weeks || weeks.has(s.week)),
+    );
+    rows.sort(
+      (a, b) =>
+        a.week.localeCompare(b.week) ||
+        a.period_days - b.period_days ||
+        a.imported_at.localeCompare(b.imported_at),
+    );
+    return structuredClone(rows);
+  }
+
+  async upsertCopilotSnapshot(snapshot: CopilotUsageSnapshot): Promise<void> {
+    if (!this.findOrganization(snapshot.org_id)) {
+      throw new Error(`upsertCopilotSnapshot: unknown org_id "${snapshot.org_id}"`);
+    }
+    if (!ISO_WEEK_PATTERN.test(snapshot.week)) {
+      throw new Error(`upsertCopilotSnapshot: invalid week "${snapshot.week}"`);
+    }
+    const index = this.copilotSnapshots.findIndex(
+      (s) =>
+        s.org_id === snapshot.org_id &&
+        s.week === snapshot.week &&
+        s.source === snapshot.source &&
+        s.period_days === snapshot.period_days,
+    );
+    if (index >= 0) this.copilotSnapshots[index] = structuredClone(snapshot);
+    else this.copilotSnapshots.push(structuredClone(snapshot));
   }
 
   // --- Internals -------------------------------------------------------------

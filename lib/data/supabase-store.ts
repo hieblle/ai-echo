@@ -17,15 +17,18 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   ListCyclesOptions,
   ListResponsesOptions,
+  ListSnapshotsOptions,
   Store,
   StoreMode,
 } from "@/lib/data/store";
 import type {
   AnswerValue,
+  CopilotUsageSnapshot,
   CyclePatch,
   DemoPersona,
   Department,
   FormOfAddress,
+  IntegrationProvider,
   Membership,
   MembershipPatch,
   NewMembership,
@@ -35,6 +38,7 @@ import type {
   OrgId,
   Organization,
   OrganizationPatch,
+  OrgIntegration,
   OrgToolSetting,
   Participation,
   ParticipationStat,
@@ -126,9 +130,49 @@ interface ParticipationStatRow {
   completed: number;
 }
 
+interface SnapshotRow {
+  org_id: string;
+  week: string;
+  source: CopilotUsageSnapshot["source"];
+  period_days: number;
+  report_refresh_date: string;
+  enabled_users: number;
+  active_users: number;
+  active_by_app: CopilotUsageSnapshot["active_by_app"] | null;
+  prompts_total: number | null;
+  prompts_per_active_user: number | string | null;
+  active_days_avg: number | string | null;
+  active_days_buckets: CopilotUsageSnapshot["active_days_buckets"];
+  assisted_hours: number | string | null;
+  imported_at: string;
+}
+
 interface QueryResult<T> {
   data: T | null;
   error: { message: string } | null;
+}
+
+function numberOrNull(value: number | string | null | undefined): number | null {
+  return value == null ? null : Number(value);
+}
+
+function mapSnapshot(row: SnapshotRow): CopilotUsageSnapshot {
+  return {
+    org_id: row.org_id,
+    week: row.week,
+    source: row.source,
+    period_days: Number(row.period_days),
+    report_refresh_date: row.report_refresh_date,
+    enabled_users: Number(row.enabled_users),
+    active_users: Number(row.active_users),
+    active_by_app: row.active_by_app ?? {},
+    prompts_total: numberOrNull(row.prompts_total),
+    prompts_per_active_user: numberOrNull(row.prompts_per_active_user),
+    active_days_avg: numberOrNull(row.active_days_avg),
+    active_days_buckets: row.active_days_buckets ?? null,
+    assisted_hours: numberOrNull(row.assisted_hours),
+    imported_at: row.imported_at,
+  };
 }
 
 /**
@@ -145,6 +189,17 @@ export class MigrationPendingError extends Error {
     this.name = "MigrationPendingError";
     this.migration = migration;
   }
+}
+
+/**
+ * `instanceof` is not reliable across Next's separate server-action and
+ * page module graphs (two copies of the class in dev) — match by name too.
+ */
+export function isMigrationPendingError(err: unknown): err is MigrationPendingError {
+  return (
+    err instanceof MigrationPendingError ||
+    (err instanceof Error && err.name === "MigrationPendingError")
+  );
 }
 
 function unwrap<T>(result: QueryResult<T>, what: string): T {
@@ -755,6 +810,67 @@ export class SupabaseStore implements Store {
       .from("recommendation_states")
       .upsert(state, { onConflict: "org_id,rule_key,context" });
     if (error) throw new Error(`setRecommendationState: ${error.message}`);
+  }
+
+  // --- Integrations & vendor telemetry (D4.10) ---------------------------------
+
+  async getIntegration(
+    orgId: OrgId,
+    provider: IntegrationProvider,
+  ): Promise<OrgIntegration | null> {
+    const result = await this.db
+      .from("org_integrations")
+      .select("*")
+      .eq("org_id", orgId)
+      .eq("provider", provider)
+      .maybeSingle();
+    // Before migration 20260928120000 the table does not exist — treat as
+    // "not connected" so the admin page renders its hint instead of failing.
+    if (result.error && /org_integrations/.test(result.error.message)) return null;
+    return unwrapMaybe<OrgIntegration>(result, "getIntegration");
+  }
+
+  async upsertIntegration(integration: OrgIntegration): Promise<void> {
+    const { error } = await this.db
+      .from("org_integrations")
+      .upsert(integration, { onConflict: "org_id,provider" });
+    if (error) {
+      if (/org_integrations/.test(error.message)) {
+        throw new MigrationPendingError(
+          "20260928120000_copilot_usage.sql",
+          "upsertIntegration: the org_integrations table is missing",
+        );
+      }
+      throw new Error(`upsertIntegration: ${error.message}`);
+    }
+  }
+
+  async listCopilotSnapshots(
+    orgId: OrgId,
+    options: ListSnapshotsOptions = {},
+  ): Promise<CopilotUsageSnapshot[]> {
+    const weeks = options.weeks;
+    if (weeks && weeks.length === 0) return [];
+    let query = this.db.from("copilot_usage_snapshots").select("*").eq("org_id", orgId);
+    if (weeks) query = query.in("week", [...weeks]);
+    const result = await query.order("week").order("period_days").order("imported_at");
+    if (result.error && /copilot_usage_snapshots/.test(result.error.message)) return [];
+    return unwrap<SnapshotRow[]>(result, "listCopilotSnapshots").map(mapSnapshot);
+  }
+
+  async upsertCopilotSnapshot(snapshot: CopilotUsageSnapshot): Promise<void> {
+    const { error } = await this.db
+      .from("copilot_usage_snapshots")
+      .upsert(snapshot, { onConflict: "org_id,week,source,period_days" });
+    if (error) {
+      if (/copilot_usage_snapshots/.test(error.message)) {
+        throw new MigrationPendingError(
+          "20260928120000_copilot_usage.sql",
+          "upsertCopilotSnapshot: the copilot_usage_snapshots table is missing",
+        );
+      }
+      throw new Error(`upsertCopilotSnapshot: ${error.message}`);
+    }
   }
 
   // --- Internals -------------------------------------------------------------

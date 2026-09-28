@@ -43,6 +43,15 @@ export function previousIsoWeek(week: string): string {
   return `${prevYear}-W${String(weeksInIsoYear(prevYear)).padStart(2, "0")}`;
 }
 
+/** Monday of an ISO week (UTC midnight). */
+export function mondayOfIsoWeek(week: string): Date {
+  const { year, week: wk } = parseIsoWeek(week);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const isoDay = jan4.getUTCDay() === 0 ? 7 : jan4.getUTCDay();
+  const week1Monday = new Date(jan4.getTime() - (isoDay - 1) * 86_400_000);
+  return new Date(week1Monday.getTime() + (wk - 1) * 7 * 86_400_000);
+}
+
 /** The ISO week immediately after the given one (handles year rollover). */
 export function nextIsoWeek(week: string): string {
   const { year, week: wk } = parseIsoWeek(week);

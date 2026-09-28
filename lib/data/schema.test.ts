@@ -63,6 +63,36 @@ describe("schema · respondent_profiles", () => {
   });
 });
 
+describe("schema · copilot_usage_snapshots hold aggregates only (D4.10)", () => {
+  const body = tableBody(sql, "copilot_usage_snapshots");
+  const columns = body
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("--"))
+    .map((l) => l.split(/\s+/)[0] ?? "");
+
+  it.each([
+    "user_principal_name",
+    "upn",
+    "display_name",
+    "email",
+    "user_id",
+    "membership_id",
+    "respondent_key",
+    "department_id",
+  ])("has no %s column", (forbidden) => {
+    expect(columns).not.toContain(forbidden);
+  });
+
+  it("is keyed by org, week, source and window", () => {
+    expect(body).toMatch(/primary key \(org_id, week, source, period_days\)/);
+  });
+
+  it("stores no secret on the integration row", () => {
+    expect(tableBody(sql, "org_integrations")).not.toMatch(/secret|password|token/);
+  });
+});
+
 describe("schema · tenant isolation and k-anonymity", () => {
   it("enforces k >= 5 in the database", () => {
     expect(tableBody(sql, "organizations")).toMatch(
@@ -80,13 +110,21 @@ describe("schema · tenant isolation and k-anonymity", () => {
     "respondent_profiles",
     "responses",
     "recommendation_states",
+    "org_integrations",
+    "copilot_usage_snapshots",
   ])("enables row level security on %s", (table) => {
     expect(sql).toMatch(
       new RegExp(`alter table public\\.${table}\\s+enable row level security`),
     );
   });
 
-  it.each(["responses", "respondent_profiles", "recommendation_states"])(
+  it.each([
+    "responses",
+    "respondent_profiles",
+    "recommendation_states",
+    "org_integrations",
+    "copilot_usage_snapshots",
+  ])(
     "defines no client policy on %s (server-only)",
     (table) => {
       expect(sql).not.toMatch(new RegExp(`on public\\.${table} for`));
@@ -106,6 +144,8 @@ describe("schema · tenant isolation and k-anonymity", () => {
       "respondent_profiles",
       "responses",
       "recommendation_states",
+      "org_integrations",
+      "copilot_usage_snapshots",
     ]) {
       expect(tableBody(sql, table)).toMatch(/org_id\s+uuid not null references public\.organizations/);
     }
