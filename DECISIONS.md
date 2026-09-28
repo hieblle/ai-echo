@@ -47,7 +47,9 @@ weiterarbeiten"). Neueste Einträge oben.
       Tool-Nutzungsdaten der Anbieter (Copilot-/ChatGPT-Reports), Anker-
       beispiele in der Frage („eine Angebotsübersetzung ≈ 1 h"), Plausi-
       bilitätsgrenzen pro Kopf. Bis dahin steht am ROI sichtbar
-      „Selbsteinschätzung der Befragten".
+      „Selbsteinschätzung der Befragten". **Konkreter Weg für die
+      Tool-Nutzungsdaten:** `docs/COPILOT-INTEGRATION.md` (Recherche und
+      Stufenplan, 2026-09-28, noch nicht entschieden).
 
 ---
 
