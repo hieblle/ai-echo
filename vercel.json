@@ -4,6 +4,7 @@
   "regions": ["fra1"],
   "crons": [
     { "path": "/api/cron/open-cycle", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/remind", "schedule": "0 8 * * 4" }
+    { "path": "/api/cron/remind", "schedule": "0 8 * * 4" },
+    { "path": "/api/cron/copilot-sync", "schedule": "0 6 * * 3" }
   ]
 }

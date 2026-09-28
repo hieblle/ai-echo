@@ -110,6 +110,19 @@ export function getCronSecret(): string | null {
   return read("CRON_SECRET");
 }
 
+/** The multi-tenant Entra app that reads Copilot usage reports (D4.10). */
+export interface M365Env {
+  clientId: string;
+  clientSecret: string;
+}
+
+export function getM365Env(): M365Env | null {
+  const clientId = read("M365_CLIENT_ID");
+  const clientSecret = read("M365_CLIENT_SECRET");
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
 export type MailProvider = "console" | "supabase";
 
 /** Which mailer the app uses; defaults to Supabase when it is configured. */
